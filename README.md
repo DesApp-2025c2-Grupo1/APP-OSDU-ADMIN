@@ -1,16 +1,69 @@
-# Desarrollo de Aplicaciones - Universidad Nacional de Hurlingham - Template para armar un proyecto de FE basado en React
-La organización de este repo se creó usando Vite (https://vitejs.dev/). Integra los siguientes packages (además de React, claro):
-- Material UI.
-- Redux (usado a título demostrativo en un solo componente).
-- React Router.
-- Axios.
+# React + TypeScript + Vite
 
-## Cómo trabajar con este template
-Loguearse con un usuario de Github. Entrar a este repo, pulsar el botón "Use this template" que van a ver arriba a la derecha. Se abre un menucito con dos opciones, elegir la primera, "Create a new repository". Llenar los datos que pide la página siguiente, y darle a "Create repository".  
-Eso va a crear un repo en el usuario o la orga que hayan elegido, con el contenido del template en un único commit inicial. 
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Clonarse el repo, en la carpeta principal de la copia local ejecutar `npm install` para instalar las dependencias. 
+Currently, two official plugins are available:
 
-Para levantar la app en modo desarrollo, `npm run dev`.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-Obviamente las funcionalidades están solamente a modo de ejemplo. Se puede empezar agregando la funcionalidad de nuestro proyecto, y después a medida que este va creciendo, ir borrando el código de ejemplo.
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default tseslint.config([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      ...tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      ...tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      ...tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default tseslint.config([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
