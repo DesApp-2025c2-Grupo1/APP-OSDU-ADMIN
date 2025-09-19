@@ -1,5 +1,6 @@
 import { Header } from "../components/Header";
 
+
 import { AffiliatesTable } from "../components/AffiliatesTable";
 import { Sidebar } from "../components/Sidebar";
 import type { Affiliate } from "../components/AffiliatesTable";
@@ -53,6 +54,5 @@ export function Home() {
 			</div>
 		</div>
 	);
-
 
 }
