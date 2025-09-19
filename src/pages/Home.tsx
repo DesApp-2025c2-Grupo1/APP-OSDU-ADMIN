@@ -1,5 +1,4 @@
 import { Header } from "../components/Header";
-import { Button } from "../util/Button";
 import { AffiliatesTable } from "../components/AffiliatesTable";
 import { Sidebar } from "../components/Sidebar";
 import type { Affiliate } from "../components/AffiliatesTable";
@@ -45,7 +44,7 @@ export function Home() {
 			<Sidebar />
 			<div className="main-content">
 				<Header />
-				<Button text="Agregar Afiliado" />
+				<ButtonAddAffiliate text="Agregar Afiliado" />
         <ButtonVolver text="Volver" onClick={() => window.history.back()} />
         <ButtonCreateAffiliate text="Dar de alta Afiliado" onClick={() => console.log("click")} />
         <ButtonProgramateAffiliate text="Programar Alta Afiliado" onClick={() => console.log("click")} />
