@@ -3,6 +3,11 @@ import { Button } from "../util/Button";
 import { AffiliatesTable } from "../components/AffiliatesTable";
 import { Sidebar } from "../components/Sidebar";
 import type { Affiliate } from "../components/AffiliatesTable";
+import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
+import { ButtonVolver } from "../util/ButtonVolver";
+import { ButtonCreateAffiliate } from "../util/ButtonCreateAffiliate";
+import { ButtonProgramateAffiliate } from "../util/ButtonProgramateAffiliate";
+
 
 const affiliates: Affiliate[] = [
 	{
@@ -41,8 +46,13 @@ export function Home() {
 			<div className="main-content">
 				<Header />
 				<Button text="Agregar Afiliado" />
+        <ButtonVolver text="Volver" onClick={() => window.history.back()} />
+        <ButtonCreateAffiliate text="Dar de alta Afiliado" onClick={() => console.log("click")} />
+        <ButtonProgramateAffiliate text="Programar Alta Afiliado" onClick={() => console.log("click")} />
 				<AffiliatesTable affiliates={affiliates} />
 			</div>
 		</div>
 	);
+
+
 }
