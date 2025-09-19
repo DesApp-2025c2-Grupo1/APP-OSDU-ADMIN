@@ -1,5 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
-export function Button({ text }: { text: string }) {
+export function ButtonAddAffiliate({ text }: { text: string }) {
     return (
         <button
             className="
