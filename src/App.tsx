@@ -22,7 +22,7 @@ function App() {
             <Route path="/prestadores" element={<Prestadores />} />
             <Route path="/otros" element={<Otros />} />
             <Route path="/home/agregarAfiliado" element={<AgregarAfiliado />} />
-            <Route path="*" element={<div>404 ahre</div>} />
+            <Route path="*" element={<div>404</div>} />
           </Routes>
         </main>
       </div>
