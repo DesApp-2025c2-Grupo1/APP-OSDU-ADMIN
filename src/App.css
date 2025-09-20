@@ -66,26 +66,39 @@
   width: 220px;
   background: #fff;
   color: #222;
-  padding:0;
+  padding: 0;
   font-size: 1.1rem;
   border-right: 2px solid #5fa92c;
   min-height: calc(100vh - 60px);
 }
+
 .sidebar ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
+
 .sidebar li {
+  padding: 0;
+}
+
+.sidebar a {
+  display: block;
+  width: 100%;
+  height: 100%;
   padding: 16px 24px;
+  color: inherit;
+  text-decoration: none;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
-.sidebar li.active {
+
+.sidebar a.active {
   background: #5fa92c;
   color: #fff;
 }
-.sidebar li:hover {
+
+.sidebar a:hover {
   background: #e6f4e0;
   color: #222;
 }
