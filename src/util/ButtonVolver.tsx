@@ -1,6 +1,5 @@
 
-import ReplayIcon from '@mui/icons-material/Replay'; // No es identico al del figma, esta mas asociado a replay multimedia.
-// import ArrowBackIcon from '@mui/icons-material/ArrowBack'; Este icono me gustó más, hay que reemplazarlo y vemos cual nos convenece más
+import ReplayIcon from '@mui/icons-material/Replay'; 
 
 type ButtonVolverProps = {
   text: string;
@@ -11,6 +10,7 @@ export function ButtonVolver({ text, onClick }: ButtonVolverProps) {
   return (
     <button
       onClick={onClick}
+      type='button'
       className="
         inline-flex items-center gap-3
         mt-2 ml-2
@@ -28,7 +28,3 @@ export function ButtonVolver({ text, onClick }: ButtonVolverProps) {
     </button>
   );
 }
-
-// Para usarlo :         <ButtonVolver text="Volver" onClick={() => window.history.back()} />
-// Con window.history.back() deberia volver a la pantalla anterior segun el historial, sino se puede llevar directo a home
-// Pero hay que usar React Router para usar una funcion llamada useNavigate, no se que será mejor.
