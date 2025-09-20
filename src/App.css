@@ -93,9 +93,15 @@
 /* Contenido principal */
 .home-content {
   flex: 1;
-  padding: 40px 48px;
+  padding: 16px 24px;
 }
-
+/* barra de acciones: empuja el botón a la derecha */
+.actions-bar {
+  display: flex;
+  justify-content: flex-end;  /* <- clave */
+  align-items: center;
+  margin-bottom: 12px;
+}
 /* Tabla de afiliados */
 table {
   width: 100%;
@@ -117,4 +123,108 @@ tr {
 }
 tr:last-child {
   border-bottom: none;
+}
+
+/* Contenedor principal */
+.searchbar {
+  max-width: 640px;
+}
+
+/* Wrapper general */
+.searchbar__wrapper {
+  display: flex;
+  position: relative;
+}
+
+/* Botón del dropdown */
+.searchbar__dropdown-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem 0 0 0.5rem;
+  cursor: pointer;
+}
+.searchbar__dropdown-btn:hover {
+  background: #e5e7eb;
+}
+.searchbar__dropdown-icon {
+  width: 10px;
+  height: 10px;
+  margin-left: 8px;
+}
+
+/* Lista desplegable */
+.searchbar__dropdown {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  z-index: 20;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  width: 176px;
+}
+.searchbar__dropdown-list {
+  padding: 8px 0;
+  font-size: 0.875rem;
+  color: #374151;
+}
+.searchbar__dropdown-item {
+  width: 100%;
+  padding: 8px 16px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.searchbar__dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+/* Input */
+.searchbar__input-wrapper {
+  position: relative;
+  flex: 1;
+}
+.searchbar__input {
+  width: 100%;
+  padding: 10px;
+  font-size: 0.875rem;
+  color: #111827;
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-left: none;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+.searchbar__input:focus {
+  outline: none;
+  border-color: #002983;
+  box-shadow: 0 0 0 2px #93c5fd;
+}
+
+/* Botón submit */
+.searchbar__submit-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  padding: 10px;
+  background: #5FA92C;
+  border: 1px solid #1d4ed8;
+  border-radius: 0 0.5rem 0.5rem 0;
+  color: white;
+  cursor: pointer;
+}
+.searchbar__submit-btn:hover {
+  background: #4c8c23;
+}
+.searchbar__submit-icon {
+  width: 16px;
+  height: 16px;
 }

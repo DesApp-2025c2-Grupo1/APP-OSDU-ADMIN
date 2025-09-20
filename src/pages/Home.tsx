@@ -1,13 +1,11 @@
+import { useMemo, useState } from "react";
 import { Header } from "../components/Header";
-
-
 import { AffiliatesTable } from "../components/AffiliatesTable";
 import { Sidebar } from "../components/Sidebar";
 import type { Affiliate } from "../components/AffiliatesTable";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
-import { ButtonVolver } from "../util/ButtonVolver";
-import { ButtonCreateAffiliate } from "../util/ButtonCreateAffiliate";
-import { ButtonProgramateAffiliate } from "../util/ButtonProgramateAffiliate";
+
+import SearchDropdown from "../components/SearchDropdown";
 
 
 const affiliates: Affiliate[] = [
@@ -40,18 +38,63 @@ const affiliates: Affiliate[] = [
 	},
 ];
 
+const OPTIONS = [
+  { value: "dni", label: "DNI" },
+  { value: "nombre", label: "Nombre" },
+  { value: "apellido", label: "Apellido" },
+  { value: "credencial", label: "Credencial" },
+  { value: "plan", label: "Plan" },
+];
+
+function norm(s: string) {
+  return s
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 export function Home() {
+  const [field, setField] = useState<string>(OPTIONS[0].value);
+  const [query, setQuery] = useState<string>("");
+
+  const filtered = useMemo(() => {
+    if (!query) return affiliates;
+    const q = norm(query);
+
+    return affiliates.filter((a) => {
+      const val =
+        field === "dni" ? a.dni :
+        field === "nombre" ? a.nombre :
+        field === "apellido" ? a.apellido :
+        field === "credencial" ? a.credencial :
+        field === "plan" ? String(a.plan) :
+        "";
+      return norm(val).includes(q);
+    });
+  }, [field, query]);
+
   return (
     <div className="app-layout">
       <Header />
       <div className="body-layout">
         <Sidebar />
         <div className="home-content">
-          <ButtonAddAffiliate text="Agregar Afiliado" />
-          <ButtonVolver text="Volver" onClick={() => window.history.back()} />
-          <ButtonCreateAffiliate text="Dar de alta Afiliado" onClick={() => console.log("click")} />
-          <ButtonProgramateAffiliate text="Programar Alta Afiliado" onClick={() => console.log("click")} />
-          <AffiliatesTable affiliates={affiliates} />
+          {/* barra superior: buscador a la izq, botón a la der */}
+          <div className="mb-3 flex items-center gap-3">
+            <SearchDropdown
+              options={OPTIONS}
+              placeholder="Buscar"
+              onSearch={(f, q) => { setField(f); setQuery(q); }}
+              className="flex-1"
+            />
+            <div className="actions-bar">
+              <ButtonAddAffiliate text="Agregar Afiliado" />
+            </div>
+          </div>
+
+          <AffiliatesTable affiliates={filtered} />
         </div>
       </div>
     </div>
