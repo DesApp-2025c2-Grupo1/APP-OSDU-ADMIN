@@ -1,7 +1,7 @@
 
 export function Agenda() {
     return (
-        <h1>Hola Agenda</h1>
+        <h1>Hola Agenda </h1>
 
     )
 }

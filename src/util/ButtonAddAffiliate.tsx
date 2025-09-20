@@ -26,4 +26,3 @@ export function ButtonAddAffiliate({ text }: { text: string }) {
         </button>
     );
 }
-
