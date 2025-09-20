@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { AffiliatesTable } from "../components/AffiliatesTable";
 import type { Affiliate } from "../components/AffiliatesTable";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
+import { useNavigate } from "react-router-dom";
+
 
 import SearchDropdown from "../components/SearchDropdown";
 
@@ -56,6 +58,8 @@ function norm(s: string) {
 export function Home() {
   const [field, setField] = useState<string>(OPTIONS[0].value);
   const [query, setQuery] = useState<string>("");
+  const navigate = useNavigate();
+
 
   const filtered = useMemo(() => {
     if (!query) return affiliates;
@@ -86,7 +90,7 @@ export function Home() {
               className="flex-1"
             />
             <div className="actions-bar">
-              <ButtonAddAffiliate text="Agregar Afiliado" />
+              <ButtonAddAffiliate text="Agregar Afiliado" onClick={() => navigate("/home/agregarAfiliado")} />
             </div>
           </div>
 
