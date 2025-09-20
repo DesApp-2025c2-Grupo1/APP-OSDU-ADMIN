@@ -1,7 +1,5 @@
 import { useMemo, useState } from "react";
-import { Header } from "../components/Header";
 import { AffiliatesTable } from "../components/AffiliatesTable";
-import { Sidebar } from "../components/Sidebar";
 import type { Affiliate } from "../components/AffiliatesTable";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 
@@ -77,10 +75,8 @@ export function Home() {
 
   return (
     <div className="app-layout">
-      <Header />
       <div className="body-layout">
-        <Sidebar />
-        <div className="home-content">
+          <div className="home-content">
           {/* barra superior: buscador a la izq, botón a la der */}
           <div className="mb-3 flex items-center gap-3">
             <SearchDropdown
