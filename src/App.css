@@ -5,10 +5,59 @@
   font-family: "Poppins", sans-serif;
 }
 
+/* Header */
+.header {
+  height: 80px;
+  display: flex;
+  justify-content: space-between; /* Logo izquierda - avatar derecha */
+  align-items: center;
+  padding: 0 24px;
+  background: #fff;
+  border-bottom: 2px solid #5fa92c;
+}
+
+/* Bloque izquierdo */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+/* Texto */
+.header-text h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #5fa92c;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.header-text span {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 0;
+}
+
+
+
+
 /* Layout principal */
 .home-layout {
   display: flex;
   min-height: 100vh;
+  background: #f5f5f5;
+}
+
+/* Cuerpo debajo del header */
+.body-layout {
+  display: flex;
+  flex: 1; 
   background: #f5f5f5;
 }
 
@@ -17,10 +66,10 @@
   width: 220px;
   background: #fff;
   color: #222;
-  padding: 32px 0 0 0;
+  padding:0;
   font-size: 1.1rem;
-  min-height: 100vh;
   border-right: 2px solid #5fa92c;
+  min-height: calc(100vh - 60px);
 }
 .sidebar ul {
   list-style: none;
