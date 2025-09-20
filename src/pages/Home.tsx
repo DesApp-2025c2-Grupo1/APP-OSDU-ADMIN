@@ -41,18 +41,19 @@ const affiliates: Affiliate[] = [
 ];
 
 export function Home() {
-	return (
-		<div className="home-layout">
-			<Sidebar />
-			<div className="main-content">
-				<Header />
-				<ButtonAddAffiliate text="Agregar Afiliado" />
-        <ButtonVolver text="Volver" onClick={() => window.history.back()} />
-        <ButtonCreateAffiliate text="Dar de alta Afiliado" onClick={() => console.log("click")} />
-        <ButtonProgramateAffiliate text="Programar Alta Afiliado" onClick={() => console.log("click")} />
-				<AffiliatesTable affiliates={affiliates} />
-			</div>
-		</div>
-	);
-
+  return (
+    <div className="app-layout">
+      <Header />
+      <div className="body-layout">
+        <Sidebar />
+        <div className="home-content">
+          <ButtonAddAffiliate text="Agregar Afiliado" />
+          <ButtonVolver text="Volver" onClick={() => window.history.back()} />
+          <ButtonCreateAffiliate text="Dar de alta Afiliado" onClick={() => console.log("click")} />
+          <ButtonProgramateAffiliate text="Programar Alta Afiliado" onClick={() => console.log("click")} />
+          <AffiliatesTable affiliates={affiliates} />
+        </div>
+      </div>
+    </div>
+  );
 }
