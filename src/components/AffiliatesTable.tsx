@@ -1,4 +1,5 @@
 import React from "react";
+import { OptionsMenu } from "./OptionsMenu"; 
 
 export type Affiliate = {
   credencial: string;
@@ -15,6 +16,11 @@ interface AffiliatesTableProps {
 }
 
 export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
+  
+  const handleOptionClick = (option: string, affiliate: Affiliate) => {
+    console.log(`Opción seleccionada: ${option} para ${affiliate.nombre} ${affiliate.apellido}`);
+  };
+
   return (
     <table style={{ width: "100%", borderCollapse: "collapse" }}>
       <thead>
@@ -40,9 +46,7 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
             <td>{a.plan}</td>
             <td>{a.direccion}</td>
             <td>
-              <button className="options-btn" title="Opciones">
-                &#8942;
-              </button>
+              <OptionsMenu affiliate={a} onOptionClick={handleOptionClick} />
             </td>
           </tr>
         ))}
