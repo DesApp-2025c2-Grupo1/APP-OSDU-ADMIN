@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Menu, MenuItem, IconButton } from "@mui/material";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { OptionsMenu } from "./OptionsMenu";
+import { EditAffiliatePopup } from "./EditAffiliatePopup";
 
 export type Affiliate = {
   credencial: string;
@@ -10,32 +10,36 @@ export type Affiliate = {
   fechaNacimiento: string;
   plan: string;
   direccion: string;
+  tipoDocumento?: string;
+  nroDocumento?: string;
+  planMedico?: string;
+  telefono?: string;
+  telefono2?: string;
+  email?: string;
+  email2?: string;
+  direccion2?: string;
+  situaciones?: Array<{situacion: string, fechaFinalizacion: string}>;
 };
 
 interface AffiliatesTableProps {
   affiliates: Affiliate[];
-  onEdit: (a: Affiliate) => void;
-  onViewGroup: (a: Affiliate) => void;
-  onDelete: (a: Affiliate) => void;
 }
 
-export function AffiliatesTable({
-  affiliates,
-  onEdit,
-  onViewGroup,
-  onDelete,
-}: AffiliatesTableProps) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selected, setSelected] = useState<Affiliate | null>(null);
+export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
+  const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
+  const [showEditPopup, setShowEditPopup] = useState(false);
 
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>, a: Affiliate) => {
-    setAnchorEl(event.currentTarget);
-    setSelected(a);
+  const handleOptionClick = (option: string, affiliate: Affiliate) => {
+    console.log(`Opción seleccionada: ${option} para ${affiliate.nombre} ${affiliate.apellido}`);
+    
+    if (option === "Editar") {
+      setSelectedAffiliate(affiliate);
+      setShowEditPopup(true);
+    }
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
-    setSelected(null);
+  const handleSaveAffiliate = (data: any) => {
+    console.log("Datos guardados:", data);
   };
 
   return (
@@ -64,41 +68,20 @@ export function AffiliatesTable({
               <td>{a.plan}</td>
               <td>{a.direccion}</td>
               <td>
-                <IconButton onClick={(e) => handleClick(e, a)}>
-                  <MoreVertIcon />
-                </IconButton>
+                <OptionsMenu affiliate={a} onOptionClick={handleOptionClick} />
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={handleClose}>
-  <MenuItem
-    onClick={() => {
-      if (selected) onEdit(selected);
-      handleClose();
-    }}
-  >
-    Editar
-  </MenuItem>
-  <MenuItem
-    onClick={() => {
-      if (selected) onViewGroup(selected);
-      handleClose();
-    }}
-  >
-    Ver Grupo Familiar
-  </MenuItem>
-  <MenuItem
-    onClick={() => {
-      if (selected) onDelete(selected);
-      handleClose();
-    }}
-  >
-    Dar de Baja
-  </MenuItem>
-</Menu>
+      {showEditPopup && selectedAffiliate && (
+        <EditAffiliatePopup
+          affiliate={selectedAffiliate}
+          onClose={() => setShowEditPopup(false)}
+          onSave={handleSaveAffiliate}
+        />
+      )}
     </>
   );
 }
