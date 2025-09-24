@@ -20,131 +20,46 @@ export function OptionsMenu({ affiliate, onOptionClick }: OptionsMenuProps) {
         setIsMenuOpen(false);
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleMenuClick = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
+  const handleMenuClick = () => setIsMenuOpen(!isMenuOpen);
   const handleOptionSelect = (option: string) => {
     onOptionClick(option, affiliate);
     setIsMenuOpen(false);
   };
 
   return (
-    <div style={{ position: "relative", display: "inline-block" }}>
+    <div className="relative inline-block text-left">
+      {/* Botón del menú */}
       <button
-        className="options-btn"
-        title="Opciones"
         onClick={handleMenuClick}
-        style={{ 
-          background: "none", 
-          border: "none", 
-          cursor: "pointer", 
-          fontSize: "20px",
-          padding: "5px 10px"
-        }}
+        className="text-gray-700 hover:bg-gray-100 rounded px-2 py-1 text-xl cursor-pointer"
+        title="Opciones"
       >
         &#8942;
       </button>
-      
+
+      {/* Dropdown */}
       {isMenuOpen && (
         <div
           ref={menuRef}
-          style={{
-            position: "absolute",
-            right: "0",
-            top: "30px",
-            backgroundColor: "white",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
-            zIndex: 1000,
-            minWidth: "180px",
-          }}
+          className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg z-50"
         >
-          <ul style={{ listStyle: "none", margin: 0, padding: "5px 0" }}>
-            <li>
-              <button
-                onClick={() => handleOptionSelect("Editar")}
-                style={{
-                  width: "100%",
-                  textAlign: "left",
-                  padding: "10px 15px",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  color: "#333",
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-              >
-                Editar
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => handleOptionSelect("Ver grupo familiar")}
-                style={{
-                  width: "100%",
-                  textAlign: "left",
-                  padding: "10px 15px",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  color: "#333",
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-              >
-                Ver grupo familiar
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => handleOptionSelect("Ver detalles")}
-                style={{
-                  width: "100%",
-                  textAlign: "left",
-                  padding: "10px 15px",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  color: "#333",
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-              >
-                Ver detalles
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => handleOptionSelect("Dar de baja")}
-                style={{
-                  width: "100%",
-                  textAlign: "left",
-                  padding: "10px 15px",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  color: "#333",
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-              >
-                Dar de baja
-              </button>
-            </li>
+          <ul className="py-1">
+            {["Editar", "Ver grupo familiar", "Ver detalles", "Dar de baja"].map(
+              (option) => (
+                <li key={option}>
+                  <button
+                    onClick={() => handleOptionSelect(option)}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    {option}
+                  </button>
+                </li>
+              )
+            )}
           </ul>
         </div>
       )}

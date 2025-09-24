@@ -33,16 +33,17 @@ export default function SearchDropdown({
 
   return (
     <form onSubmit={handleSubmit} className={`searchbar ${className}`}>
-      <div className="searchbar__wrapper">
+      <div className="flex relative">
         {/* Botón dropdown */}
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="searchbar__dropdown-btn"
+          className="inline-flex items-center gap-1 px-3 border border-gray-300 bg-white
+            rounded-l-md hover:bg-gray-50"
         >
           {fieldLabel}
           <svg
-            className="searchbar__dropdown-icon"
+            className="w-3 h-3 ml-3"
             aria-hidden="true"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -60,14 +61,14 @@ export default function SearchDropdown({
 
         {/* Lista de opciones */}
         {isOpen && (
-          <div className="searchbar__dropdown">
-            <ul className="searchbar__dropdown-list">
+          <div className="absolute top-[40px] left-0 bg-white border border-white rounded-md shadow-lg z-20 w-[175px]">
+            <ul className="py-1 px-1 text-sm text-gray-700">
               {options.map((opt) => (
                 <li key={opt.value}>
                   <button
                     type="button"
                     onClick={() => handleSelect(opt)}
-                    className="searchbar__dropdown-item"
+                    className="w-full text-left px-3 py-3 bg-transparent hover:bg-gray-100 rounded-md cursor-pointer"
                   >
                     {opt.label}
                   </button>
@@ -78,17 +79,26 @@ export default function SearchDropdown({
         )}
 
         {/* Input */}
-        <div className="searchbar__input-wrapper">
+        <div className="relative w-1/2">
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`${placeholder} por ${fieldLabel}`}
-            className="searchbar__input"
+            className="
+            w-full
+            p-2.5
+            text-sm
+            text-gray-900
+            border
+            bg-white
+            border-gray-300
+            rounded-r-md
+            "
           />
-          <button type="submit" className="searchbar__submit-btn">
+          <button type="submit">
             <svg
-              className="searchbar__submit-icon"
+              className="w-5 h-5 text-gray-500 absolute right-2.5 top-1/2 -translate-y-1/2"
               aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"

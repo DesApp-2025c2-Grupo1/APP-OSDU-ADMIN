@@ -35,10 +35,6 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
-    console.log(
-      `Opción seleccionada: ${option} para ${affiliate.nombre} ${affiliate.apellido}`
-    );
-
     if (option === "Editar") {
       setSelectedAffiliate(affiliate);
       setShowEditPopup(true);
@@ -62,36 +58,44 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
 
   return (
     <>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ background: "#5FA92C", color: "white" }}>
-            <th>Credencial</th>
-            <th>DNI</th>
-            <th>Nombre</th>
-            <th>Apellido</th>
-            <th>Fecha De Nac.</th>
-            <th>Plan</th>
-            <th>Dirección</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {affiliates.map((a) => (
-            <tr key={a.credencial}>
-              <td>{a.credencial}</td>
-              <td>{a.dni}</td>
-              <td>{a.nombre}</td>
-              <td>{a.apellido}</td>
-              <td>{a.fechaNacimiento}</td>
-              <td>{a.plan}</td>
-              <td>{a.direccion}</td>
-              <td>
-                <OptionsMenu affiliate={a} onOptionClick={handleOptionClick} />
-              </td>
+      <div className="rounded-lg border border-gray-300 shadow-md">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-[#5FA92C] text-white">
+            <tr>
+              {["Credencial", "DNI", "Nombre", "Apellido", "Fecha Nac.", "Plan", "Dirección", ""].map(
+                (h) => (
+                  <th
+                    key={h}
+                    scope="col"
+                    className="px-4 py-2 text-left text-sm font-medium uppercase tracking-wider"
+                  >
+                    {h}
+                  </th>
+                )
+              )}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {affiliates.map((a, idx) => (
+              <tr
+                key={a.credencial}
+                className={idx % 2 === 0 ? "bg-gray-50" : ""}
+              >
+                <td className="px-4 py-2 text-sm">{a.credencial}</td>
+                <td className="px-4 py-2 text-sm">{a.dni}</td>
+                <td className="px-4 py-2 text-sm">{a.nombre}</td>
+                <td className="px-4 py-2 text-sm">{a.apellido}</td>
+                <td className="px-4 py-2 text-sm">{a.fechaNacimiento}</td>
+                <td className="px-4 py-2 text-sm">{a.plan}</td>
+                <td className="px-4 py-2 text-sm">{a.direccion}</td>
+                <td className="px-4 py-2 text-center relative">
+                  <OptionsMenu affiliate={a} onOptionClick={handleOptionClick} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {showEditPopup && selectedAffiliate && (
         <EditAffiliatePopup

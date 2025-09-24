@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-import AddIcon from '@mui/icons-material/Add';
-
 
 interface Situacion {
   situacion: string;
@@ -58,10 +56,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSave = () => {
@@ -69,477 +64,157 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
     onClose();
   };
 
-  const addNewField = (fieldType: string) => {
-    console.log(`Agregar nuevo ${fieldType}`);
-    alert(`Funcionalidad para agregar nuevo ${fieldType} será implementada`);
-  };
-
   return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: "white",
-        borderRadius: "8px",
-        width: "90%",
-        maxWidth: "1000px",
-        maxHeight: "90vh",
-        overflowY: "auto",
-        padding: "20px",
-        position: "relative"
-      }}>
-
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+      <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 relative">
+        {/* Botón Cerrar */}
         <button
           onClick={onClose}
-          style={{
-            position: "absolute",
-            top: "15px",
-            right: "15px",
-            background: "none",
-            border: "none",
-            fontSize: "20px",
-            cursor: "pointer",
-            color: "#666"
-          }}
+          className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800"
         >
           ✕
         </button>
-        <div style={{ marginBottom: "20px" }}>
-          <h1 style={{ color: "#333", margin: 0 }}>Editar Afiliado</h1>
-        </div>
 
-        <div style={{ marginBottom: "30px", padding: "20px", border: "1px solid #ddd", borderRadius: "8px", backgroundColor: "#fff" }}>
-          <h2 style={{ color: "#5FA92C", marginBottom: "15px", borderBottom: "2px solid #5FA92C", paddingBottom: "5px" }}>
+        {/* Título */}
+        <h1 className="text-2xl font-semibold text-gray-800 mb-6">Editar Afiliado</h1>
+
+        {/* Datos de Afiliado */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Datos de Afiliado
           </h2>
-          
-          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px" }}>
-            <tbody>
-              <tr>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", width: "20%", backgroundColor: "#f9f9f9" }}>
-                  Tipo Documento (*)
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd", width: "30%" }}>
-                  <select 
-                    name="tipoDocumento"
-                    value={formData.tipoDocumento}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-                  >
-                    <option value="DNI">DNI</option>
-                    <option value="LE">CUIL</option>
-                    <option value="LE">CUIT</option>
-                    <option value="LC">DOCUMENTO EXTRANJERO</option>
-                    <option value="LE">LE</option>
-                    <option value="LE">LC</option>
-                    <option value="LE">CDI</option>
-                    <option value="PASAPORTE">Pasaporte</option>
-                  </select>
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", width: "20%", backgroundColor: "#f9f9f9" }}>
-                  Nro Documento (*)
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd", width: "30%" }}>
-                  <input 
-                    type="text" 
-                    name="nroDocumento"
-                    value={formData.nroDocumento}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", backgroundColor: "#f9f9f9" }}>
-                  Nombres (*)
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  <input 
-                    type="text" 
-                    name="nombres"
-                    value={formData.nombres}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
-                  />
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", backgroundColor: "#f9f9f9" }}>
-                  Apellidos (*)
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  <input 
-                    type="text" 
-                    name="apellidos"
-                    value={formData.apellidos}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", backgroundColor: "#f9f9f9" }}>
-                  Fecha nacimiento (*)
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  <input 
-                    type="date" 
-                    name="fechaNacimiento"
-                    value={formData.fechaNacimiento.split('/').reverse().join('-')}
-                    onChange={(e) => {
-                      const date = e.target.value.split('-').reverse().join('/');
-                      setFormData(prev => ({ ...prev, fechaNacimiento: date }));
-                    }}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
-                  />
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", backgroundColor: "#f9f9f9" }}>
-                  Plan Médico (*)
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  <select 
-                    name="planMedico"
-                    value={formData.planMedico}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-                  >
-                    <option value="Integral 210">Integral 210</option>
-                    <option value="Básico 110">Básico 110</option>
-                    <option value="Premium 310">Premium 310</option>
-                  </select>
-                </td>
-              </tr>
-              <tr>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", backgroundColor: "#f9f9f9" }}>
-                  Credencial
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  {formData.credencial}
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd" }}></td>
-                <td style={{ padding: "10px", border: "1px solid #ddd" }}></td>
-              </tr>
-            </tbody>
-          </table>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo Documento (*)</label>
+              <select
+                name="tipoDocumento"
+                value={formData.tipoDocumento}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              >
+                <option value="DNI">DNI</option>
+                <option value="LE">CUIL</option>
+                <option value="CUIT">CUIT</option>
+                <option value="LC">DOCUMENTO EXTRANJERO</option>
+                <option value="CDI">CDI</option>
+                <option value="PASAPORTE">Pasaporte</option>
+              </select>
+            </div>
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Nro Documento (*)</label>
+              <input
+                type="text"
+                name="nroDocumento"
+                value={formData.nroDocumento}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Nombres (*)</label>
+              <input
+                type="text"
+                name="nombres"
+                value={formData.nombres}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Apellidos (*)</label>
+              <input
+                type="text"
+                name="apellidos"
+                value={formData.apellidos}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Fecha nacimiento (*)</label>
+              <input
+                type="date"
+                name="fechaNacimiento"
+                value={formData.fechaNacimiento.split('/').reverse().join('-')}
+                onChange={(e) => {
+                  const date = e.target.value.split('-').reverse().join('/');
+                  setFormData(prev => ({ ...prev, fechaNacimiento: date }));
+                }}
+                className="p-2 border border-gray-300 rounded"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Plan Médico (*)</label>
+              <select
+                name="planMedico"
+                value={formData.planMedico}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              >
+                <option value="Integral 210">Integral 210</option>
+                <option value="Básico 110">Básico 110</option>
+                <option value="Premium 310">Premium 310</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        <div style={{ marginBottom: "30px", padding: "20px", border: "1px solid #ddd", borderRadius: "8px", backgroundColor: "#fff" }}>
-          <h2 style={{ color: "#5FA92C", marginBottom: "15px", borderBottom: "2px solid #5FA92C", paddingBottom: "5px" }}>
+        {/* Situaciones Terapéuticas */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Situaciones Terapéuticas
           </h2>
-          
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ backgroundColor: "#5FA92C", color: "white" }}>
-                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "left" }}>Situación</th>
-                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "left" }}>Fecha estimada de finalización</th>
-              </tr>
-            </thead>
-            <tbody>
-              {situaciones.map((sit, index) => (
-                <tr key={index}>
-                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                    <input 
-                      type="text" 
-                      value={sit.situacion}
-                      onChange={(e) => {
-                        const newSituaciones = [...situaciones];
-                        newSituaciones[index].situacion = e.target.value;
-                        setSituaciones(newSituaciones);
-                      }}
-                      style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
-                    />
-                  </td>
-                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                    <input 
-                      type="text" 
-                      value={sit.fechaFinalizacion}
-                      onChange={(e) => {
-                        const newSituaciones = [...situaciones];
-                        newSituaciones[index].fechaFinalizacion = e.target.value;
-                        setSituaciones(newSituaciones);
-                      }}
-                      style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          <button 
-            style={{ 
-              marginTop: "15px", 
-              padding: "8px 15px", 
-              backgroundColor: "#5FA92C", 
-              color: "white", 
-              border: "none", 
-              borderRadius: "4px", 
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "5px"
-            }}
+
+          <div className="space-y-2">
+            {situaciones.map((sit, idx) => (
+              <div key={idx} className="grid grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  value={sit.situacion}
+                  onChange={(e) => {
+                    const newSituaciones = [...situaciones];
+                    newSituaciones[idx].situacion = e.target.value;
+                    setSituaciones(newSituaciones);
+                  }}
+                  className="p-2 border border-gray-300 rounded"
+                  placeholder="Situación"
+                />
+                <input
+                  type="text"
+                  value={sit.fechaFinalizacion}
+                  onChange={(e) => {
+                    const newSituaciones = [...situaciones];
+                    newSituaciones[idx].fechaFinalizacion = e.target.value;
+                    setSituaciones(newSituaciones);
+                  }}
+                  className="p-2 border border-gray-300 rounded"
+                  placeholder="Fecha estimada de finalización"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* <button
             onClick={() => setSituaciones([...situaciones, { situacion: "", fechaFinalizacion: "" }])}
+            className="mt-4 px-4 py-2 bg-[#5FA92C] text-white rounded flex items-center gap-2"
           >
-            <AddIcon fontSize="small" />
+            <AddIcon className="w-4 h-4" />
             Agregar Situación
-          </button>
+          </button> */}
         </div>
 
-        <div style={{ marginBottom: "30px", padding: "20px", border: "1px solid #ddd", borderRadius: "8px", backgroundColor: "#fff" }}>
-          <h2 style={{ color: "#5FA92C", marginBottom: "15px", borderBottom: "2px solid #5FA92C", paddingBottom: "5px" }}>
-            Datos de Contacto
-          </h2>
-          
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <tbody>
-              <tr>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", width: "20%", backgroundColor: "#f9f9f9" }}>
-                  Teléfono (*)
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd", width: "30%" }}>
-                  <input 
-                    type="text" 
-                    name="telefono"
-                    value={formData.telefono}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
-                  />
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd", width: "50%", textAlign: "center" }}>
-                  <button 
-                    onClick={() => addNewField("teléfono")}
-                    style={{ 
-                      padding: "8px 15px", 
-                      backgroundColor: "#5FA92C", 
-                      color: "white", 
-                      border: "none", 
-                      borderRadius: "4px", 
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      margin: "0 auto"
-                    }}
-                  >
-                    <AddIcon fontSize="small" />
-                    Agregar nuevo teléfono
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", backgroundColor: "#f9f9f9" }}>
-                  Teléfono 2
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  <input 
-                    type="text" 
-                    name="telefono2"
-                    value={formData.telefono2}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
-                  />
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>
-                  <button 
-                    onClick={() => addNewField("teléfono")}
-                    style={{ 
-                      padding: "8px 15px", 
-                      backgroundColor: "#5FA92C", 
-                      color: "white", 
-                      border: "none", 
-                      borderRadius: "4px", 
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      margin: "0 auto"
-                    }}
-                  >
-                    <AddIcon fontSize="small" />
-                    Agregar nuevo teléfono
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", backgroundColor: "#f9f9f9" }}>
-                  Correo electrónico (*)
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  <input 
-                    type="email" 
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
-                  />
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>
-                  <button 
-                    onClick={() => addNewField("correo")}
-                    style={{ 
-                      padding: "8px 15px", 
-                      backgroundColor: "#5FA92C", 
-                      color: "white", 
-                      border: "none", 
-                      borderRadius: "4px", 
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      margin: "0 auto"
-                    }}
-                  >
-                    <AddIcon fontSize="small" />
-                    Agregar nuevo correo
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", backgroundColor: "#f9f9f9" }}>
-                  Correo electrónico 2
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  <input 
-                    type="email" 
-                    name="email2"
-                    value={formData.email2}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
-                  />
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>
-                  <button 
-                    onClick={() => addNewField("correo")}
-                    style={{ 
-                      padding: "8px 15px", 
-                      backgroundColor: "#5FA92C", 
-                      color: "white", 
-                      border: "none", 
-                      borderRadius: "4px", 
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      margin: "0 auto"
-                    }}
-                  >
-                    <AddIcon fontSize="small" />
-                    Agregar nuevo correo
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", backgroundColor: "#f9f9f9" }}>
-                  Dirección (*)
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  <input 
-                    type="text" 
-                    name="direccion"
-                    value={formData.direccion}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
-                  />
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>
-                  <button 
-                    onClick={() => addNewField("domicilio")}
-                    style={{ 
-                      padding: "8px 15px", 
-                      backgroundColor: "#5FA92C", 
-                      color: "white", 
-                      border: "none", 
-                      borderRadius: "4px", 
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      margin: "0 auto"
-                    }}
-                  >
-                    <AddIcon fontSize="small" />
-                    Agregar nuevo domicilio
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td style={{ padding: "10px", border: "1px solid #ddd", fontWeight: "bold", backgroundColor: "#f9f9f9" }}>
-                  Dirección 2
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                  <input 
-                    type="text" 
-                    name="direccion2"
-                    value={formData.direccion2}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} 
-                  />
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>
-                  <button 
-                    onClick={() => addNewField("domicilio")}
-                    style={{ 
-                      padding: "8px 15px", 
-                      backgroundColor: "#5FA92C", 
-                      color: "white", 
-                      border: "none", 
-                      borderRadius: "4px", 
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      margin: "0 auto"
-                    }}
-                  >
-                    <AddIcon fontSize="small" />
-                    Agregar nuevo domicilio
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "center", gap: "15px", marginTop: "20px" }}>
+        {/* Botones */}
+        <div className="flex justify-center gap-4 mt-4">
           <button
             onClick={handleSave}
-            style={{
-              backgroundColor: "#5FA92C",
-              color: "white",
-              padding: "12px 25px",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "bold",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
-            }}
+            className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
           >
             Guardar Cambios
           </button>
-          
           <button
             onClick={onClose}
-            style={{
-              backgroundColor: "#6c757d",
-              color: "white",
-              padding: "12px 25px",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "bold",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
-            }}
+            className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition"
           >
             Cancelar
           </button>

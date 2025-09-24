@@ -1,6 +1,4 @@
 import React from "react";
-import { TextField, MenuItem, Box, Select, FormControl, InputLabel } from "@mui/material";
-import type { SelectChangeEvent } from "@mui/material"; 
 
 type FilterOption = {
   label: string;
@@ -23,44 +21,42 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   const [filterType, setFilterType] = React.useState("");
   const [filterValue, setFilterValue] = React.useState("");
 
-  const handleTypeChange = (event: SelectChangeEvent<string>) => {
-    const value = event.target.value;
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
     setFilterType(value);
     onFilterTypeChange(value);
   };
 
-  const handleValueChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
     setFilterValue(value);
     onFilterValueChange(value);
   };
 
   return (
-    <Box display="flex" gap={2} mb={2}>
-      <TextField
+    <div className="flex gap-2 mb-4 flex-wrap">
+      <input
+        type="text"
         value={filterValue}
         onChange={handleValueChange}
-        size="small"
-        sx={{ flex: 1 }}
         placeholder={valueLabel}
+        className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
       />
 
-      <FormControl size="small" sx={{ minWidth: 200 }}>
-        <InputLabel id="filter-type-label">Tipo de dato</InputLabel>
-        <Select
-          labelId="filter-type-label"
+      <div className="min-w-[200px]">
+        <select
           value={filterType}
-          label="Tipo de dato"
-          onChange={handleTypeChange} 
-          displayEmpty
+          onChange={handleTypeChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
+          <option value="">Seleccione tipo</option>
           {filterOptions.map((opt) => (
-            <MenuItem key={opt.value} value={opt.value}>
+            <option key={opt.value} value={opt.value}>
               {opt.label}
-            </MenuItem>
+            </option>
           ))}
-        </Select>
-      </FormControl>
-    </Box>
+        </select>
+      </div>
+    </div>
   );
 };
