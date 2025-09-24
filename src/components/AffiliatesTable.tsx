@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { OptionsMenu } from "./OptionsMenu";
 import { EditAffiliatePopup } from "./EditAffiliatePopup";
+import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 
 export type Affiliate = {
   credencial: string;
@@ -18,28 +19,45 @@ export type Affiliate = {
   email?: string;
   email2?: string;
   direccion2?: string;
-  situaciones?: Array<{situacion: string, fechaFinalizacion: string}>;
+  situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>;
 };
 
 interface AffiliatesTableProps {
   affiliates: Affiliate[];
+  onOptionClick: (option: string, affiliate: Affiliate) => void;
 }
 
 export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
-  const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
+  const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(
+    null
+  );
   const [showEditPopup, setShowEditPopup] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
-    console.log(`Opción seleccionada: ${option} para ${affiliate.nombre} ${affiliate.apellido}`);
-    
+    console.log(
+      `Opción seleccionada: ${option} para ${affiliate.nombre} ${affiliate.apellido}`
+    );
+
     if (option === "Editar") {
       setSelectedAffiliate(affiliate);
       setShowEditPopup(true);
+    }
+
+    if (option === "Dar de baja") {
+      setSelectedAffiliate(affiliate);
+      setShowDeleteDialog(true);
     }
   };
 
   const handleSaveAffiliate = (data: any) => {
     console.log("Datos guardados:", data);
+  };
+
+  const handleConfirmDelete = () => {
+    console.log("Afiliado dado de baja:", selectedAffiliate);
+    setShowDeleteDialog(false);
+    setSelectedAffiliate(null);
   };
 
   return (
@@ -80,6 +98,17 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
           affiliate={selectedAffiliate}
           onClose={() => setShowEditPopup(false)}
           onSave={handleSaveAffiliate}
+        />
+      )}
+
+      {showDeleteDialog && selectedAffiliate && (
+        <ConfirmDeleteDialog
+          open={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={handleConfirmDelete}
+          affiliateName={selectedAffiliate.nombre}
+          affiliateSurname={selectedAffiliate.apellido}
+          affiliateDni={selectedAffiliate.dni}
         />
       )}
     </>

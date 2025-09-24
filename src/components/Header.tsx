@@ -1,7 +1,6 @@
 export function Header() {
   return (
     <header className="header">
-      {/* Bloque izquierdo: Logo + texto */}
       <div className="header-left">
         <img src="/logo.png" alt="Logo" className="logo" />
         <div className="header-text">
