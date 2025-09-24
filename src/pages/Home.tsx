@@ -56,30 +56,23 @@ function norm(s: string) {
 export function Home() {
   const [field, setField] = useState<string>(OPTIONS[0].value);
   const [query, setQuery] = useState<string>("");
-  const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
   const [openDelete, setOpenDelete] = useState(false);
+  const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
 
   const navigate = useNavigate();
+
+  const fieldMap: Record<string, (a: Affiliate) => string> = {
+    dni: (a) => a.dni,
+    nombre: (a) => a.nombre,
+    apellido: (a) => a.apellido,
+    credencial: (a) => a.credencial,
+    plan: (a) => a.plan,
+  };
 
   const filtered = useMemo(() => {
     if (!query) return affiliates;
     const q = norm(query);
-
-    return affiliates.filter((a) => {
-      const val =
-        field === "dni"
-          ? a.dni
-          : field === "nombre"
-          ? a.nombre
-          : field === "apellido"
-          ? a.apellido
-          : field === "credencial"
-          ? a.credencial
-          : field === "plan"
-          ? String(a.plan)
-          : "";
-      return norm(val).includes(q);
-    });
+    return affiliates.filter((a) => norm(fieldMap[field](a)).includes(q));
   }, [field, query]);
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
@@ -98,46 +91,48 @@ export function Home() {
     }
   };
 
+  const handleConfirmDelete = () => {
+    if (selectedAffiliate) {
+      console.log("Eliminar:", selectedAffiliate.credencial);
+      // Aquí iría la lógica real de eliminación (ej: API call)
+    }
+    setOpenDelete(false);
+    setSelectedAffiliate(null);
+  };
+
   return (
-    <div className="app-layout">
-      <div className="body-layout">
-        <div className="home-content">
-          {/* barra superior: buscador a la izq, botón a la der */}
-          <div className="mb-3 flex items-center gap-3">
-            <SearchDropdown
-              options={OPTIONS}
-              placeholder="Buscar"
-              onSearch={(f, q) => {
-                setField(f);
-                setQuery(q);
-              }}
-              className="flex-1"
-            />
-            <div className="actions-bar">
-              <ButtonAddAffiliate
-                text="Agregar Afiliado"
-                onClick={() => navigate("/home/agregarAfiliado")}
-              />
-            </div>
-          </div>
-
-          <AffiliatesTable affiliates={filtered} onOptionClick={handleOptionClick} />
-
-          <ConfirmDeleteDialog
-            open={openDelete}
-            onClose={() => setOpenDelete(false)}
-            onConfirm={() => {
-              if (selectedAffiliate) {
-                navigate(`/home/eliminarAfiliado/${selectedAffiliate.credencial}`);
-              }
-              setOpenDelete(false);
-            }}
-            affiliateName={selectedAffiliate?.nombre ?? ""}
-            affiliateSurname={selectedAffiliate?.apellido ?? ""}
-            affiliateDni={selectedAffiliate?.dni ?? ""}
-          />
-        </div>
+    <div className="w-full p-6 space-y-4">
+      {/* Barra superior */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+        <SearchDropdown
+          options={OPTIONS}
+          placeholder="Buscar"
+          onSearch={(f, q) => {
+            setField(f);
+            setQuery(q);
+          }}
+          className="w-full sm:w-2/3"
+        />
+        <ButtonAddAffiliate
+          text="Agregar Afiliado"
+          onClick={() => navigate("/home/agregarAfiliado")}
+        />
       </div>
+
+      {/* Tabla */}
+      <div className="rounded-md shadow-sm border border-gray-200">
+        <AffiliatesTable affiliates={filtered} onOptionClick={handleOptionClick} />
+      </div>
+
+      {/* Modal de confirmación de baja */}
+      <ConfirmDeleteDialog
+        open={openDelete}
+        onClose={() => setOpenDelete(false)}
+        onConfirm={handleConfirmDelete}
+        affiliateName={selectedAffiliate?.nombre || ""}
+        affiliateSurname={selectedAffiliate?.apellido || ""}
+        affiliateDni={selectedAffiliate?.dni || ""}
+      />
     </div>
   );
 }

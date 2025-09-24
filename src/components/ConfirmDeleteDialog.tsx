@@ -1,5 +1,3 @@
-import React from "react";
-
 interface ConfirmDeleteDialogProps {
   open: boolean;
   onClose: () => void;
@@ -20,61 +18,33 @@ export function ConfirmDeleteDialog({
   if (!open) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 2000,
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: "white",
-          padding: "20px",
-          borderRadius: "8px",
-          width: "400px",
-          textAlign: "center",
-          boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
-        }}
-      >
-        <div style={{ fontSize: "40px", color: "red" }}>⚠️</div>
-        <p style={{ fontSize: "16px", margin: "20px 0" }}>
+    <div className="fixed inset-0 bg-light-gray bg-opacity-50 flex items-center justify-center z-[2000]">
+      <div className="bg-white p-6 rounded-lg w-[400px] text-center shadow-lg">
+        {/* Ícono de advertencia */}
+        <div className="text-4xl text-red-600 mb-4">⚠️</div>
+
+        {/* Mensaje */}
+        <p className="text-gray-800 text-base mb-6">
           ¿Está seguro que desea dar de baja al afiliado <br />
           <b>
             {affiliateName} {affiliateSurname}, DNI {affiliateDni}
           </b>
           ?
         </p>
-        <div style={{ display: "flex", justifyContent: "space-around", marginTop: "20px" }}>
+
+        {/* Botones */}
+        <div className="flex justify-around mt-4 gap-3">
           <button
             onClick={onClose}
-            style={{
-              backgroundColor: "red",
-              color: "white",
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
+            className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded-md font-medium transition"
           >
-            NO, CANCELAR
+            No, cancelar
           </button>
           <button
             onClick={onConfirm}
-            style={{
-              backgroundColor: "green",
-              color: "white",
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition"
           >
-            SÍ, ELIMINAR
+            Sí, eliminar
           </button>
         </div>
       </div>
