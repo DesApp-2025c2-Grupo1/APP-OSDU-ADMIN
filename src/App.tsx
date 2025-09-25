@@ -7,6 +7,9 @@ import { Header } from "./components/Header";
 import { Prestadores } from "./pages/Providers";
 import { Otros } from "./pages/Others";
 import { AgregarAfiliado } from "./pages/AddAffiliate";
+import { EditarAfiliado } from "./pages/EditarAfiliado";
+import { GrupoFamiliar } from "./pages/GrupoFamiliar";
+
 
 function App() {
   return (
@@ -16,13 +19,21 @@ function App() {
         <Sidebar />
         <main className="p-6 flex-1">
           <Routes>
+            {/* redirección inicial */}
             <Route path="/" element={<Navigate to="/home" replace />} />
+
+            {/* páginas principales */}
             <Route path="/home" element={<Home />} />
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/prestadores" element={<Prestadores />} />
             <Route path="/otros" element={<Otros />} />
+
+            {/* afiliados */}
             <Route path="/home/agregarAfiliado" element={<AgregarAfiliado />} />
-            <Route path="*" element={<div>404</div>} />
+            <Route path="/home/editarAfiliado/:credencial" element={<EditarAfiliado />} />
+            <Route path="/home/grupoFamiliar/:credencial" element={<GrupoFamiliar />} />
+
+            {/* fallback */}
           </Routes>
         </main>
       </div>
