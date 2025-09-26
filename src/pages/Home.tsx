@@ -5,36 +5,8 @@ import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import { useNavigate } from "react-router-dom";
 import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
 import SearchDropdown from "../components/SearchDropdown";
+import { affiliates } from "../data/affiliates";
 
-const affiliates: Affiliate[] = [
-  {
-    credencial: "0000001-01",
-    dni: "12345678",
-    nombre: "Joaquin",
-    apellido: "Mogno",
-    fechaNacimiento: "16/12/2002",
-    plan: "210",
-    direccion: "Calle Falsa 123",
-  },
-  {
-    credencial: "0000001-02",
-    dni: "23456789",
-    nombre: "Juan",
-    apellido: "Perez",
-    fechaNacimiento: "10/05/2019",
-    plan: "210",
-    direccion: "Av. Vergara 742",
-  },
-  {
-    credencial: "0000002-01",
-    dni: "34567890",
-    nombre: "Nombre",
-    apellido: "Apellido",
-    fechaNacimiento: "04/05/1958",
-    plan: "210",
-    direccion: "Calle Ejemplo 456",
-  },
-];
 
 const OPTIONS = [
   { value: "dni", label: "DNI" },
@@ -80,7 +52,8 @@ export function Home() {
       navigate(`/home/editarAfiliado/${affiliate.credencial}`);
     }
     if (option === "Ver grupo familiar") {
-      navigate(`/home/grupoFamiliar/${affiliate.credencial}`);
+      const grupoFamiliarId = affiliate.credencial.split("-")[0]; 
+      navigate(`/home/grupoFamiliar/${grupoFamiliarId}`);
     }
     if (option === "Ver detalles") {
       navigate(`/home/detalleAfiliado/${affiliate.credencial}`);
@@ -94,7 +67,6 @@ export function Home() {
   const handleConfirmDelete = () => {
     if (selectedAffiliate) {
       console.log("Eliminar:", selectedAffiliate.credencial);
-      // Aquí iría la lógica real de eliminación (ej: API call)
     }
     setOpenDelete(false);
     setSelectedAffiliate(null);

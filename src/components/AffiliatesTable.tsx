@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { OptionsMenu } from "./OptionsMenu";
 import { EditAffiliatePopup } from "./EditAffiliatePopup";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
+import { useNavigate } from "react-router-dom";
 
 export type Affiliate = {
   credencial: string;
@@ -11,6 +12,7 @@ export type Affiliate = {
   fechaNacimiento: string;
   plan: string;
   direccion: string;
+  parentesco?: string;
   tipoDocumento?: string;
   nroDocumento?: string;
   planMedico?: string;
@@ -28,6 +30,7 @@ interface AffiliatesTableProps {
 }
 
 export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
+  const navigate = useNavigate();
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(
     null
   );
@@ -38,6 +41,11 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
     if (option === "Editar") {
       setSelectedAffiliate(affiliate);
       setShowEditPopup(true);
+    }
+    
+    if (option === "Ver grupo familiar") {
+      const grupoFamiliarId = affiliate.credencial.split("-")[0]; 
+      navigate(`/home/grupoFamiliar/${grupoFamiliarId}`);
     }
 
     if (option === "Dar de baja") {
@@ -89,7 +97,11 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
                 <td className="px-4 py-2 text-sm">{a.plan}</td>
                 <td className="px-4 py-2 text-sm">{a.direccion}</td>
                 <td className="px-4 py-2 text-center relative">
-                  <OptionsMenu affiliate={a} onOptionClick={handleOptionClick} />
+                  <OptionsMenu 
+                  affiliate={a} 
+                  onOptionClick={handleOptionClick}
+                  options={["Editar", "Ver grupo familiar", "Ver detalles", "Dar de baja"]}
+                />
                 </td>
               </tr>
             ))}
