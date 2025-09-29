@@ -8,9 +8,10 @@ interface OptionsMenuProps {
     apellido: string;
   };
   onOptionClick: (option: string, affiliate: any) => void;
+  options: string[];
 }
 
-export function OptionsMenu({ affiliate, onOptionClick }: OptionsMenuProps) {
+export function OptionsMenu({ affiliate, onOptionClick, options }: OptionsMenuProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -32,7 +33,6 @@ export function OptionsMenu({ affiliate, onOptionClick }: OptionsMenuProps) {
 
   return (
     <div className="relative inline-block text-left">
-      {/* Botón del menú */}
       <button
         onClick={handleMenuClick}
         className="text-gray-700 hover:bg-gray-100 rounded px-2 py-1 text-xl cursor-pointer"
@@ -41,25 +41,22 @@ export function OptionsMenu({ affiliate, onOptionClick }: OptionsMenuProps) {
         &#8942;
       </button>
 
-      {/* Dropdown */}
       {isMenuOpen && (
         <div
           ref={menuRef}
           className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg z-50"
         >
           <ul className="py-1">
-            {["Editar", "Ver grupo familiar", "Ver detalles", "Dar de baja"].map(
-              (option) => (
-                <li key={option}>
-                  <button
-                    onClick={() => handleOptionSelect(option)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    {option}
-                  </button>
-                </li>
-              )
-            )}
+            {options.map((option) => (
+              <li key={option}>
+                <button
+                  onClick={() => handleOptionSelect(option)}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  {option}
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
       )}

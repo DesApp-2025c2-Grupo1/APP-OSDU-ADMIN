@@ -1,53 +1,38 @@
 import React, { useState } from "react";
+import type { Affiliate as AffiliateType } from "./AffiliatesTable";
 
 interface Situacion {
   situacion: string;
   fechaFinalizacion: string;
 }
 
-interface Affiliate {
-  tipoDocumento?: string;
-  nroDocumento?: string;
-  dni?: string;
-  nombre?: string;
-  apellido?: string;
-  fechaNacimiento?: string;
-  planMedico?: string;
-  plan?: string;
-  credencial?: string;
-  telefono?: string;
-  telefono2?: string;
-  email?: string;
-  email2?: string;
-  direccion?: string;
-  direccion2?: string;
-  situaciones?: Situacion[];
-}
-
 interface EditAffiliatePopupProps {
-  affiliate: Affiliate;
+  affiliate: AffiliateType;
   onClose: () => void;
-  onSave: (data: Affiliate) => void;
+  onSave: (data: AffiliateType) => void;
 }
 
 export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliatePopupProps) {
   const [formData, setFormData] = useState({
     tipoDocumento: affiliate.tipoDocumento || "DNI",
     nroDocumento: affiliate.nroDocumento || affiliate.dni || "",
-    nombres: affiliate.nombre || "",
-    apellidos: affiliate.apellido || "",
+    nombre: affiliate.nombre || "",
+    apellido: affiliate.apellido || "",
     fechaNacimiento: affiliate.fechaNacimiento || "",
     planMedico: affiliate.planMedico || affiliate.plan || "",
+    plan: affiliate.plan || "",
     credencial: affiliate.credencial || "",
     telefono: affiliate.telefono || "",
     telefono2: affiliate.telefono2 || "",
     email: affiliate.email || "",
     email2: affiliate.email2 || "",
     direccion: affiliate.direccion || "",
-    direccion2: affiliate.direccion2 || ""
+    direccion2: affiliate.direccion2 || "",
+    parentesco: affiliate.parentesco || "",
+    dni: affiliate.dni || affiliate.nroDocumento || "",
   });
 
-  const [situaciones, setSituaciones] = useState(
+  const [situaciones, setSituaciones] = useState<Situacion[]>(
     affiliate.situaciones || [
       { situacion: "Operación Meniscal", fechaFinalizacion: "13/06/2024" },
       { situacion: "acompañamiento terapéutico", fechaFinalizacion: "-" }
@@ -60,14 +45,33 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   };
 
   const handleSave = () => {
-    onSave({ ...formData, situaciones });
+    const updatedAffiliate: AffiliateType = {
+      credencial: formData.credencial,
+      dni: formData.nroDocumento || formData.dni || "",
+      nombre: formData.nombre,
+      apellido: formData.apellido,
+      fechaNacimiento: formData.fechaNacimiento,
+      plan: formData.plan || formData.planMedico,
+      direccion: formData.direccion,
+      parentesco: formData.parentesco,
+      tipoDocumento: formData.tipoDocumento,
+      nroDocumento: formData.nroDocumento,
+      planMedico: formData.planMedico,
+      telefono: formData.telefono,
+      telefono2: formData.telefono2,
+      email: formData.email,
+      email2: formData.email2,
+      direccion2: formData.direccion2,
+      situaciones: situaciones,
+    };
+
+    onSave(updatedAffiliate);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 relative">
-        {/* Botón Cerrar */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800"
@@ -75,10 +79,8 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
           ✕
         </button>
 
-        {/* Título */}
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">Editar Afiliado</h1>
 
-        {/* Datos de Afiliado */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Datos de Afiliado
@@ -115,8 +117,8 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
               <label className="font-semibold mb-1 bg-gray-100 px-2">Nombres (*)</label>
               <input
                 type="text"
-                name="nombres"
-                value={formData.nombres}
+                name="nombre"
+                value={formData.nombre}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
               />
@@ -125,8 +127,8 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
               <label className="font-semibold mb-1 bg-gray-100 px-2">Apellidos (*)</label>
               <input
                 type="text"
-                name="apellidos"
-                value={formData.apellidos}
+                name="apellido"
+                value={formData.apellido}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
               />
@@ -160,7 +162,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
           </div>
         </div>
 
-        {/* Situaciones Terapéuticas */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Situaciones Terapéuticas
@@ -194,17 +195,8 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
               </div>
             ))}
           </div>
-
-          {/* <button
-            onClick={() => setSituaciones([...situaciones, { situacion: "", fechaFinalizacion: "" }])}
-            className="mt-4 px-4 py-2 bg-[#5FA92C] text-white rounded flex items-center gap-2"
-          >
-            <AddIcon className="w-4 h-4" />
-            Agregar Situación
-          </button> */}
         </div>
 
-        {/* Botones */}
         <div className="flex justify-center gap-4 mt-4">
           <button
             onClick={handleSave}
