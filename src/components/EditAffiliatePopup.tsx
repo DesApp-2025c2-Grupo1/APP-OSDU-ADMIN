@@ -154,9 +154,14 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
               >
-                <option value="Integral 210">Integral 210</option>
-                <option value="Básico 110">Básico 110</option>
-                <option value="Premium 310">Premium 310</option>
+                <option value="210">210</option>
+                <option value="310">310</option>
+                <option value="410">410</option>
+                <option value="510">510</option>
+                <option value="Bronce">Bronce</option>
+                <option value="Plata">Plata</option>
+                <option value="Oro">Oro</option>
+                <option value="Platino">Platino</option>
               </select>
             </div>
           </div>
