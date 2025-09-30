@@ -125,6 +125,7 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
           affiliateName={selectedAffiliate.nombre}
           affiliateSurname={selectedAffiliate.apellido}
           affiliateDni={selectedAffiliate.dni}
+          affiliateCredencial={selectedAffiliate.credencial}
         />
       )}
     </>

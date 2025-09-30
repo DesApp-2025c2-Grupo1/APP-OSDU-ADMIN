@@ -120,6 +120,7 @@ export function GrupoFamiliar() {
           affiliateName={selectedAffiliate.nombre}
           affiliateSurname={selectedAffiliate.apellido}
           affiliateDni={selectedAffiliate.dni}
+          affiliateCredencial={selectedAffiliate.credencial}
         />
       )}
     </div>

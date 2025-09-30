@@ -7,7 +7,6 @@ import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
 import SearchDropdown from "../components/SearchDropdown";
 import { affiliates } from "../data/affiliates";
 
-
 const OPTIONS = [
   { value: "dni", label: "DNI" },
   { value: "nombre", label: "Nombre" },
@@ -28,8 +27,9 @@ function norm(s: string) {
 export function Home() {
   const [field, setField] = useState<string>(OPTIONS[0].value);
   const [query, setQuery] = useState<string>("");
-  const [openDelete, setOpenDelete] = useState(false);
+
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const navigate = useNavigate();
 
@@ -52,7 +52,7 @@ export function Home() {
       navigate(`/home/editarAfiliado/${affiliate.credencial}`);
     }
     if (option === "Ver grupo familiar") {
-      const grupoFamiliarId = affiliate.credencial.split("-")[0]; 
+      const grupoFamiliarId = affiliate.credencial.split("-")[0];
       navigate(`/home/grupoFamiliar/${grupoFamiliarId}`);
     }
     if (option === "Ver detalles") {
@@ -60,15 +60,16 @@ export function Home() {
     }
     if (option === "Dar de baja") {
       setSelectedAffiliate(affiliate);
-      setOpenDelete(true);
+      setShowDeleteDialog(true);
     }
   };
 
   const handleConfirmDelete = () => {
     if (selectedAffiliate) {
-      console.log("Eliminar:", selectedAffiliate.credencial);
+      console.log("Afiliado dado de baja:", selectedAffiliate);
+      // Aquí podrías eliminar del array o hacer llamada API
     }
-    setOpenDelete(false);
+    setShowDeleteDialog(false);
     setSelectedAffiliate(null);
   };
 
@@ -97,14 +98,17 @@ export function Home() {
       </div>
 
       {/* Modal de confirmación de baja */}
-      <ConfirmDeleteDialog
-        open={openDelete}
-        onClose={() => setOpenDelete(false)}
-        onConfirm={handleConfirmDelete}
-        affiliateName={selectedAffiliate?.nombre || ""}
-        affiliateSurname={selectedAffiliate?.apellido || ""}
-        affiliateDni={selectedAffiliate?.dni || ""}
-      />
+      {showDeleteDialog && selectedAffiliate && (
+        <ConfirmDeleteDialog
+          open={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={handleConfirmDelete}
+          affiliateName={selectedAffiliate.nombre}
+          affiliateSurname={selectedAffiliate.apellido}
+          affiliateDni={selectedAffiliate.dni}
+          affiliateCredencial={selectedAffiliate.credencial}
+        />
+      )}
     </div>
   );
 }
