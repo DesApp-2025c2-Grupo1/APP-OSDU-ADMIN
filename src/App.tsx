@@ -31,8 +31,8 @@ function App() {
             {/* afiliados */}
             <Route path="/home/agregarAfiliado" element={<AgregarAfiliado />} />
             <Route path="/home/editarAfiliado/:credencial" element={<EditarAfiliado />} />
-            <Route path="/home/grupoFamiliar/:credencial" element={<GrupoFamiliar />} />
-
+            <Route path="/home/grupoFamiliar/:grupoId" element={<GrupoFamiliar />} />
+            
             {/* fallback */}
           </Routes>
         </main>
