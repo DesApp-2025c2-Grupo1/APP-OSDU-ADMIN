@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { affiliates } from "../data/affiliates";
 import type { Affiliate } from "../components/AffiliatesTable";
+import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup";
 import { EditAffiliatePopup } from "../components/EditAffiliatePopup";
 import { OptionsMenu } from "../components/OptionsMenu";
 import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
@@ -10,6 +11,7 @@ export function GrupoFamiliar() {
   const { grupoId } = useParams<{ grupoId: string }>();
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
   const [showEditPopup, setShowEditPopup] = useState(false);
+  const [showViewPopup, setShowViewPopup] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Filtrar miembros del grupo por credencial
@@ -23,6 +25,12 @@ export function GrupoFamiliar() {
       setSelectedAffiliate(affiliate);
       setShowEditPopup(true);
     }
+
+     if (option === "Ver detalles") {
+      setSelectedAffiliate(affiliate);
+      setShowViewPopup(true);
+    }
+
     if (option === "Dar de baja") {
       setSelectedAffiliate(affiliate);
       setShowDeleteDialog(true);
@@ -93,7 +101,7 @@ export function GrupoFamiliar() {
                   <OptionsMenu
                     affiliate={m}
                     onOptionClick={handleOptionClick}
-                    options={["Editar", "Dar de baja"]}
+                    options={["Editar", "Ver detalles", "Dar de baja"]}
                   />
                 </td>
               </tr>
@@ -108,6 +116,14 @@ export function GrupoFamiliar() {
           affiliate={selectedAffiliate}
           onClose={() => setShowEditPopup(false)}
           onSave={handleSaveAffiliate}
+        />
+      )}
+
+      {/* Popup para Ver */}
+      {showViewPopup && selectedAffiliate && (
+        <ViewAffiliatePopup
+          affiliate={selectedAffiliate}
+          onClose={() => setShowViewPopup(false)}
         />
       )}
 
