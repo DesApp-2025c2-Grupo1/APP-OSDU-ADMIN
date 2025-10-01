@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import { OptionsMenu } from "./OptionsMenu";
 import { EditAffiliatePopup } from "./EditAffiliatePopup";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
-<<<<<<< Updated upstream
-=======
+
 import { useNavigate } from "react-router-dom";
 import { ViewAffiliatePopup } from "./ViewAffiliatePopup";
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
->>>>>>> Stashed changes
+
+import { useNavigate } from "react-router-dom";
+import { ViewAffiliatePopup } from "./ViewAffiliatePopup";
+
 
 export type Affiliate = {
   credencial: string;
@@ -18,6 +20,7 @@ export type Affiliate = {
   fechaNacimiento: string;
   plan: string;
   direccion: string;
+  parentesco?: string;
   tipoDocumento?: string;
   nroDocumento?: string;
   planMedico?: string;
@@ -35,19 +38,21 @@ interface AffiliatesTableProps {
 }
 
 export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
+  const navigate = useNavigate();
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(
     null
   );
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-<<<<<<< Updated upstream
-=======
+
   const [showViewPopup, setShowViewPopup] = useState(false);
 
   // PAGINACIÓN: Estados simples
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
->>>>>>> Stashed changes
+
+  const [showViewPopup, setShowViewPopup] = useState(false);
+
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
     if (option === "Editar") {
@@ -55,11 +60,14 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
       setShowEditPopup(true);
     }
 
-<<<<<<< Updated upstream
-=======
     if (option === "Ver detalles") {
       setSelectedAffiliate(affiliate);
       setShowViewPopup(true);
+
+    if (option === "Ver detalles") {
+      setSelectedAffiliate(affiliate);
+      setShowViewPopup(true)
+
     }
 
     if (option === "Ver grupo familiar") {
@@ -67,7 +75,6 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
       navigate(`/home/grupoFamiliar/${grupoFamiliarId}`);
     }
 
->>>>>>> Stashed changes
     if (option === "Dar de baja") {
       setSelectedAffiliate(affiliate);
       setShowDeleteDialog(true);
@@ -123,7 +130,11 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
                 <td className="px-4 py-2 text-sm">{a.plan}</td>
                 <td className="px-4 py-2 text-sm">{a.direccion}</td>
                 <td className="px-4 py-2 text-center relative">
-                  <OptionsMenu affiliate={a} onOptionClick={handleOptionClick} />
+                  <OptionsMenu
+                    affiliate={a}
+                    onOptionClick={handleOptionClick}
+                    options={["Editar", "Ver grupo familiar", "Ver detalles", "Dar de baja"]}
+                  />
                 </td>
               </tr>
             ))}
@@ -173,6 +184,13 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
         />
       )}
 
+      {showViewPopup && selectedAffiliate && (
+        <ViewAffiliatePopup
+          affiliate={selectedAffiliate}
+          onClose={() => setShowViewPopup(false)}
+        />
+      )}
+
       {showDeleteDialog && selectedAffiliate && (
         <ConfirmDeleteDialog
           open={showDeleteDialog}
@@ -181,6 +199,7 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
           affiliateName={selectedAffiliate.nombre}
           affiliateSurname={selectedAffiliate.apellido}
           affiliateDni={selectedAffiliate.dni}
+          affiliateCredencial={selectedAffiliate.credencial}
         />
       )}
     </>

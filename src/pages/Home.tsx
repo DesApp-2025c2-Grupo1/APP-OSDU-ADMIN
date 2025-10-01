@@ -4,37 +4,9 @@ import type { Affiliate } from "../components/AffiliatesTable";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import { useNavigate } from "react-router-dom";
 import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
+import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup"; 
 import SearchDropdown from "../components/SearchDropdown";
-
-const affiliates: Affiliate[] = [
-  {
-    credencial: "0000001-01",
-    dni: "12345678",
-    nombre: "Joaquin",
-    apellido: "Mogno",
-    fechaNacimiento: "16/12/2002",
-    plan: "210",
-    direccion: "Calle Falsa 123",
-  },
-  {
-    credencial: "0000001-02",
-    dni: "23456789",
-    nombre: "Juan",
-    apellido: "Perez",
-    fechaNacimiento: "10/05/2019",
-    plan: "210",
-    direccion: "Av. Vergara 742",
-  },
-  {
-    credencial: "0000002-01",
-    dni: "34567890",
-    nombre: "Nombre",
-    apellido: "Apellido",
-    fechaNacimiento: "04/05/1958",
-    plan: "210",
-    direccion: "Calle Ejemplo 456",
-  },
-];
+import { affiliates } from "../data/affiliates";
 
 const OPTIONS = [
   { value: "dni", label: "DNI" },
@@ -45,19 +17,16 @@ const OPTIONS = [
 ];
 
 function norm(s: string) {
-  return s
-    .toString()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
+  return s.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
 export function Home() {
   const [field, setField] = useState<string>(OPTIONS[0].value);
   const [query, setQuery] = useState<string>("");
-  const [openDelete, setOpenDelete] = useState(false);
+
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showViewPopup, setShowViewPopup] = useState(false);
 
   const navigate = useNavigate();
 
@@ -80,23 +49,24 @@ export function Home() {
       navigate(`/home/editarAfiliado/${affiliate.credencial}`);
     }
     if (option === "Ver grupo familiar") {
-      navigate(`/home/grupoFamiliar/${affiliate.credencial}`);
+      const grupoFamiliarId = affiliate.credencial.split("-")[0];
+      navigate(`/home/grupoFamiliar/${grupoFamiliarId}`);
     }
     if (option === "Ver detalles") {
-      navigate(`/home/detalleAfiliado/${affiliate.credencial}`);
+      setSelectedAffiliate(affiliate);
+      setShowViewPopup(true);
     }
     if (option === "Dar de baja") {
       setSelectedAffiliate(affiliate);
-      setOpenDelete(true);
+      setShowDeleteDialog(true);
     }
   };
 
   const handleConfirmDelete = () => {
     if (selectedAffiliate) {
-      console.log("Eliminar:", selectedAffiliate.credencial);
-      // Aquí iría la lógica real de eliminación (ej: API call)
+      console.log("Afiliado dado de baja:", selectedAffiliate);
     }
-    setOpenDelete(false);
+    setShowDeleteDialog(false);
     setSelectedAffiliate(null);
   };
 
@@ -124,15 +94,26 @@ export function Home() {
         <AffiliatesTable affiliates={filtered} onOptionClick={handleOptionClick} />
       </div>
 
+      {/* Popup para Ver */}
+      {showViewPopup && selectedAffiliate && (
+        <ViewAffiliatePopup
+          affiliate={selectedAffiliate}
+          onClose={() => setShowViewPopup(false)}
+        />
+      )}
+
       {/* Modal de confirmación de baja */}
-      <ConfirmDeleteDialog
-        open={openDelete}
-        onClose={() => setOpenDelete(false)}
-        onConfirm={handleConfirmDelete}
-        affiliateName={selectedAffiliate?.nombre || ""}
-        affiliateSurname={selectedAffiliate?.apellido || ""}
-        affiliateDni={selectedAffiliate?.dni || ""}
-      />
+      {showDeleteDialog && selectedAffiliate && (
+        <ConfirmDeleteDialog
+          open={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={handleConfirmDelete}
+          affiliateName={selectedAffiliate.nombre}
+          affiliateSurname={selectedAffiliate.apellido}
+          affiliateDni={selectedAffiliate.dni}
+          affiliateCredencial={selectedAffiliate.credencial}
+        />
+      )}
     </div>
   );
 }
