@@ -34,3 +34,4 @@ export function ButtonAddAffiliate({ text, onClick }: ButtonAddAffiliateProps) {
     </button>
   );
 }
+
