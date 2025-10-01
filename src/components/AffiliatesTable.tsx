@@ -1,14 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { OptionsMenu } from "./OptionsMenu";
 import { EditAffiliatePopup } from "./EditAffiliatePopup";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
-<<<<<<< Updated upstream
-=======
-import { useNavigate } from "react-router-dom";
-import { ViewAffiliatePopup } from "./ViewAffiliatePopup";
+// import { ViewAffiliatePopup } from "./ViewAffiliatePopup";
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
->>>>>>> Stashed changes
 
 export type Affiliate = {
   credencial: string;
@@ -18,6 +15,7 @@ export type Affiliate = {
   fechaNacimiento: string;
   plan: string;
   direccion: string;
+  parentesco?: string;
   tipoDocumento?: string;
   nroDocumento?: string;
   planMedico?: string;
@@ -35,19 +33,15 @@ interface AffiliatesTableProps {
 }
 
 export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
-  const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(
-    null
-  );
+  const navigate = useNavigate();
+  const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-<<<<<<< Updated upstream
-=======
   const [showViewPopup, setShowViewPopup] = useState(false);
 
-  // PAGINACIÓN: Estados simples
+  // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
->>>>>>> Stashed changes
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
     if (option === "Editar") {
@@ -55,8 +49,6 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
       setShowEditPopup(true);
     }
 
-<<<<<<< Updated upstream
-=======
     if (option === "Ver detalles") {
       setSelectedAffiliate(affiliate);
       setShowViewPopup(true);
@@ -67,7 +59,6 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
       navigate(`/home/grupoFamiliar/${grupoFamiliarId}`);
     }
 
->>>>>>> Stashed changes
     if (option === "Dar de baja") {
       setSelectedAffiliate(affiliate);
       setShowDeleteDialog(true);
@@ -84,7 +75,7 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
     setSelectedAffiliate(null);
   };
 
-  // PAGINACIÓN: Calcular qué afiliados mostrar
+  // Cálculos de paginación
   const totalPages = Math.ceil(affiliates.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -123,25 +114,28 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
                 <td className="px-4 py-2 text-sm">{a.plan}</td>
                 <td className="px-4 py-2 text-sm">{a.direccion}</td>
                 <td className="px-4 py-2 text-center relative">
-                  <OptionsMenu affiliate={a} onOptionClick={handleOptionClick} />
+                  <OptionsMenu
+                    affiliate={a}
+                    onOptionClick={handleOptionClick}
+                    // options={["Editar", "Ver grupo familiar", "Ver detalles", "Dar de baja"]}
+                  />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* PAGINACIÓN: Controles */}
+        {/* Controles de paginación */}
         <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
-          {/* Izquierda: Info y selector */}
+          {/* Información de registros */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-700">
               Mostrando {startIndex + 1} a {Math.min(endIndex, affiliates.length)} de {affiliates.length} afiliados
             </span>
           </div>
 
-          {/* Derecha: Botones de navegación */}
+          {/* Botones de navegación */}
           <div className="flex items-center gap-2">
-
             <span className="text-sm text-gray-700">
               Página {currentPage} de {totalPages}
             </span>
@@ -173,6 +167,13 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
         />
       )}
 
+      {/* {showViewPopup && selectedAffiliate && (
+        <ViewAffiliatePopup
+          affiliate={selectedAffiliate}
+          onClose={() => setShowViewPopup(false)}
+        />
+      )} */}
+
       {showDeleteDialog && selectedAffiliate && (
         <ConfirmDeleteDialog
           open={showDeleteDialog}
@@ -181,6 +182,7 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
           affiliateName={selectedAffiliate.nombre}
           affiliateSurname={selectedAffiliate.apellido}
           affiliateDni={selectedAffiliate.dni}
+          // affiliateCredencial={selectedAffiliate.credencial}
         />
       )}
     </>
