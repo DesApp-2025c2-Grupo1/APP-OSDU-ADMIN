@@ -34,7 +34,9 @@ export function AgregarAfiliado() {
     direccion2: "",
     parentesco: "",
   });
-
+  const [showPhone2, setShowPhone2] = React.useState(false);
+  const [showEmail2, setShowEmail2] = React.useState(false);
+  const [showAddress2, setShowAddress2] = React.useState(false);
   const [situaciones, setSituaciones] = useState<Situacion[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -107,7 +109,6 @@ export function AgregarAfiliado() {
     } as AffiliateType;
 
     try {
-      // Simular POST
       await new Promise((res) => setTimeout(res, 700));
       setLoading(false);
       setSuccess("Afiliado creado con éxito");
@@ -308,166 +309,151 @@ export function AgregarAfiliado() {
           Datos de Afiliado (Titular)
 
       </div>
-      {/* Datos de Afiliado */}
-      <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-        <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-          Datos de Afiliado
-        </h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo Documento (*)</label>
-            <select
-              name="tipoDocumento"
-              value={formData.tipoDocumento}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            >
-              <option value="DNI">DNI</option>
-              <option value="LE">CUIL</option>
-              <option value="CUIT">CUIT</option>
-              <option value="LC">DOCUMENTO EXTRANJERO</option>
-              <option value="CDI">CDI</option>
-              <option value="PASAPORTE">Pasaporte</option>
-            </select>
-          </div>
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Nro Documento (*)</label>
-            <input
-              type="text"
-              name="nroDocumento"
-              value={formData.nroDocumento}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            />
-            {errors.nroDocumento && (
-              <p className="text-red-500 text-sm mt-1">{errors.nroDocumento}</p>
-            )}
-          </div>
 
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Nombres (*)</label>
-            <input
-              type="text"
-              name="nombre"
-              value={formData.nombre}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            />
-            {errors.nombre && <p className="text-red-500 text-sm mt-1">{errors.nombre}</p>}
-          </div>
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Apellidos (*)</label>
-            <input
-              type="text"
-              name="apellido"
-              value={formData.apellido}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            />
-            {errors.apellido && <p className="text-red-500 text-sm mt-1">{errors.apellido}</p>}
-          </div>
+      {/*Div central para poder copiar ese formulario y reutilizarlo en agregar familiar con el boton agregar familiar*/}
+      <div className="mx-auto w-full max-w-4xl space-y-8">
+        {/* DATOS DE AFILIADO */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+            Datos de Afiliado
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Tipo Documento */}
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo Documento (*)</label>
+              <select
+                name="tipoDocumento"
+                value={formData.tipoDocumento}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              >
+                <option value="DNI">DNI</option>
+                <option value="LE">CUIL</option>
+                <option value="CUIT">CUIT</option>
+                <option value="LC">DOCUMENTO EXTRANJERO</option>
+                <option value="CDI">CDI</option>
+                <option value="PASAPORTE">Pasaporte</option>
+              </select>
+            </div>
 
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Fecha nacimiento (*)</label>
-            <input
-              type="date"
-              name="fechaNacimiento"
-              value={formData.fechaNacimiento}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            />
-            {errors.fechaNacimiento && (
-              <p className="text-red-500 text-sm mt-1">{errors.fechaNacimiento}</p>
-            )}
-          </div>
+            {/* Nro Documento */}
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Nro Documento (*)</label>
+              <input
+                type="text"
+                name="nroDocumento"
+                value={formData.nroDocumento}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
+              {errors.nroDocumento && (
+                <p className="text-red-500 text-sm mt-1">{errors.nroDocumento}</p>
+              )}
+            </div>
 
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Plan Médico (*)</label>
-            <select
-              name="planMedico"
-              value={formData.planMedico}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            >
-              <option value="210">210</option>
-              <option value="310">310</option>
-              <option value="410">410</option>
-              <option value="510">510</option>
-              <option value="Bronce">Bronce</option>
-              <option value="Plata">Plata</option>
-              <option value="Oro">Oro</option>
-              <option value="Platino">Platino</option>
-            </select>
-            {errors.planMedico && (
-              <p className="text-red-500 text-sm mt-1">{errors.planMedico}</p>
-            )}
-          </div>
+            {/* Nombres */}
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Nombres (*)</label>
+              <input
+                type="text"
+                name="nombre"
+                value={formData.nombre}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
+              {errors.nombre && <p className="text-red-500 text-sm mt-1">{errors.nombre}</p>}
+            </div>
 
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Credencial</label>
-            <input
-              type="text"
-              name="credencial"
-              value={formData.credencial}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            />
-          </div>
+            {/* Apellidos */}
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Apellidos (*)</label>
+              <input
+                type="text"
+                name="apellido"
+                value={formData.apellido}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
+              {errors.apellido && <p className="text-red-500 text-sm mt-1">{errors.apellido}</p>}
+            </div>
 
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Teléfono</label>
-            <input
-              type="text"
-              name="telefono"
-              value={formData.telefono}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            />
-          </div>
+            {/* Fecha nacimiento */}
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Fecha nacimiento (*)</label>
+              <input
+                type="date"
+                name="fechaNacimiento"
+                value={formData.fechaNacimiento}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
+              {errors.fechaNacimiento && (
+                <p className="text-red-500 text-sm mt-1">{errors.fechaNacimiento}</p>
+              )}
+            </div>
 
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Teléfono 2</label>
-            <input
-              type="text"
-              name="telefono2"
-              value={formData.telefono2}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            />
-          </div>
+            {/* Plan Médico */}
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Plan Médico (*)</label>
+              <select
+                name="planMedico"
+                value={formData.planMedico}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              >
+                <option value="210">210</option>
+                <option value="310">310</option>
+                <option value="410">410</option>
+                <option value="510">510</option>
+                <option value="Bronce">Bronce</option>
+                <option value="Plata">Plata</option>
+                <option value="Oro">Oro</option>
+                <option value="Platino">Platino</option>
+              </select>
+              {errors.planMedico && (
+                <p className="text-red-500 text-sm mt-1">{errors.planMedico}</p>
+              )}
+            </div>
 
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            />
-          </div>
+            {/* Credencial( Revisar si esto se setea aca o en la logica del backend) */}
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Credencial</label>
+              <input
+                type="text"
+                name="credencial"
+                value={formData.credencial}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
+            </div>
 
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Email 2</label>
-            <input
-              type="email"
-              name="email2"
-              value={formData.email2}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            />
+            {/* Parentesco */}
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Parentesco</label>
+              <select
+                name="parentesco"
+                value={formData.parentesco}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              >
+                <option value="Titular">Titular</option>
+                <option value="Cónyuge">Cónyuge</option>
+                <option value="Hijo">Hijo</option>
+                <option value="Familiar a cargo">Familiar a cargo</option>
+              </select>
+            </div>
           </div>
+        </div>
 
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Dirección</label>
-            <input
-              type="text"
-              name="direccion"
-              value={formData.direccion}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            />
-          </div>
+        {/*DATOS DE CONTACTO*/}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+            Datos de Contacto
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Teléfono */}
+            <div className="flex flex-col col-span-2">
+              <label className="font-semibold mb-1">Teléfono</label>
 
           <div className="flex flex-col">
             <label className="font-semibold mb-1 bg-gray-100 px-2">Dirección 2</label>
@@ -610,52 +596,118 @@ export function AgregarAfiliado() {
         </button>
 
 
-          <div className="flex flex-col">
-            <label className="font-semibold mb-1 bg-gray-100 px-2">Parentesco</label>
-            <select
-              name="parentesco"
-              value={formData.parentesco}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
-            >
-              <option value="Titular">Titular</option>
-              <option value="Cónyuge">Cónyuge</option>
-              <option value="Hijo">Hijo</option>
-              <option value="Familiar a cargo">Familiar a cargo</option>
-            </select>
-          </div>
+              {/* Teléfono principal */}
+              <input
+                type="text"
+                name="telefono"
+                value={formData.telefono}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                placeholder="Teléfono"
+              />
+
+              {/* Segundo teléfono */}
+              {showPhone2 && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    name="telefono2"
+                    value={formData.telefono2}
+                    onChange={handleInputChange}
+                    className="flex-1 p-2 border border-gray-300 rounded"
+                    placeholder="Teléfono adicional"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev: typeof formData) => ({ ...prev, telefono2: "" }));
+                      setShowPhone2(false);
+                    }}
+                    className="px-3 py-2 border rounded hover:bg-gray-50"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              )}
+
 
         </div>
 
       </div>
 
-      {/* Situaciones Terapéuticas */}
-      <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-        <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-          Situaciones Terapéuticas
-        </h2>
-        <div className="space-y-2">
-          {situaciones.length === 0 && (
-            <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
-          )}
-          {situaciones.map((s, idx) => (
-            <div key={idx} className="grid grid-cols-2 gap-4">
+              {/* Botón agregar segundo teléfono */}
+              {!showPhone2 && (
+                <button
+                  type="button"
+                  onClick={() => setShowPhone2(true)}
+                  className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
+                >
+                  + Agregar otro
+                </button>
+              )}
+            </div>
+
+            {/* Email */}
+            <div className="flex flex-col col-span-2">
+              <label className="font-semibold mb-1">Email</label>
+
+
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                placeholder="Email"
+              />
+
+              {showEmail2 && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="email"
+                    name="email2"
+                    value={formData.email2}
+                    onChange={handleInputChange}
+                    className="flex-1 p-2 border border-gray-300 rounded"
+                    placeholder="Email adicional"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev: typeof formData) => ({ ...prev, email2: "" }));
+                      setShowEmail2(false);
+                    }}
+                    className="px-3 py-2 border rounded hover:bg-gray-50"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              )}
+
+              {!showEmail2 && (
+                <button
+                  type="button"
+                  onClick={() => setShowEmail2(true)}
+                  className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
+                >
+                  + Agregar otro
+                </button>
+              )}
+            </div>
+
+            {/* Dirección */}
+            <div className="flex flex-col col-span-2">
+              <label className="font-semibold mb-1">Dirección</label>
+
               <input
                 type="text"
-                placeholder="Situación"
-                value={s.situacion}
-                onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
+                name="direccion"
+                value={formData.direccion}
+                onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
+                placeholder="Dirección"
               />
-              <input
-                type="text"
-                placeholder="Fecha estimada de finalización"
-                value={s.fechaFinalizacion}
-                onChange={(e) =>
-                  updateSituacion(idx, "fechaFinalizacion", e.target.value)
-                }
-                className="p-2 border border-gray-300 rounded"
-              />
+
               <button
                 type="button"
                 onClick={() => removeSituacion(idx)}
@@ -680,13 +732,98 @@ export function AgregarAfiliado() {
           >
             + Agregar
           </button>
+
+
+              {showAddress2 && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    name="direccion2"
+                    value={formData.direccion2}
+                    onChange={handleInputChange}
+                    className="flex-1 p-2 border border-gray-300 rounded"
+                    placeholder="Dirección adicional"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev: typeof formData) => ({ ...prev, direccion2: "" }));
+                      setShowAddress2(false);
+                    }}
+                    className="px-3 py-2 border rounded hover:bg-gray-50"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              )}
+
+              {!showAddress2 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddress2(true)}
+                  className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
+                >
+                  + Agregar otro
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/*SITUACIONES TERAPÉUTICAS (Falta que sea una lista de situaciones terapeuticas como la consigna lo pide*/}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+            Situaciones Terapéuticas
+          </h2>
+          <div className="space-y-2">
+            {situaciones.length === 0 && (
+              <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
+            )}
+            {situaciones.map((s, idx) => (
+              <div key={idx} className="grid grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Situación"
+                  value={s.situacion}
+                  onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
+                  className="p-2 border border-gray-300 rounded"
+                />
+                <input
+                  type="text"
+                  placeholder="Fecha estimada de finalización"
+                  value={s.fechaFinalizacion}
+                  onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
+                  className="p-2 border border-gray-300 rounded"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeSituacion(idx)}
+                  className="px-3 py-1 border rounded"
+                >
+                  Eliminar
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addSituacion}
+              className="text-sm px-3 py-1 border rounded hover:bg-gray-50"
+            >
+              + Agregar
+            </button>
+          </div>
+
         </div>
       </div>
+
 
 
       {/* Botones finales */}
 
       {/* Botones */}
+
+
+      {/*BOTONES*/}
 
       <div className="flex justify-center gap-4 mt-4">
         <button
