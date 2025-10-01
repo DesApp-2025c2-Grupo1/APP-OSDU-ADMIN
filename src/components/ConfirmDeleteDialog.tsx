@@ -5,6 +5,7 @@ interface ConfirmDeleteDialogProps {
   affiliateName: string;
   affiliateSurname: string;
   affiliateDni: string;
+  affiliateCredencial: string;
 }
 
 export function ConfirmDeleteDialog({
@@ -14,8 +15,11 @@ export function ConfirmDeleteDialog({
   affiliateName,
   affiliateSurname,
   affiliateDni,
+  affiliateCredencial,
 }: ConfirmDeleteDialogProps) {
   if (!open) return null;
+
+  const isTitular = affiliateCredencial.endsWith("-01");
 
   return (
     <div className="fixed inset-0 bg-light-gray bg-opacity-50 flex items-center justify-center z-[2000]">
@@ -24,13 +28,30 @@ export function ConfirmDeleteDialog({
         <div className="text-4xl text-red-600 mb-4">⚠️</div>
 
         {/* Mensaje */}
-        <p className="text-gray-800 text-base mb-6">
-          ¿Está seguro que desea dar de baja al afiliado <br />
-          <b>
-            {affiliateName} {affiliateSurname}, DNI {affiliateDni}
-          </b>
-          ?
-        </p>
+        {isTitular && (
+          <>
+            <p className="text-gray-800 text-base mb-6">
+              ¿Está seguro que desea dar de baja al afiliado <br />
+              <b>
+                {affiliateName} {affiliateSurname}, DNI {affiliateDni}
+              </b>
+              ?
+            </p>
+            <p className="text-red-600 text-sm mb-6">
+              Si elimina este afiliado se eliminaran todos los miembros del grupo familiar.
+            </p>
+          </>
+        )}
+
+        {!isTitular && (
+          <p className="text-gray-800 text-base mb-6">
+            ¿Está seguro que desea dar de baja al afiliado <br />
+            <b>
+              {affiliateName} {affiliateSurname}, DNI {affiliateDni}
+            </b>
+            ?
+          </p>
+        )}
 
         {/* Botones */}
         <div className="flex justify-around mt-4 gap-3">
