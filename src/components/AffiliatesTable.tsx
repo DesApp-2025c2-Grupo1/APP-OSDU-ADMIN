@@ -2,6 +2,13 @@ import React, { useState } from "react";
 import { OptionsMenu } from "./OptionsMenu";
 import { EditAffiliatePopup } from "./EditAffiliatePopup";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
+<<<<<<< Updated upstream
+=======
+import { useNavigate } from "react-router-dom";
+import { ViewAffiliatePopup } from "./ViewAffiliatePopup";
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+>>>>>>> Stashed changes
 
 export type Affiliate = {
   credencial: string;
@@ -33,6 +40,14 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
   );
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+<<<<<<< Updated upstream
+=======
+  const [showViewPopup, setShowViewPopup] = useState(false);
+
+  // PAGINACIÓN: Estados simples
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+>>>>>>> Stashed changes
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
     if (option === "Editar") {
@@ -40,6 +55,19 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
       setShowEditPopup(true);
     }
 
+<<<<<<< Updated upstream
+=======
+    if (option === "Ver detalles") {
+      setSelectedAffiliate(affiliate);
+      setShowViewPopup(true);
+    }
+
+    if (option === "Ver grupo familiar") {
+      const grupoFamiliarId = affiliate.credencial.split("-")[0];
+      navigate(`/home/grupoFamiliar/${grupoFamiliarId}`);
+    }
+
+>>>>>>> Stashed changes
     if (option === "Dar de baja") {
       setSelectedAffiliate(affiliate);
       setShowDeleteDialog(true);
@@ -55,6 +83,12 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
     setShowDeleteDialog(false);
     setSelectedAffiliate(null);
   };
+
+  // PAGINACIÓN: Calcular qué afiliados mostrar
+  const totalPages = Math.ceil(affiliates.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentAffiliates = affiliates.slice(startIndex, endIndex);
 
   return (
     <>
@@ -76,7 +110,7 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {affiliates.map((a, idx) => (
+            {currentAffiliates.map((a, idx) => (
               <tr
                 key={a.credencial}
                 className={idx % 2 === 0 ? "bg-gray-50" : ""}
@@ -95,6 +129,40 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
             ))}
           </tbody>
         </table>
+
+        {/* PAGINACIÓN: Controles */}
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+          {/* Izquierda: Info y selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700">
+              Mostrando {startIndex + 1} a {Math.min(endIndex, affiliates.length)} de {affiliates.length} afiliados
+            </span>
+          </div>
+
+          {/* Derecha: Botones de navegación */}
+          <div className="flex items-center gap-2">
+
+            <span className="text-sm text-gray-700">
+              Página {currentPage} de {totalPages}
+            </span>
+
+            <button
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <NavigateBeforeIcon />
+            </button>
+
+            <button
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <NavigateNextIcon />
+            </button>
+          </div>
+        </div>
       </div>
 
       {showEditPopup && selectedAffiliate && (
