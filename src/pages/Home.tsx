@@ -4,7 +4,8 @@ import type { Affiliate } from "../components/AffiliatesTable";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import { useNavigate } from "react-router-dom";
 import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
-import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup"; 
+import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup";
+import { EditAffiliatePopup } from "../components/EditAffiliatePopup";
 import SearchDropdown from "../components/SearchDropdown";
 import { affiliates } from "../data/affiliates";
 
@@ -27,6 +28,7 @@ export function Home() {
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewPopup, setShowViewPopup] = useState(false);
+  const [showEditPopup, setShowEditPopup] = useState(false);
 
   const navigate = useNavigate();
 
@@ -45,19 +47,19 @@ export function Home() {
   }, [field, query]);
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
+    setSelectedAffiliate(affiliate);
+
     if (option === "Editar") {
-      navigate(`/home/editarAfiliado/${affiliate.credencial}`);
+      setShowEditPopup(true);
     }
     if (option === "Ver grupo familiar") {
       const grupoFamiliarId = affiliate.credencial.split("-")[0];
       navigate(`/home/grupoFamiliar/${grupoFamiliarId}`);
     }
     if (option === "Ver detalles") {
-      setSelectedAffiliate(affiliate);
       setShowViewPopup(true);
     }
     if (option === "Dar de baja") {
-      setSelectedAffiliate(affiliate);
       setShowDeleteDialog(true);
     }
   };
@@ -99,6 +101,18 @@ export function Home() {
         <ViewAffiliatePopup
           affiliate={selectedAffiliate}
           onClose={() => setShowViewPopup(false)}
+        />
+      )}
+
+      {/* Popup para Editar */}
+      {showEditPopup && selectedAffiliate && (
+        <EditAffiliatePopup
+          affiliate={selectedAffiliate}
+          onClose={() => setShowEditPopup(false)}
+          onSave={(updatedAffiliate) => {
+            console.log("Afiliado editado:", updatedAffiliate);
+            setShowEditPopup(false);
+          }}
         />
       )}
 

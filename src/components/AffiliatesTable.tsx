@@ -125,7 +125,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
                   <OptionsMenu
                     affiliate={a}
                     onOptionClick={handleOptionClick}
-                    // options={["Editar", "Ver grupo familiar", "Ver detalles", "Dar de baja"]}
+                    options={["Editar", "Ver grupo familiar", "Ver detalles", "Dar de baja"]}
                   />
                 </td>
               </tr>
@@ -203,7 +203,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
           affiliateName={selectedAffiliate.nombre}
           affiliateSurname={selectedAffiliate.apellido}
           affiliateDni={selectedAffiliate.dni}
-          // affiliateCredencial={selectedAffiliate.credencial}
+          affiliateCredencial={selectedAffiliate.credencial}
         />
       )}
     </>

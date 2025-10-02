@@ -7,9 +7,7 @@ import { Header } from "./components/Header";
 import { Prestadores } from "./pages/Providers";
 import { Otros } from "./pages/Others";
 import { AgregarAfiliado } from "./pages/AddAffiliate";
-import { EditarAfiliado } from "./pages/EditarAfiliado";
 import { GrupoFamiliar } from "./pages/GrupoFamiliar";
-
 
 function App() {
   return (
@@ -30,10 +28,7 @@ function App() {
 
             {/* afiliados */}
             <Route path="/home/agregarAfiliado" element={<AgregarAfiliado />} />
-            <Route path="/home/editarAfiliado/:credencial" element={<EditarAfiliado />} />
             <Route path="/home/grupoFamiliar/:grupoId" element={<GrupoFamiliar />} />
-            
-            {/* fallback */}
           </Routes>
         </main>
       </div>
@@ -41,4 +36,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
