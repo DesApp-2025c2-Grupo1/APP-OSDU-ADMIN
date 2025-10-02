@@ -5,19 +5,45 @@ import type { Affiliate as AffiliateType } from "../components/AffiliatesTable";
 
 interface Situacion {
   situacion: string;
-  fechaFinalizacion: string; // dd/mm/yyyy o string libre
+  fechaFinalizacion: string;
 }
+
+interface Familiar {
+  tipoDocumento: string;
+  nroDocumento: string;
+  nombre: string;
+  apellido: string;
+  fechaNacimiento: string; // yyyy-mm-dd (input date)
+  parentesco: string;
+  telefono?: string;
+  email?: string;
+  direccion?: string;
+  direccion2?: string;
+  usaDireccionTitular?: boolean;
+  usaContactoTitular?: boolean;
+  situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>; 
+}
+
+// Helpers
+const getCredPrefix = (cred: string) => (cred || "").split("-")[0]?.trim() || "";
+const buildChildCredential = (prefix: string, index: number) =>
+  `${prefix}-${String(index).padStart(2, "0")}`;
+
+const isoToDDMMYYYY = (iso: string) => {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+};
 
 export function AgregarAfiliado() {
   const navigate = useNavigate();
 
-  // Estado del formulario
   const [formData, setFormData] = useState({
     tipoDocumento: "DNI",
     nroDocumento: "",
     nombre: "",
     apellido: "",
-    fechaNacimiento: "", // yyyy-mm-dd para input type="date"
+    fechaNacimiento: "", // yyyy-mm-dd
     planMedico: "210",
     credencial: "",
     telefono: "",
@@ -26,12 +52,16 @@ export function AgregarAfiliado() {
     email2: "",
     direccion: "",
     direccion2: "",
-    parentesco: "",
+    parentesco: "Titular",
   });
-  const [showPhone2, setShowPhone2] = React.useState(false);
-  const [showEmail2, setShowEmail2] = React.useState(false);
-  const [showAddress2, setShowAddress2] = React.useState(false);
-  const [situaciones, setSituaciones] = useState<Situacion[]>([]);
+
+  const [showPhone2, setShowPhone2] = useState(false);
+  const [showEmail2, setShowEmail2] = useState(false);
+  const [showAddress2, setShowAddress2] = useState(false);
+
+  const [situaciones, setSituaciones] = useState<Situacion[]>([]); 
+  const [familiares, setFamiliares] = useState<Familiar[]>([]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -42,11 +72,12 @@ export function AgregarAfiliado() {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // Situaciones helpers
   const addSituacion = () =>
     setSituaciones((prev) => [...prev, { situacion: "", fechaFinalizacion: "" }]);
+
   const removeSituacion = (idx: number) =>
     setSituaciones((prev) => prev.filter((_, i) => i !== idx));
+
   const updateSituacion = (idx: number, field: keyof Situacion, value: string) => {
     setSituaciones((prev) => {
       const next = [...prev];
@@ -55,7 +86,71 @@ export function AgregarAfiliado() {
     });
   };
 
-  // Validación simple
+  // Familiares
+  const agregarFamiliar = () => {
+    const nuevoFamiliar: Familiar = {
+      tipoDocumento: "DNI",
+      nroDocumento: "",
+      nombre: "",
+      apellido: "",
+      fechaNacimiento: "",
+      parentesco: "Hijo",
+      telefono: "",
+      email: "",
+      usaDireccionTitular: true,
+      usaContactoTitular: false,
+      situaciones: [],
+    };
+    setFamiliares((prev) => [...prev, nuevoFamiliar]);
+  };
+
+  const eliminarFamiliar = (posicion: number) => {
+    setFamiliares((prev) => prev.filter((_, i) => i !== posicion));
+  };
+
+  const cambiarDatoFamiliar = (posicion: number, campo: keyof Familiar, valor: string) => {
+    setFamiliares((prev) => {
+      const next = [...prev];
+      next[posicion] = { ...next[posicion], [campo]: valor };
+      return next;
+    });
+  };
+
+  // Situaciones por FAMILIAR 
+  const addSituacionFamiliar = (i: number) => {
+    setFamiliares((prev) => {
+      const next = [...prev];
+      const sit = next[i].situaciones || [];
+      next[i] = { ...next[i], situaciones: [...sit, { situacion: "", fechaFinalizacion: "" }] };
+      return next;
+    });
+  };
+
+  const updateSituacionFamiliar = (
+    i: number,
+    idx: number,
+    field: "situacion" | "fechaFinalizacion",
+    value: string
+  ) => {
+    setFamiliares((prev) => {
+      const next = [...prev];
+      const sit = [...(next[i].situaciones || [])];
+      sit[idx] = { ...sit[idx], [field]: value };
+      next[i] = { ...next[i], situaciones: sit };
+      return next;
+    });
+  };
+
+  const removeSituacionFamiliar = (i: number, idx: number) => {
+    setFamiliares((prev) => {
+      const next = [...prev];
+      const sit = (next[i].situaciones || []).filter((_, k) => k !== idx);
+      next[i] = { ...next[i], situaciones: sit };
+      return next;
+    });
+  };
+
+  // Validación mínima del titular
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.nroDocumento?.trim()) newErrors.nroDocumento = "Requerido";
@@ -67,14 +162,38 @@ export function AgregarAfiliado() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Formatear fecha a dd/mm/yyyy
-  const formatDateToDDMMYYYY = (isoDate: string) => {
-    if (!isoDate) return "";
-    const [y, m, d] = isoDate.split("-");
-    return `${d}/${m}/${y}`;
+  const mapFamiliaresToAffiliates = (lista: Familiar[], titular: typeof formData): AffiliateType[] => {
+    const prefix = getCredPrefix(titular.credencial) || titular.nroDocumento || "GRP";
+
+    return lista.map((f, idx) => {
+      const fechaNac = f.fechaNacimiento ? isoToDDMMYYYY(f.fechaNacimiento) : "";
+
+      const situacionesPayload = (f.situaciones || []).map(s => ({
+        situacion: s.situacion,
+        fechaFinalizacion: isoToDDMMYYYY(s.fechaFinalizacion || ""),
+      }));
+
+      return {
+        credencial: buildChildCredential(prefix, idx + 1),
+        dni: f.nroDocumento,
+        nombre: f.nombre,
+        apellido: f.apellido,
+        fechaNacimiento: fechaNac,
+        plan: titular.planMedico,
+        planMedico: titular.planMedico,
+        direccion: f.usaDireccionTitular ? titular.direccion : (f.direccion || ""),
+        direccion2: f.usaDireccionTitular ? titular.direccion2 : (f.direccion2 || ""),
+        telefono: f.usaContactoTitular ? titular.telefono : (f.telefono || ""),
+        email: f.usaContactoTitular ? titular.email : (f.email || ""),
+        parentesco: f.parentesco,
+        tipoDocumento: f.tipoDocumento,
+        nroDocumento: f.nroDocumento,
+        situaciones: situacionesPayload,
+      } as AffiliateType;
+    });
   };
 
-  // Submit (mock)
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!validate()) return;
@@ -82,12 +201,12 @@ export function AgregarAfiliado() {
     setLoading(true);
     setSuccess(null);
 
-    const payload: AffiliateType = {
+    const titular: AffiliateType = {
       credencial: formData.credencial,
       dni: formData.nroDocumento,
       nombre: formData.nombre,
       apellido: formData.apellido,
-      fechaNacimiento: formatDateToDDMMYYYY(formData.fechaNacimiento),
+      fechaNacimiento: isoToDDMMYYYY(formData.fechaNacimiento),
       plan: formData.planMedico,
       planMedico: formData.planMedico,
       direccion: formData.direccion,
@@ -96,16 +215,24 @@ export function AgregarAfiliado() {
       telefono2: formData.telefono2,
       email: formData.email,
       email2: formData.email2,
-      parentesco: formData.parentesco,
+      parentesco: "Titular",
       tipoDocumento: formData.tipoDocumento,
       nroDocumento: formData.nroDocumento,
-      situaciones,
-    } as AffiliateType;
+      situaciones: (situaciones || []).map(s => ({
+        situacion: s.situacion,
+        fechaFinalizacion: isoToDDMMYYYY(s.fechaFinalizacion || ""),
+      })),
+    };
 
     try {
+      const familiaresMapped = mapFamiliaresToAffiliates(familiares, formData);
+      const grupo: AffiliateType[] = [titular, ...familiaresMapped];
+
       await new Promise((res) => setTimeout(res, 700));
+      console.log("Grupo familiar a guardar:", grupo);
+
       setLoading(false);
-      setSuccess("Afiliado creado con éxito");
+      setSuccess("Afiliado y familiares creados con éxito");
       setTimeout(() => navigate("/home"), 700);
     } catch (err) {
       setLoading(false);
@@ -115,20 +242,19 @@ export function AgregarAfiliado() {
 
   return (
     <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 mx-auto mt-6 shadow">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Crear nuevo afiliado</h1>
         <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
       </div>
 
-      {/*Div central para poder copiar ese formulario y reutilizarlo en agregar familiar con el boton agregar familiar*/}
       <div className="mx-auto w-full max-w-4xl space-y-8">
-        {/* DATOS DE AFILIADO */}
+        {/* DATOS DE AFILIADO (Titular) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-            Datos de Afiliado
+            Datos de Afiliado (Titular)
           </h2>
           <div className="grid grid-cols-2 gap-4">
-            {/* Tipo Documento */}
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo Documento (*)</label>
               <select
@@ -146,7 +272,6 @@ export function AgregarAfiliado() {
               </select>
             </div>
 
-            {/* Nro Documento */}
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Nro Documento (*)</label>
               <input
@@ -161,7 +286,6 @@ export function AgregarAfiliado() {
               )}
             </div>
 
-            {/* Nombres */}
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Nombres (*)</label>
               <input
@@ -174,7 +298,6 @@ export function AgregarAfiliado() {
               {errors.nombre && <p className="text-red-500 text-sm mt-1">{errors.nombre}</p>}
             </div>
 
-            {/* Apellidos */}
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Apellidos (*)</label>
               <input
@@ -187,7 +310,6 @@ export function AgregarAfiliado() {
               {errors.apellido && <p className="text-red-500 text-sm mt-1">{errors.apellido}</p>}
             </div>
 
-            {/* Fecha nacimiento */}
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Fecha nacimiento (*)</label>
               <input
@@ -202,7 +324,6 @@ export function AgregarAfiliado() {
               )}
             </div>
 
-            {/* Plan Médico */}
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Plan Médico (*)</label>
               <select
@@ -225,7 +346,6 @@ export function AgregarAfiliado() {
               )}
             </div>
 
-            {/* Credencial( Revisar si esto se setea aca o en la logica del backend) */}
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Credencial</label>
               <input
@@ -234,10 +354,10 @@ export function AgregarAfiliado() {
                 value={formData.credencial}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
+                placeholder="Ej: ABC123-00 (el prefijo agrupa familiares)"
               />
             </div>
 
-            {/* Parentesco */}
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Parentesco</label>
               <select
@@ -251,11 +371,14 @@ export function AgregarAfiliado() {
                 <option value="Hijo">Hijo</option>
                 <option value="Familiar a cargo">Familiar a cargo</option>
               </select>
+              <small className="text-gray-500 mt-1">
+                Se forzará “Titular” al guardar para evitar errores.
+              </small>
             </div>
           </div>
         </div>
 
-        {/*DATOS DE CONTACTO*/}
+        {/* DATOS DE CONTACTO */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Datos de Contacto
@@ -264,8 +387,6 @@ export function AgregarAfiliado() {
             {/* Teléfono */}
             <div className="flex flex-col col-span-2">
               <label className="font-semibold mb-1">Teléfono</label>
-
-              {/* Teléfono principal */}
               <input
                 type="text"
                 name="telefono"
@@ -275,7 +396,6 @@ export function AgregarAfiliado() {
                 placeholder="Teléfono"
               />
 
-              {/* Segundo teléfono */}
               {showPhone2 && (
                 <div className="mt-2 flex gap-2">
                   <input
@@ -289,7 +409,7 @@ export function AgregarAfiliado() {
                   <button
                     type="button"
                     onClick={() => {
-                      setFormData((prev: typeof formData) => ({ ...prev, telefono2: "" }));
+                      setFormData((prev) => ({ ...prev, telefono2: "" }));
                       setShowPhone2(false);
                     }}
                     className="px-3 py-2 border rounded hover:bg-gray-50"
@@ -299,7 +419,6 @@ export function AgregarAfiliado() {
                 </div>
               )}
 
-              {/* Botón agregar segundo teléfono */}
               {!showPhone2 && (
                 <button
                   type="button"
@@ -314,7 +433,6 @@ export function AgregarAfiliado() {
             {/* Email */}
             <div className="flex flex-col col-span-2">
               <label className="font-semibold mb-1">Email</label>
-
               <input
                 type="email"
                 name="email"
@@ -337,7 +455,7 @@ export function AgregarAfiliado() {
                   <button
                     type="button"
                     onClick={() => {
-                      setFormData((prev: typeof formData) => ({ ...prev, email2: "" }));
+                      setFormData((prev) => ({ ...prev, email2: "" }));
                       setShowEmail2(false);
                     }}
                     className="px-3 py-2 border rounded hover:bg-gray-50"
@@ -361,7 +479,6 @@ export function AgregarAfiliado() {
             {/* Dirección */}
             <div className="flex flex-col col-span-2">
               <label className="font-semibold mb-1">Dirección</label>
-
               <input
                 type="text"
                 name="direccion"
@@ -384,7 +501,7 @@ export function AgregarAfiliado() {
                   <button
                     type="button"
                     onClick={() => {
-                      setFormData((prev: typeof formData) => ({ ...prev, direccion2: "" }));
+                      setFormData((prev) => ({ ...prev, direccion2: "" }));
                       setShowAddress2(false);
                     }}
                     className="px-3 py-2 border rounded hover:bg-gray-50"
@@ -406,8 +523,7 @@ export function AgregarAfiliado() {
             </div>
           </div>
         </div>
-
-        {/*SITUACIONES TERAPÉUTICAS (Falta que sea una lista de situaciones terapeuticas como la consigna lo pide*/}
+        {/* SITUACIONES TERAPÉUTICAS (Titular) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Situaciones Terapéuticas
@@ -426,16 +542,15 @@ export function AgregarAfiliado() {
                   className="p-2 border border-gray-300 rounded"
                 />
                 <input
-                  type="text"
-                  placeholder="Fecha estimada de finalización"
-                  value={s.fechaFinalizacion}
+                  type="date"
+                  value={s.fechaFinalizacion || ""}
                   onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
                   className="p-2 border border-gray-300 rounded"
                 />
                 <button
                   type="button"
                   onClick={() => removeSituacion(idx)}
-                  className="px-3 py-1 border rounded"
+                  className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
                 >
                   Eliminar
                 </button>
@@ -444,16 +559,187 @@ export function AgregarAfiliado() {
             <button
               type="button"
               onClick={addSituacion}
-              className="text-sm px-3 py-1 border rounded hover:bg-gray-50"
+              className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
             >
               + Agregar
             </button>
           </div>
         </div>
+
+        {/* FAMILIARES A CARGO */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+            Familiares a Cargo
+          </h2>
+
+          {familiares.length === 0 && (
+            <p className="text-sm text-gray-500 mb-4">No hay familiares agregados.</p>
+          )}
+
+          {familiares.map((familiar, i) => (
+            <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-4">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-semibold text-gray-700">Familiar {i + 1}</h3>
+                <button
+                  type="button"
+                  onClick={() => eliminarFamiliar(i)}
+                  className="text-red-600 hover:text-red-800 text-sm font-semibold"
+                >
+                  Eliminar
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col">
+                  <label className="font-semibold mb-1 text-sm">Tipo Documento</label>
+                  <select
+                    value={familiar.tipoDocumento}
+                    onChange={(e) => cambiarDatoFamiliar(i, "tipoDocumento", e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                  >
+                    <option value="DNI">DNI</option>
+                    <option value="LE">CUIL</option>
+                    <option value="CUIT">CUIT</option>
+                    <option value="LC">DOCUMENTO EXTRANJERO</option>
+                    <option value="CDI">CDI</option>
+                    <option value="PASAPORTE">Pasaporte</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="font-semibold mb-1 text-sm">Nro Documento</label>
+                  <input
+                    type="text"
+                    value={familiar.nroDocumento}
+                    onChange={(e) => cambiarDatoFamiliar(i, "nroDocumento", e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                  />
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="font-semibold mb-1 text-sm">Nombres</label>
+                  <input
+                    type="text"
+                    value={familiar.nombre}
+                    onChange={(e) => cambiarDatoFamiliar(i, "nombre", e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                  />
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="font-semibold mb-1 text-sm">Apellidos</label>
+                  <input
+                    type="text"
+                    value={familiar.apellido}
+                    onChange={(e) => cambiarDatoFamiliar(i, "apellido", e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                  />
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="font-semibold mb-1 text-sm">Fecha Nacimiento</label>
+                  <input
+                    type="date"
+                    value={familiar.fechaNacimiento}
+                    onChange={(e) => cambiarDatoFamiliar(i, "fechaNacimiento", e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                  />
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="font-semibold mb-1 text-sm">Parentesco</label>
+                  <select
+                    value={familiar.parentesco}
+                    onChange={(e) => cambiarDatoFamiliar(i, "parentesco", e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                  >
+                    <option value="Cónyuge">Cónyuge</option>
+                    <option value="Hijo">Hijo</option>
+                    <option value="Familiar a cargo">Familiar a cargo</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="font-semibold mb-1 text-sm">Teléfono</label>
+                  <input
+                    type="text"
+                    value={familiar.telefono || ""}
+                    onChange={(e) => cambiarDatoFamiliar(i, "telefono", e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                  />
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="font-semibold mb-1 text-sm">Email</label>
+                  <input
+                    type="email"
+                    value={familiar.email || ""}
+                    onChange={(e) => cambiarDatoFamiliar(i, "email", e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                  />
+                </div>
+              </div>
+
+              {/* Situaciones del familiar */}
+              <div className="mt-4 p-3 rounded-lg border border-dashed border-gray-300 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold text-gray-700 text-sm">Situaciones del familiar</h4>
+                  <button
+                    type="button"
+                    onClick={() => addSituacionFamiliar(i)}
+                    className="text-xs px-3 py-1 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                  >
+                    + Agregar situación
+                  </button>
+                </div>
+
+                {(familiar.situaciones?.length ?? 0) === 0 && (
+                  <p className="text-xs text-gray-500">No hay situaciones cargadas.</p>
+                )}
+
+                {(familiar.situaciones || []).map((s, idx) => (
+                  <div key={idx} className="grid grid-cols-2 gap-2 items-start mb-2">
+                    <input
+                      type="text"
+                      placeholder="Situación"
+                      value={s.situacion}
+                      onChange={(e) => updateSituacionFamiliar(i, idx, "situacion", e.target.value)}
+                      className="p-2 border border-gray-300 rounded text-sm"
+                    />
+                    <input
+                      type="date"
+                      value={s.fechaFinalizacion || ""}
+                      onChange={(e) => updateSituacionFamiliar(i, idx, "fechaFinalizacion", e.target.value)}
+                      className="p-2 border border-gray-300 rounded text-sm"
+                    />
+                    <div className="col-span-2">
+                      <button
+                        type="button"
+                        onClick={() => removeSituacionFamiliar(i, idx)}
+                        className="text-xs px-3 py-1 border border-red-500 text-red-600 rounded hover:bg-red-50"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={agregarFamiliar}
+            className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+          >
+            + Agregar Familiar
+          </button>
+        </div>
+
+
       </div>
 
-
-      {/*BOTONES*/}
+      {/* BOTONES */}
       <div className="flex justify-center gap-4 mt-4">
         <button
           type="submit"

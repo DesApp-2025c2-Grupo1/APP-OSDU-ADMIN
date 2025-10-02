@@ -1,9 +1,10 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { OptionsMenu } from "./OptionsMenu";
 import { EditAffiliatePopup } from "./EditAffiliatePopup";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
-import { useNavigate } from "react-router-dom";
-import { ViewAffiliatePopup } from "./ViewAffiliatePopup";
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 
 export type Affiliate = {
   credencial: string;
@@ -30,17 +31,19 @@ interface AffiliatesTableProps {
   onOptionClick: (option: string, affiliate: Affiliate) => void;
 }
 
-export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
+export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTableProps) {
   const navigate = useNavigate();
-  const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(
-    null
-  );
+  const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewPopup, setShowViewPopup] = useState(false);
 
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5); 
+
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
+
     if (option === "Editar") {
       setSelectedAffiliate(affiliate);
       setShowEditPopup(true);
@@ -48,7 +51,7 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
 
     if (option === "Ver detalles") {
       setSelectedAffiliate(affiliate);
-      setShowViewPopup(true)
+      setShowViewPopup(true);
     }
 
     if (option === "Ver grupo familiar") {
@@ -59,6 +62,13 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
     if (option === "Dar de baja") {
       setSelectedAffiliate(affiliate);
       setShowDeleteDialog(true);
+    }
+
+
+    try {
+      onOptionClick?.(option, affiliate);
+    } catch {
+      // Podria mejorarse aca
     }
   };
 
@@ -71,6 +81,13 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
     setShowDeleteDialog(false);
     setSelectedAffiliate(null);
   };
+
+  // Cálculos de paginación
+  const totalPages = Math.max(1, Math.ceil(affiliates.length / itemsPerPage));
+  const safePage = Math.min(currentPage, totalPages); 
+  const startIndex = (safePage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentAffiliates = affiliates.slice(startIndex, endIndex);
 
   return (
     <>
@@ -92,7 +109,7 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {affiliates.map((a, idx) => (
+            {currentAffiliates.map((a, idx) => (
               <tr
                 key={a.credencial}
                 className={idx % 2 === 0 ? "bg-gray-50" : ""}
@@ -108,13 +125,59 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
                   <OptionsMenu
                     affiliate={a}
                     onOptionClick={handleOptionClick}
-                    options={["Editar", "Ver grupo familiar", "Ver detalles", "Dar de baja"]}
+                    // options={["Editar", "Ver grupo familiar", "Ver detalles", "Dar de baja"]}
                   />
                 </td>
               </tr>
             ))}
+
+            {/* Sin resultados en la página actual */}
+            {currentAffiliates.length === 0 && (
+              <tr>
+                <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">
+                  No hay afiliados para mostrar.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
+
+        {/* Controles de paginación */}
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+          {/* Información de registros */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700">
+              Mostrando {affiliates.length === 0 ? 0 : startIndex + 1} a {Math.min(endIndex, affiliates.length)} de {affiliates.length} afiliados
+            </span>
+          </div>
+
+          {/* Botones de navegación */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700">
+              Página {safePage} de {totalPages}
+            </span>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+              className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Página anterior"
+              title="Página anterior"
+            >
+              <NavigateBeforeIcon />
+            </button>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+              className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Página siguiente"
+              title="Página siguiente"
+            >
+              <NavigateNextIcon />
+            </button>
+          </div>
+        </div>
       </div>
 
       {showEditPopup && selectedAffiliate && (
@@ -125,12 +188,12 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
         />
       )}
 
-      {showViewPopup && selectedAffiliate && (
+      {/* {showViewPopup && selectedAffiliate && (
         <ViewAffiliatePopup
           affiliate={selectedAffiliate}
           onClose={() => setShowViewPopup(false)}
         />
-      )}
+      )} */}
 
       {showDeleteDialog && selectedAffiliate && (
         <ConfirmDeleteDialog
@@ -140,7 +203,7 @@ export function AffiliatesTable({ affiliates }: AffiliatesTableProps) {
           affiliateName={selectedAffiliate.nombre}
           affiliateSurname={selectedAffiliate.apellido}
           affiliateDni={selectedAffiliate.dni}
-          affiliateCredencial={selectedAffiliate.credencial}
+          // affiliateCredencial={selectedAffiliate.credencial}
         />
       )}
     </>
