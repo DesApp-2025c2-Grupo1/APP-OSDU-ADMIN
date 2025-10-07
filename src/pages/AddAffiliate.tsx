@@ -151,16 +151,53 @@ export function AgregarAfiliado() {
   };
 
   // Validación mínima del titular
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.nroDocumento?.trim()) newErrors.nroDocumento = "Requerido";
-    if (!formData.nombre?.trim()) newErrors.nombre = "Requerido";
-    if (!formData.apellido?.trim()) newErrors.apellido = "Requerido";
-    if (!formData.fechaNacimiento) newErrors.fechaNacimiento = "Requerido";
-    if (!formData.planMedico) newErrors.planMedico = "Requerido";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+const validate = () => {
+  const newErrors: Record<string, string> = {};
+
+  // ---- Validación Titular ----
+  if (!formData.nroDocumento?.trim()) newErrors.nroDocumento = "Requerido";
+  if (!formData.nombre?.trim()) newErrors.nombre = "Requerido";
+  if (!formData.apellido?.trim()) newErrors.apellido = "Requerido";
+
+  if (!formData.fechaNacimiento) newErrors.fechaNacimiento = "Requerido";
+  else {
+    const fechaNac = new Date(formData.fechaNacimiento);
+    const hoy = new Date();
+    if (fechaNac > hoy) newErrors.fechaNacimiento = "La fecha no puede ser futura";
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (formData.email && !emailRegex.test(formData.email))
+    newErrors.email = "Formato de email inválido";
+  if (formData.email2 && !emailRegex.test(formData.email2))
+    newErrors.email2 = "Formato de email inválido";
+
+  if (!formData.planMedico) newErrors.planMedico = "Requerido";
+
+  // ---- Validación Familiares ----
+  familiares.forEach((f, index) => {
+    const prefix = `familiares[${index}]`;
+    if (!f.nroDocumento?.trim()) newErrors[`${prefix}.nroDocumento`] = "Requerido";
+    if (!f.nombre?.trim()) newErrors[`${prefix}.nombre`] = "Requerido";
+    if (!f.apellido?.trim()) newErrors[`${prefix}.apellido`] = "Requerido";
+
+    if (!f.fechaNacimiento) {
+      newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
+    } else {
+      const fechaNac = new Date(f.fechaNacimiento);
+      const hoy = new Date();
+      if (fechaNac > hoy) newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+    }
+
+    if (f.email && !emailRegex.test(f.email))
+      newErrors[`${prefix}.email`] = "Formato de email inválido";
+  });
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
+
+  
 
   const mapFamiliaresToAffiliates = (lista: Familiar[], titular: typeof formData): AffiliateType[] => {
     const prefix = getCredPrefix(titular.credencial) || titular.nroDocumento || "GRP";
@@ -441,6 +478,7 @@ export function AgregarAfiliado() {
                 className="p-2 border border-gray-300 rounded"
                 placeholder="Email"
               />
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
 
               {showEmail2 && (
                 <div className="mt-2 flex gap-2">
@@ -452,6 +490,8 @@ export function AgregarAfiliado() {
                     className="flex-1 p-2 border border-gray-300 rounded"
                     placeholder="Email adicional"
                   />
+                  {errors.email2 && <p className="text-red-500 text-xs mt-1">{errors.email2}</p>}
+                  
                   <button
                     type="button"
                     onClick={() => {
@@ -614,6 +654,9 @@ export function AgregarAfiliado() {
                     onChange={(e) => cambiarDatoFamiliar(i, "nroDocumento", e.target.value)}
                     className="p-2 border border-gray-300 rounded"
                   />
+                  {errors[`familiares[${i}].nroDocumento`] && (
+                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].nroDocumento`]}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col">
@@ -624,6 +667,9 @@ export function AgregarAfiliado() {
                     onChange={(e) => cambiarDatoFamiliar(i, "nombre", e.target.value)}
                     className="p-2 border border-gray-300 rounded"
                   />
+                  {errors[`familiares[${i}].nombre`] && (
+                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].nombre`]}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col">
@@ -634,6 +680,9 @@ export function AgregarAfiliado() {
                     onChange={(e) => cambiarDatoFamiliar(i, "apellido", e.target.value)}
                     className="p-2 border border-gray-300 rounded"
                   />
+                  {errors[`familiares[${i}].apellido`] && (
+                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].apellido`]}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col">
@@ -644,6 +693,9 @@ export function AgregarAfiliado() {
                     onChange={(e) => cambiarDatoFamiliar(i, "fechaNacimiento", e.target.value)}
                     className="p-2 border border-gray-300 rounded"
                   />
+                  {errors[`familiares[${i}].fechaNacimiento`] && (
+                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].fechaNacimiento`]}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col">
@@ -677,6 +729,9 @@ export function AgregarAfiliado() {
                     onChange={(e) => cambiarDatoFamiliar(i, "email", e.target.value)}
                     className="p-2 border border-gray-300 rounded"
                   />
+                  {errors[`familiares[${i}].email`] && (
+                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].email`]}</p>
+                  )}
                 </div>
               </div>
 
