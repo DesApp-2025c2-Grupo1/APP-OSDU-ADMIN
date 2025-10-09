@@ -406,7 +406,7 @@ function AddFamiliarPopup({ grupoId, planFijo, onClose, onSave }: AddFamiliarPop
             </div>
           </div>
 
-          {/* SECCIÓN: SITUACIONES TERAPÉUTICAS */}
+          {/* situaciones terapeuticas seguir arreglando*/}
           <div className="mt-6 p-4 border border-gray-200 rounded-lg">
             <h3 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
               Situaciones Terapéuticas
