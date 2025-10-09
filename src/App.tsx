@@ -18,7 +18,8 @@ function App() {
         <main className="p-6 flex-1">
           <Routes>
             {/* redirección inicial */}
-            <Route path="/" element={<Navigate to="/home" replace />} />
+            {/* <Route path="/" element={<Navigate to="/home" replace />} /> */}
+            
 
             {/* páginas principales */}
             <Route path="/home" element={<Home />} />
