@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
 
+// En OptionsMenu.tsx, actualizar la interfaz:
 interface OptionsMenuProps {
   affiliate: {
     credencial: string;
     dni: string;
     nombre: string;
     apellido: string;
+    // Hacer estas propiedades opcionales para mayor flexibilidad
+    tipoDocumento?: string;
+    nroDocumento?: string;
   };
   onOptionClick: (option: string, affiliate: any) => void;
   options: string[];
