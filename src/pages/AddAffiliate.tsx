@@ -397,20 +397,13 @@ const validate = () => {
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Parentesco</label>
-              <select
-                name="parentesco"
-                value={formData.parentesco}
-                onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-              >
-                <option value="Titular">Titular</option>
-                <option value="Cónyuge">Cónyuge</option>
-                <option value="Hijo">Hijo</option>
-                <option value="Familiar a cargo">Familiar a cargo</option>
-              </select>
-              <small className="text-gray-500 mt-1">
-                Se forzará “Titular” al guardar para evitar errores.
-              </small>
+              <input
+                type="text"
+                value="Titular"
+                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
+                disabled
+                readOnly
+              />
             </div>
           </div>
         </div>
