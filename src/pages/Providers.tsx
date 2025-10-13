@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom"; 
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import SearchDropdown from "../components/SearchDropdown";
 import { ProvidersTable } from "../components/ProvidersTable";
@@ -11,8 +12,9 @@ import { ConfirmDeleteProviderDialog } from "../components/ConfirmDeleteProvider
 type ProviderField = keyof Pick<Prestador, "cuilCuit" | "nombreCompleto">;
 
 export function Prestadores() {
-  const [prestadores, setPrestadores] = useState<Prestador[]>(providersMock);
+  const navigate = useNavigate();
 
+  const [prestadores, setPrestadores] = useState<Prestador[]>(providersMock);
   const [field, setField] = useState<ProviderField>("cuilCuit");
   const [query, setQuery] = useState("");
   const [tipoFiltro, setTipoFiltro] = useState<"todos" | "profesional" | "centro">("todos");
@@ -53,19 +55,13 @@ export function Prestadores() {
 
   // --- OPCIONES DEL MENÚ DE CADA FILA ---
   const handleOptionClick = (option: string, prestador: Prestador) => {
-    console.log(`Opción seleccionada: ${option}`, prestador);
-
     if (option === "Editar") {
       setEditingProvider(prestador);
       setOpenEditPopup(true);
-    }
-
-    if (option === "Ver Detalles") {
+    } else if (option === "Ver Detalles") {
       setViewingProvider(prestador);
       setOpenViewPopup(true);
-    }
-
-    if (option === "Dar de Baja") {
+    } else if (option === "Dar de Baja") {
       setDeletingProvider(prestador);
       setOpenDeletePopup(true);
     }
@@ -87,6 +83,11 @@ export function Prestadores() {
       setOpenDeletePopup(false);
       setDeletingProvider(null);
     }
+  };
+
+  // --- REDIRECCIÓN ---
+  const handleAddProvider = () => {
+    navigate("/home/agregarPrestador");
   };
 
   return (
@@ -145,7 +146,7 @@ export function Prestadores() {
         {/*Botón agregar*/}
         <ButtonAddAffiliate
           text="Agregar Prestador"
-          onClick={() => console.log("Agregar prestador")}
+          onClick={handleAddProvider}
         />
       </div>
 

@@ -8,6 +8,8 @@ import { Prestadores } from "./pages/Providers";
 import { Otros } from "./pages/Others";
 import { AgregarAfiliado } from "./pages/AddAffiliate";
 import { GrupoFamiliar } from "./pages/GrupoFamiliar";
+import { AddProvider } from "./pages/AddProvider";
+
 
 function App() {
   return (
@@ -30,6 +32,9 @@ function App() {
             {/* afiliados */}
             <Route path="/home/agregarAfiliado" element={<AgregarAfiliado />} />
             <Route path="/home/grupoFamiliar/:grupoId" element={<GrupoFamiliar />} />
+
+            {/*Prestadrores*/}
+            <Route path="/home/agregarPrestador" element={<AddProvider />} />
           </Routes>
         </main>
       </div>
