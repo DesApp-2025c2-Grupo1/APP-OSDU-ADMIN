@@ -72,24 +72,26 @@ export function Home() {
     setSelectedAffiliate(null);
   };
 
-  return (
+      return (
     <div className="w-full p-6 space-y-4">
       {/* Barra superior */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        {/* 🔍 Buscador */}
         <SearchDropdown
           options={OPTIONS}
           placeholder="Buscar"
-          onSearch={(f, q) => {
-            setField(f);
-            setQuery(q);
-          }}
-          className="w-full sm:w-2/3"
+          onSearch={(f, q) => { setField(f); setQuery(q); }}
+          className="w-full md:w-2/3"
         />
-        <ButtonAddAffiliate
-          text="Agregar Afiliado"
-          onClick={() => navigate("/home/agregarAfiliado")}
-        />
-      </div>
+
+        {/* ➕ Botón: pegado a la izquierda en mobile, normal en desktop */}
+        <div className="self-start md:self-auto">
+          <ButtonAddAffiliate
+            text="Agregar Afiliado"
+            onClick={() => navigate("/home/agregarAfiliado")}
+          />
+        </div>
+      </div>  {/* 👈 cierre correcto del div superior */}
 
       {/* Tabla */}
       <div className="rounded-md shadow-sm border border-gray-200">
@@ -103,6 +105,7 @@ export function Home() {
           onClose={() => setShowViewPopup(false)}
         />
       )}
+
 
       {/* Popup para Editar */}
       {showEditPopup && selectedAffiliate && (
