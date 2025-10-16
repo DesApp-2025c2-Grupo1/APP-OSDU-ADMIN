@@ -13,11 +13,27 @@ interface Familiar {
   nroDocumento: string;
   nombre: string;
   apellido: string;
-  fechaNacimiento: string;
+  fechaNacimiento: string; // yyyy-mm-dd (input date)
   parentesco: string;
   telefono?: string;
   email?: string;
+  direccion?: string;
+  direccion2?: string;
+  usaDireccionTitular?: boolean;
+  usaContactoTitular?: boolean;
+  situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>; 
 }
+
+// Helpers
+const getCredPrefix = (cred: string) => (cred || "").split("-")[0]?.trim() || "";
+const buildChildCredential = (prefix: string, index: number) =>
+  `${prefix}-${String(index).padStart(2, "0")}`;
+
+const isoToDDMMYYYY = (iso: string) => {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+};
 
 export function AgregarAfiliado() {
   const navigate = useNavigate();
@@ -27,7 +43,7 @@ export function AgregarAfiliado() {
     nroDocumento: "",
     nombre: "",
     apellido: "",
-    fechaNacimiento: "",
+    fechaNacimiento: "", // yyyy-mm-dd
     planMedico: "210",
     credencial: "",
     telefono: "",
@@ -42,8 +58,15 @@ export function AgregarAfiliado() {
   const [showPhone2, setShowPhone2] = useState(false);
   const [showEmail2, setShowEmail2] = useState(false);
   const [showAddress2, setShowAddress2] = useState(false);
+<<<<<<< HEAD
   const [situaciones, setSituaciones] = useState<Situacion[]>([]);
   const [familiares, setFamiliares] = useState<Familiar[]>([]);
+=======
+
+  const [situaciones, setSituaciones] = useState<Situacion[]>([]); 
+  const [familiares, setFamiliares] = useState<Familiar[]>([]);
+
+>>>>>>> develop
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -68,6 +91,10 @@ export function AgregarAfiliado() {
     });
   };
 
+<<<<<<< HEAD
+=======
+  // Familiares
+>>>>>>> develop
   const agregarFamiliar = () => {
     const nuevoFamiliar: Familiar = {
       tipoDocumento: "DNI",
@@ -78,23 +105,26 @@ export function AgregarAfiliado() {
       parentesco: "Hijo",
       telefono: "",
       email: "",
+      usaDireccionTitular: true,
+      usaContactoTitular: false,
+      situaciones: [],
     };
-    setFamiliares([...familiares, nuevoFamiliar]);
+    setFamiliares((prev) => [...prev, nuevoFamiliar]);
   };
 
   const eliminarFamiliar = (posicion: number) => {
-    setFamiliares(familiares.filter((_, i) => i !== posicion));
+    setFamiliares((prev) => prev.filter((_, i) => i !== posicion));
   };
 
   const cambiarDatoFamiliar = (posicion: number, campo: keyof Familiar, valor: string) => {
-    const familiaresActualizados = [...familiares];
-    familiaresActualizados[posicion] = {
-      ...familiaresActualizados[posicion],
-      [campo]: valor,
-    };
-    setFamiliares(familiaresActualizados);
+    setFamiliares((prev) => {
+      const next = [...prev];
+      next[posicion] = { ...next[posicion], [campo]: valor };
+      return next;
+    });
   };
 
+<<<<<<< HEAD
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.nroDocumento?.trim()) newErrors.nroDocumento = "Requerido";
@@ -112,6 +142,123 @@ export function AgregarAfiliado() {
     return `${d}/${m}/${y}`;
   };
 
+=======
+  // Situaciones por FAMILIAR 
+  const addSituacionFamiliar = (i: number) => {
+    setFamiliares((prev) => {
+      const next = [...prev];
+      const sit = next[i].situaciones || [];
+      next[i] = { ...next[i], situaciones: [...sit, { situacion: "", fechaFinalizacion: "" }] };
+      return next;
+    });
+  };
+
+  const updateSituacionFamiliar = (
+    i: number,
+    idx: number,
+    field: "situacion" | "fechaFinalizacion",
+    value: string
+  ) => {
+    setFamiliares((prev) => {
+      const next = [...prev];
+      const sit = [...(next[i].situaciones || [])];
+      sit[idx] = { ...sit[idx], [field]: value };
+      next[i] = { ...next[i], situaciones: sit };
+      return next;
+    });
+  };
+
+  const removeSituacionFamiliar = (i: number, idx: number) => {
+    setFamiliares((prev) => {
+      const next = [...prev];
+      const sit = (next[i].situaciones || []).filter((_, k) => k !== idx);
+      next[i] = { ...next[i], situaciones: sit };
+      return next;
+    });
+  };
+
+  // Validación mínima del titular
+const validate = () => {
+  const newErrors: Record<string, string> = {};
+
+  // ---- Validación Titular ----
+  if (!formData.nroDocumento?.trim()) newErrors.nroDocumento = "Requerido";
+  if (!formData.nombre?.trim()) newErrors.nombre = "Requerido";
+  if (!formData.apellido?.trim()) newErrors.apellido = "Requerido";
+
+  if (!formData.fechaNacimiento) newErrors.fechaNacimiento = "Requerido";
+  else {
+    const fechaNac = new Date(formData.fechaNacimiento);
+    const hoy = new Date();
+    if (fechaNac > hoy) newErrors.fechaNacimiento = "La fecha no puede ser futura";
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (formData.email && !emailRegex.test(formData.email))
+    newErrors.email = "Formato de email inválido";
+  if (formData.email2 && !emailRegex.test(formData.email2))
+    newErrors.email2 = "Formato de email inválido";
+
+  if (!formData.planMedico) newErrors.planMedico = "Requerido";
+
+  // ---- Validación Familiares ----
+  familiares.forEach((f, index) => {
+    const prefix = `familiares[${index}]`;
+    if (!f.nroDocumento?.trim()) newErrors[`${prefix}.nroDocumento`] = "Requerido";
+    if (!f.nombre?.trim()) newErrors[`${prefix}.nombre`] = "Requerido";
+    if (!f.apellido?.trim()) newErrors[`${prefix}.apellido`] = "Requerido";
+
+    if (!f.fechaNacimiento) {
+      newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
+    } else {
+      const fechaNac = new Date(f.fechaNacimiento);
+      const hoy = new Date();
+      if (fechaNac > hoy) newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+    }
+
+    if (f.email && !emailRegex.test(f.email))
+      newErrors[`${prefix}.email`] = "Formato de email inválido";
+  });
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
+
+  
+
+  const mapFamiliaresToAffiliates = (lista: Familiar[], titular: typeof formData): AffiliateType[] => {
+    const prefix = getCredPrefix(titular.credencial) || titular.nroDocumento || "GRP";
+
+    return lista.map((f, idx) => {
+      const fechaNac = f.fechaNacimiento ? isoToDDMMYYYY(f.fechaNacimiento) : "";
+
+      const situacionesPayload = (f.situaciones || []).map(s => ({
+        situacion: s.situacion,
+        fechaFinalizacion: isoToDDMMYYYY(s.fechaFinalizacion || ""),
+      }));
+
+      return {
+        credencial: buildChildCredential(prefix, idx + 1),
+        dni: f.nroDocumento,
+        nombre: f.nombre,
+        apellido: f.apellido,
+        fechaNacimiento: fechaNac,
+        plan: titular.planMedico,
+        planMedico: titular.planMedico,
+        direccion: f.usaDireccionTitular ? titular.direccion : (f.direccion || ""),
+        direccion2: f.usaDireccionTitular ? titular.direccion2 : (f.direccion2 || ""),
+        telefono: f.usaContactoTitular ? titular.telefono : (f.telefono || ""),
+        email: f.usaContactoTitular ? titular.email : (f.email || ""),
+        parentesco: f.parentesco,
+        tipoDocumento: f.tipoDocumento,
+        nroDocumento: f.nroDocumento,
+        situaciones: situacionesPayload,
+      } as AffiliateType;
+    });
+  };
+
+
+>>>>>>> develop
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!validate()) return;
@@ -119,12 +266,12 @@ export function AgregarAfiliado() {
     setLoading(true);
     setSuccess(null);
 
-    const payload: AffiliateType = {
+    const titular: AffiliateType = {
       credencial: formData.credencial,
       dni: formData.nroDocumento,
       nombre: formData.nombre,
       apellido: formData.apellido,
-      fechaNacimiento: formatDateToDDMMYYYY(formData.fechaNacimiento),
+      fechaNacimiento: isoToDDMMYYYY(formData.fechaNacimiento),
       plan: formData.planMedico,
       planMedico: formData.planMedico,
       direccion: formData.direccion,
@@ -133,17 +280,24 @@ export function AgregarAfiliado() {
       telefono2: formData.telefono2,
       email: formData.email,
       email2: formData.email2,
-      parentesco: formData.parentesco,
+      parentesco: "Titular",
       tipoDocumento: formData.tipoDocumento,
       nroDocumento: formData.nroDocumento,
-      situaciones,
-    } as AffiliateType;
+      situaciones: (situaciones || []).map(s => ({
+        situacion: s.situacion,
+        fechaFinalizacion: isoToDDMMYYYY(s.fechaFinalizacion || ""),
+      })),
+    };
 
     try {
+<<<<<<< HEAD
+=======
+      const familiaresMapped = mapFamiliaresToAffiliates(familiares, formData);
+      const grupo: AffiliateType[] = [titular, ...familiaresMapped];
+
+>>>>>>> develop
       await new Promise((res) => setTimeout(res, 700));
-      
-      console.log("Titular guardado:", payload);
-      console.log("Familiares guardados:", familiares);
+      console.log("Grupo familiar a guardar:", grupo);
 
       setLoading(false);
       setSuccess("Afiliado y familiares creados con éxito");
@@ -156,13 +310,18 @@ export function AgregarAfiliado() {
 
   return (
     <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 mx-auto mt-6 shadow">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Crear nuevo afiliado</h1>
         <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
       </div>
 
       <div className="mx-auto w-full max-w-4xl space-y-8">
+<<<<<<< HEAD
         {/* DATOS DE AFILIADO */}
+=======
+        {/* DATOS DE AFILIADO (Titular) */}
+>>>>>>> develop
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Datos de Afiliado (Titular)
@@ -267,11 +426,16 @@ export function AgregarAfiliado() {
                 value={formData.credencial}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
+<<<<<<< HEAD
+=======
+                placeholder="Ej: ABC123-00 (el prefijo agrupa familiares)"
+>>>>>>> develop
               />
             </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Parentesco</label>
+<<<<<<< HEAD
               <select
                 name="parentesco"
                 value={formData.parentesco}
@@ -283,6 +447,15 @@ export function AgregarAfiliado() {
                 <option value="Hijo">Hijo</option>
                 <option value="Familiar a cargo">Familiar a cargo</option>
               </select>
+=======
+              <input
+                type="text"
+                value="Titular"
+                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
+                disabled
+                readOnly
+              />
+>>>>>>> develop
             </div>
           </div>
         </div>
@@ -293,6 +466,10 @@ export function AgregarAfiliado() {
             Datos de Contacto
           </h2>
           <div className="grid grid-cols-2 gap-4">
+<<<<<<< HEAD
+=======
+            {/* Teléfono */}
+>>>>>>> develop
             <div className="flex flex-col col-span-2">
               <label className="font-semibold mb-1">Teléfono</label>
               <input
@@ -332,6 +509,7 @@ export function AgregarAfiliado() {
                   type="button"
                   onClick={() => setShowPhone2(true)}
                   className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
+<<<<<<< HEAD
                 >
                   + Agregar otro
                 </button>
@@ -377,12 +555,67 @@ export function AgregarAfiliado() {
                   type="button"
                   onClick={() => setShowEmail2(true)}
                   className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
+=======
+>>>>>>> develop
                 >
                   + Agregar otro
                 </button>
               )}
             </div>
 
+<<<<<<< HEAD
+=======
+            {/* Email */}
+            <div className="flex flex-col col-span-2">
+              <label className="font-semibold mb-1">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                placeholder="Email"
+              />
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+
+              {showEmail2 && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="email"
+                    name="email2"
+                    value={formData.email2}
+                    onChange={handleInputChange}
+                    className="flex-1 p-2 border border-gray-300 rounded"
+                    placeholder="Email adicional"
+                  />
+                  {errors.email2 && <p className="text-red-500 text-xs mt-1">{errors.email2}</p>}
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev) => ({ ...prev, email2: "" }));
+                      setShowEmail2(false);
+                    }}
+                    className="px-3 py-2 border rounded hover:bg-gray-50"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              )}
+
+              {!showEmail2 && (
+                <button
+                  type="button"
+                  onClick={() => setShowEmail2(true)}
+                  className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
+                >
+                  + Agregar otro
+                </button>
+              )}
+            </div>
+
+            {/* Dirección */}
+>>>>>>> develop
             <div className="flex flex-col col-span-2">
               <label className="font-semibold mb-1">Dirección</label>
               <input
@@ -422,11 +655,61 @@ export function AgregarAfiliado() {
                   type="button"
                   onClick={() => setShowAddress2(true)}
                   className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
+<<<<<<< HEAD
                 >
                   + Agregar otro
                 </button>
               )}
             </div>
+=======
+                >
+                  + Agregar otro
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+        {/* SITUACIONES TERAPÉUTICAS (Titular) */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+            Situaciones Terapéuticas
+          </h2>
+          <div className="space-y-2">
+            {situaciones.length === 0 && (
+              <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
+            )}
+            {situaciones.map((s, idx) => (
+              <div key={idx} className="grid grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Situación"
+                  value={s.situacion}
+                  onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
+                  className="p-2 border border-gray-300 rounded"
+                />
+                <input
+                  type="date"
+                  value={s.fechaFinalizacion || ""}
+                  onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
+                  className="p-2 border border-gray-300 rounded"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeSituacion(idx)}
+                  className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                >
+                  Eliminar
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addSituacion}
+              className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+            >
+              + Agregar
+            </button>
+>>>>>>> develop
           </div>
         </div>
 
@@ -435,11 +718,19 @@ export function AgregarAfiliado() {
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Familiares a Cargo
           </h2>
+<<<<<<< HEAD
           
           {familiares.length === 0 && (
             <p className="text-sm text-gray-500 mb-4">No hay familiares agregados.</p>
           )}
           
+=======
+
+          {familiares.length === 0 && (
+            <p className="text-sm text-gray-500 mb-4">No hay familiares agregados.</p>
+          )}
+
+>>>>>>> develop
           {familiares.map((familiar, i) => (
             <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-4">
               <div className="flex justify-between items-center mb-3">
@@ -452,7 +743,11 @@ export function AgregarAfiliado() {
                   Eliminar
                 </button>
               </div>
+<<<<<<< HEAD
               
+=======
+
+>>>>>>> develop
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col">
                   <label className="font-semibold mb-1 text-sm">Tipo Documento</label>
@@ -478,6 +773,12 @@ export function AgregarAfiliado() {
                     onChange={(e) => cambiarDatoFamiliar(i, "nroDocumento", e.target.value)}
                     className="p-2 border border-gray-300 rounded"
                   />
+<<<<<<< HEAD
+=======
+                  {errors[`familiares[${i}].nroDocumento`] && (
+                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].nroDocumento`]}</p>
+                  )}
+>>>>>>> develop
                 </div>
 
                 <div className="flex flex-col">
@@ -488,6 +789,12 @@ export function AgregarAfiliado() {
                     onChange={(e) => cambiarDatoFamiliar(i, "nombre", e.target.value)}
                     className="p-2 border border-gray-300 rounded"
                   />
+<<<<<<< HEAD
+=======
+                  {errors[`familiares[${i}].nombre`] && (
+                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].nombre`]}</p>
+                  )}
+>>>>>>> develop
                 </div>
 
                 <div className="flex flex-col">
@@ -498,6 +805,12 @@ export function AgregarAfiliado() {
                     onChange={(e) => cambiarDatoFamiliar(i, "apellido", e.target.value)}
                     className="p-2 border border-gray-300 rounded"
                   />
+<<<<<<< HEAD
+=======
+                  {errors[`familiares[${i}].apellido`] && (
+                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].apellido`]}</p>
+                  )}
+>>>>>>> develop
                 </div>
 
                 <div className="flex flex-col">
@@ -508,6 +821,12 @@ export function AgregarAfiliado() {
                     onChange={(e) => cambiarDatoFamiliar(i, "fechaNacimiento", e.target.value)}
                     className="p-2 border border-gray-300 rounded"
                   />
+<<<<<<< HEAD
+=======
+                  {errors[`familiares[${i}].fechaNacimiento`] && (
+                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].fechaNacimiento`]}</p>
+                  )}
+>>>>>>> develop
                 </div>
 
                 <div className="flex flex-col">
@@ -541,8 +860,61 @@ export function AgregarAfiliado() {
                     onChange={(e) => cambiarDatoFamiliar(i, "email", e.target.value)}
                     className="p-2 border border-gray-300 rounded"
                   />
+<<<<<<< HEAD
                 </div>
               </div>
+=======
+                  {errors[`familiares[${i}].email`] && (
+                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].email`]}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Situaciones del familiar */}
+              <div className="mt-4 p-3 rounded-lg border border-dashed border-gray-300 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold text-gray-700 text-sm">Situaciones del familiar</h4>
+                  <button
+                    type="button"
+                    onClick={() => addSituacionFamiliar(i)}
+                    className="text-xs px-3 py-1 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                  >
+                    + Agregar situación
+                  </button>
+                </div>
+
+                {(familiar.situaciones?.length ?? 0) === 0 && (
+                  <p className="text-xs text-gray-500">No hay situaciones cargadas.</p>
+                )}
+
+                {(familiar.situaciones || []).map((s, idx) => (
+                  <div key={idx} className="grid grid-cols-2 gap-2 items-start mb-2">
+                    <input
+                      type="text"
+                      placeholder="Situación"
+                      value={s.situacion}
+                      onChange={(e) => updateSituacionFamiliar(i, idx, "situacion", e.target.value)}
+                      className="p-2 border border-gray-300 rounded text-sm"
+                    />
+                    <input
+                      type="date"
+                      value={s.fechaFinalizacion || ""}
+                      onChange={(e) => updateSituacionFamiliar(i, idx, "fechaFinalizacion", e.target.value)}
+                      className="p-2 border border-gray-300 rounded text-sm"
+                    />
+                    <div className="col-span-2">
+                      <button
+                        type="button"
+                        onClick={() => removeSituacionFamiliar(i, idx)}
+                        className="text-xs px-3 py-1 border border-red-500 text-red-600 rounded hover:bg-red-50"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+>>>>>>> develop
             </div>
           ))}
 
@@ -555,6 +927,7 @@ export function AgregarAfiliado() {
           </button>
         </div>
 
+<<<<<<< HEAD
         {/* SITUACIONES TERAPÉUTICAS */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
@@ -598,6 +971,9 @@ export function AgregarAfiliado() {
             </button>
           </div>
         </div>
+=======
+
+>>>>>>> develop
       </div>
 
       {/* BOTONES */}
@@ -623,4 +999,8 @@ export function AgregarAfiliado() {
       {success && <p className="text-green-600 text-center mt-2">{success}</p>}
     </div>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> develop

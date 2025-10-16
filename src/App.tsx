@@ -7,8 +7,8 @@ import { Header } from "./components/Header";
 import { Prestadores } from "./pages/Providers";
 import { Otros } from "./pages/Others";
 import { AgregarAfiliado } from "./pages/AddAffiliate";
-import { EditarAfiliado } from "./pages/EditarAfiliado";
 import { GrupoFamiliar } from "./pages/GrupoFamiliar";
+import { AddProvider } from "./pages/AddProvider";
 
 
 function App() {
@@ -20,6 +20,7 @@ function App() {
         <main className="p-6 flex-1">
           <Routes>
             {/* redirección inicial */}
+            {/*  */}
             <Route path="/" element={<Navigate to="/home" replace />} />
 
             {/* páginas principales */}
@@ -30,10 +31,10 @@ function App() {
 
             {/* afiliados */}
             <Route path="/home/agregarAfiliado" element={<AgregarAfiliado />} />
-            <Route path="/home/editarAfiliado/:credencial" element={<EditarAfiliado />} />
-            <Route path="/home/grupoFamiliar/:credencial" element={<GrupoFamiliar />} />
+            <Route path="/home/grupoFamiliar/:grupoId" element={<GrupoFamiliar />} />
 
-            {/* fallback */}
+            {/*Prestadrores*/}
+            <Route path="/home/agregarPrestador" element={<AddProvider />} />
           </Routes>
         </main>
       </div>

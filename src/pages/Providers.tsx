@@ -1,7 +1,190 @@
+import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom"; 
+import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
+import SearchDropdown from "../components/SearchDropdown";
+import { ProvidersTable } from "../components/ProvidersTable";
+import type { Prestador } from "../model/Provider.model";
+import { providersMock } from "../data/providers";
+import { EditProviderPopup } from "../components/EditProviderPopup";
+import { ViewProviderPopup } from "../components/ViewProviderPopup";
+import { ConfirmDeleteProviderDialog } from "../components/ConfirmDeleteProviderDialog";
+
+type ProviderField = keyof Pick<Prestador, "cuilCuit" | "nombreCompleto">;
 
 export function Prestadores() {
-    return (
-        <h1>Hola Prestadores</h1>
+  const navigate = useNavigate();
 
-    )
+  const [prestadores, setPrestadores] = useState<Prestador[]>(providersMock);
+  const [field, setField] = useState<ProviderField>("cuilCuit");
+  const [query, setQuery] = useState("");
+  const [tipoFiltro, setTipoFiltro] = useState<"todos" | "profesional" | "centro">("todos");
+
+  // Estados para popups
+  const [editingProvider, setEditingProvider] = useState<Prestador | null>(null);
+  const [openEditPopup, setOpenEditPopup] = useState(false);
+
+  const [viewingProvider, setViewingProvider] = useState<Prestador | null>(null);
+  const [openViewPopup, setOpenViewPopup] = useState(false);
+
+  const [deletingProvider, setDeletingProvider] = useState<Prestador | null>(null);
+  const [openDeletePopup, setOpenDeletePopup] = useState(false);
+
+  // --- BUSCADOR ---
+  const handleSearch = (f: string, q: string) => {
+    setField(f as ProviderField);
+    setQuery(q);
+  };
+
+  // --- FILTRADO ---
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    let result = prestadores;
+
+    if (tipoFiltro !== "todos") {
+      result = result.filter((p) => p.tipo === tipoFiltro);
+    }
+
+    if (q) {
+      result = result.filter((p) =>
+        String(p[field] ?? "").toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [prestadores, field, query, tipoFiltro]);
+
+  // --- OPCIONES DEL MENÚ DE CADA FILA ---
+  const handleOptionClick = (option: string, prestador: Prestador) => {
+    if (option === "Editar") {
+      setEditingProvider(prestador);
+      setOpenEditPopup(true);
+    } else if (option === "Ver Detalles") {
+      setViewingProvider(prestador);
+      setOpenViewPopup(true);
+    } else if (option === "Dar de Baja") {
+      setDeletingProvider(prestador);
+      setOpenDeletePopup(true);
+    }
+  };
+
+  // --- GUARDAR CAMBIOS DESDE EL POPUP ---
+  const handleSaveProvider = (updated: Prestador) => {
+    setPrestadores((prev) =>
+      prev.map((p) => (p.cuilCuit === updated.cuilCuit ? updated : p))
+    );
+  };
+
+  // --- CONFIRMAR ELIMINACIÓN ---
+  const handleDeleteProvider = () => {
+    if (deletingProvider) {
+      setPrestadores((prev) =>
+        prev.filter((p) => p.cuilCuit !== deletingProvider.cuilCuit)
+      );
+      setOpenDeletePopup(false);
+      setDeletingProvider(null);
+    }
+  };
+
+  // --- REDIRECCIÓN ---
+  const handleAddProvider = () => {
+    navigate("/home/agregarPrestador");
+  };
+
+  return (
+    <div className="w-full p-6 space-y-6">
+      {/*Barra de herramientas */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          {/* Dropdown de búsqueda */}
+          <SearchDropdown
+            options={[
+              { value: "cuilCuit", label: "CUIL/CUIT" },
+              { value: "nombreCompleto", label: "Nombre" },
+            ]}
+            placeholder="Buscar"
+            onSearch={handleSearch}
+            className="w-full sm:w-96"
+          />
+
+          {/* Botones de filtro */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTipoFiltro("profesional")}
+              className={`px-4 py-2 border-2 rounded-lg font-semibold transition ${
+                tipoFiltro === "profesional"
+                  ? "bg-[#5FA92C] text-white border-[#5FA92C]"
+                  : "border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white"
+              }`}
+            >
+              Ver profesionales
+            </button>
+
+            <button
+              onClick={() => setTipoFiltro("centro")}
+              className={`px-4 py-2 border-2 rounded-lg font-semibold transition ${
+                tipoFiltro === "centro"
+                  ? "bg-[#5FA92C] text-white border-[#5FA92C]"
+                  : "border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white"
+              }`}
+            >
+              Ver centros
+            </button>
+
+            <button
+              onClick={() => setTipoFiltro("todos")}
+              className={`px-4 py-2 border-2 rounded-lg font-semibold transition ${
+                tipoFiltro === "todos"
+                  ? "bg-[#5FA92C] text-white border-[#5FA92C]"
+                  : "border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white"
+              }`}
+            >
+              Ver todos
+            </button>
+          </div>
+        </div>
+
+        {/*Botón agregar*/}
+        <ButtonAddAffiliate
+          text="Agregar Prestador"
+          onClick={handleAddProvider}
+        />
+      </div>
+
+      {/*Tabla de Prestadores*/}
+      <div className="rounded-md shadow-sm border border-gray-200">
+        <ProvidersTable
+          prestadores={filtered}
+          onOptionClick={handleOptionClick}
+          pageSize={5}
+        />
+      </div>
+
+      {/*Popup de edición*/}
+      {openEditPopup && editingProvider && (
+        <EditProviderPopup
+          provider={editingProvider}
+          onClose={() => setOpenEditPopup(false)}
+          onSave={handleSaveProvider}
+        />
+      )}
+
+      {/*Popup de detalles*/}
+      {openViewPopup && viewingProvider && (
+        <ViewProviderPopup
+          provider={viewingProvider}
+          onClose={() => setOpenViewPopup(false)}
+        />
+      )}
+
+      {/*Popup de confirmación de baja*/}
+      {openDeletePopup && deletingProvider && (
+        <ConfirmDeleteProviderDialog
+          open={openDeletePopup}
+          provider={deletingProvider}
+          onClose={() => setOpenDeletePopup(false)}
+          onConfirm={handleDeleteProvider}
+        />
+      )}
+    </div>
+  );
 }

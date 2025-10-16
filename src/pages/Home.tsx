@@ -4,37 +4,10 @@ import type { Affiliate } from "../components/AffiliatesTable";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import { useNavigate } from "react-router-dom";
 import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
+import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup";
+import { EditAffiliatePopup } from "../components/EditAffiliatePopup";
 import SearchDropdown from "../components/SearchDropdown";
-
-const affiliates: Affiliate[] = [
-  {
-    credencial: "0000001-01",
-    dni: "12345678",
-    nombre: "Joaquin",
-    apellido: "Mogno",
-    fechaNacimiento: "16/12/2002",
-    plan: "210",
-    direccion: "Calle Falsa 123",
-  },
-  {
-    credencial: "0000001-02",
-    dni: "23456789",
-    nombre: "Juan",
-    apellido: "Perez",
-    fechaNacimiento: "10/05/2019",
-    plan: "210",
-    direccion: "Av. Vergara 742",
-  },
-  {
-    credencial: "0000002-01",
-    dni: "34567890",
-    nombre: "Nombre",
-    apellido: "Apellido",
-    fechaNacimiento: "04/05/1958",
-    plan: "210",
-    direccion: "Calle Ejemplo 456",
-  },
-];
+import { affiliates } from "../data/affiliates";
 
 const OPTIONS = [
   { value: "dni", label: "DNI" },
@@ -45,19 +18,17 @@ const OPTIONS = [
 ];
 
 function norm(s: string) {
-  return s
-    .toString()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
+  return s.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
 export function Home() {
   const [field, setField] = useState<string>(OPTIONS[0].value);
   const [query, setQuery] = useState<string>("");
-  const [openDelete, setOpenDelete] = useState(false);
+
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showViewPopup, setShowViewPopup] = useState(false);
+  const [showEditPopup, setShowEditPopup] = useState(false);
 
   const navigate = useNavigate();
 
@@ -76,63 +47,90 @@ export function Home() {
   }, [field, query]);
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
+    setSelectedAffiliate(affiliate);
+
     if (option === "Editar") {
-      navigate(`/home/editarAfiliado/${affiliate.credencial}`);
+      setShowEditPopup(true);
     }
     if (option === "Ver grupo familiar") {
-      navigate(`/home/grupoFamiliar/${affiliate.credencial}`);
+      const grupoFamiliarId = affiliate.credencial.split("-")[0];
+      navigate(`/home/grupoFamiliar/${grupoFamiliarId}`);
     }
     if (option === "Ver detalles") {
-      navigate(`/home/detalleAfiliado/${affiliate.credencial}`);
+      setShowViewPopup(true);
     }
     if (option === "Dar de baja") {
-      setSelectedAffiliate(affiliate);
-      setOpenDelete(true);
+      setShowDeleteDialog(true);
     }
   };
 
   const handleConfirmDelete = () => {
     if (selectedAffiliate) {
-      console.log("Eliminar:", selectedAffiliate.credencial);
-      // Aquí iría la lógica real de eliminación (ej: API call)
+      console.log("Afiliado dado de baja:", selectedAffiliate);
     }
-    setOpenDelete(false);
+    setShowDeleteDialog(false);
     setSelectedAffiliate(null);
   };
 
-  return (
+      return (
     <div className="w-full p-6 space-y-4">
       {/* Barra superior */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        {/* 🔍 Buscador */}
         <SearchDropdown
           options={OPTIONS}
           placeholder="Buscar"
-          onSearch={(f, q) => {
-            setField(f);
-            setQuery(q);
-          }}
-          className="w-full sm:w-2/3"
+          onSearch={(f, q) => { setField(f); setQuery(q); }}
+          className="w-full md:w-2/3"
         />
-        <ButtonAddAffiliate
-          text="Agregar Afiliado"
-          onClick={() => navigate("/home/agregarAfiliado")}
-        />
-      </div>
+
+        {/* ➕ Botón: pegado a la izquierda en mobile, normal en desktop */}
+        <div className="self-start md:self-auto">
+          <ButtonAddAffiliate
+            text="Agregar Afiliado"
+            onClick={() => navigate("/home/agregarAfiliado")}
+          />
+        </div>
+      </div>  {/* 👈 cierre correcto del div superior */}
 
       {/* Tabla */}
       <div className="rounded-md shadow-sm border border-gray-200">
         <AffiliatesTable affiliates={filtered} onOptionClick={handleOptionClick} />
       </div>
 
+      {/* Popup para Ver */}
+      {showViewPopup && selectedAffiliate && (
+        <ViewAffiliatePopup
+          affiliate={selectedAffiliate}
+          onClose={() => setShowViewPopup(false)}
+        />
+      )}
+
+
+      {/* Popup para Editar */}
+      {showEditPopup && selectedAffiliate && (
+        <EditAffiliatePopup
+          affiliate={selectedAffiliate}
+          onClose={() => setShowEditPopup(false)}
+          onSave={(updatedAffiliate) => {
+            console.log("Afiliado editado:", updatedAffiliate);
+            setShowEditPopup(false);
+          }}
+        />
+      )}
+
       {/* Modal de confirmación de baja */}
-      <ConfirmDeleteDialog
-        open={openDelete}
-        onClose={() => setOpenDelete(false)}
-        onConfirm={handleConfirmDelete}
-        affiliateName={selectedAffiliate?.nombre || ""}
-        affiliateSurname={selectedAffiliate?.apellido || ""}
-        affiliateDni={selectedAffiliate?.dni || ""}
-      />
+      {showDeleteDialog && selectedAffiliate && (
+        <ConfirmDeleteDialog
+          open={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={handleConfirmDelete}
+          affiliateName={selectedAffiliate.nombre}
+          affiliateSurname={selectedAffiliate.apellido}
+          affiliateDni={selectedAffiliate.dni}
+          affiliateCredencial={selectedAffiliate.credencial}
+        />
+      )}
     </div>
   );
 }
