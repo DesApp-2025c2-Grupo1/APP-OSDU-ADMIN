@@ -85,7 +85,6 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
   return (
     <>
       <div className="rounded-lg border border-gray-300 shadow-md bg-white">
-        {/* ====== DESKTOP: TABLA (md y arriba) ====== */}
         <div className="hidden md:block">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-[#5FA92C] text-white">
@@ -132,7 +131,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
           </table>
         </div>
 
-        {/* ====== MOBILE: CARDS (por debajo de md) ====== */}
+        {/*mobile tarjetas*/}
         <div className="md:hidden p-3">
           {currentAffiliates.length === 0 && (
             <div className="px-2 py-6 text-center text-sm text-gray-500">
@@ -143,7 +142,6 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
           <div className="flex flex-col gap-3">
             {currentAffiliates.map((a) => (
               <div key={a.credencial} className="border border-gray-200 rounded-lg shadow-sm p-3 bg-white">
-                {/* Header de la card con credencial y menú */}
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="text-xs text-gray-500 uppercase">Credencial</div>
@@ -155,8 +153,6 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
                     options={["Editar", "Ver grupo familiar", "Ver detalles", "Dar de baja"]}
                   />
                 </div>
-
-                {/* Grid de campos */}
                 <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
                   <div>
                     <div className="text-xs text-gray-500 uppercase">DNI</div>
@@ -187,29 +183,20 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
             ))}
           </div>
         </div>
-
-        {/* Paginación (común para ambos layouts) */}
         <div className="bg-white px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-gray-200">
-          {/* Texto izquierda */}
           <div className="flex items-center gap-2">
-            {/* Mobile: corto */}
             <span className="text-sm text-gray-700 sm:hidden">
               {affiliates.length === 0 ? 0 : startIndex + 1}
               –{Math.min(endIndex, affiliates.length)} de {affiliates.length}
             </span>
-            {/* Desktop: largo */}
             <span className="hidden sm:inline text-sm text-gray-700">
               Mostrando {affiliates.length === 0 ? 0 : startIndex + 1} a {Math.min(endIndex, affiliates.length)} de {affiliates.length} afiliados
             </span>
           </div>
-
-          {/* Controles derecha */}
           <div className="flex items-center gap-2">
-            {/* Mobile: corto */}
             <span className="text-sm text-gray-700 sm:hidden">
               {safePage}/{totalPages}
             </span>
-            {/* Desktop: largo */}
             <span className="hidden sm:inline text-sm text-gray-700">
               Página {safePage} de {totalPages}
             </span>
@@ -237,7 +224,6 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
         </div>
       </div>
 
-      {/* Popup de edición */}
       {showEditPopup && selectedAffiliate && (
         <EditAffiliatePopup
           affiliate={selectedAffiliate}
@@ -246,7 +232,6 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
         />
       )}
 
-      {/* Diálogo de baja */}
       {showDeleteDialog && selectedAffiliate && (
         <ConfirmDeleteDialog
           open={showDeleteDialog}
