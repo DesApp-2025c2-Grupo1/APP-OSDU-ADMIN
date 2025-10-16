@@ -108,18 +108,17 @@ export function GrupoFamiliar() {
           <h1 className="text-2xl font-bold">Ver Grupo Familiar</h1>
 
           {/* desktop */}
-          <div className="hidden md:flex items-center gap-2 [&>*]:w-36 [&>*]:h-12">
+          <div className="hidden md:flex items-center gap-4 [&>*]:w-36 [&>*]:h-12">
             <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
             <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
           </div>
         </div>
 
         {/* mobile */}
-        <div className="md:hidden grid grid-cols-2 gap-2 mb-4 [&>*]:w-full [&>*]:h-12">
+        <div className="md:hidden grid grid-cols-2 gap-3 mb-4 [&>*]:w-full [&>*]:h-12">
           <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
           <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
         </div>
-
 
         {/* titular principal */}
         <div className="mb-6 p-4 border rounded-md bg-gray-50">
@@ -149,7 +148,7 @@ export function GrupoFamiliar() {
         <h1 className="text-2xl font-bold">Ver Grupo Familiar</h1>
 
         {/* Desktop*/}
-        <div className="hidden md:flex items-center gap-2 [&>*]:w-36 [&>*]:h-12">
+        <div className="hidden md:flex items-center gap-4 [&>*]:w-36 [&>*]:h-12">
           <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
           <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
         </div>
@@ -157,7 +156,7 @@ export function GrupoFamiliar() {
       </div>
 
       {/* Mobile*/}
-      <div className="md:hidden grid grid-cols-2 gap-2 mb-4 [&>*]:w-full [&>*]:h-12">
+      <div className="md:hidden grid grid-cols-2 gap-3 mb-4 [&>*]:w-full [&>*]:h-12">
         <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
         <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
       </div>
