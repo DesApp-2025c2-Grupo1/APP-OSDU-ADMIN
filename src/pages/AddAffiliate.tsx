@@ -390,8 +390,10 @@ const validate = () => {
                 name="credencial"
                 value={formData.credencial}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
+                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
                 placeholder="Ej: ABC123-00 (el prefijo agrupa familiares)"
+                disabled
+                readOnly
               />
             </div>
 
