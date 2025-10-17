@@ -35,6 +35,23 @@ const isoToDDMMYYYY = (iso: string) => {
   return `${d}/${m}/${y}`;
 };
 
+// catálogos situaciones
+const SITUACIONES_TERAPEUTICAS = [
+  { id: "embarazo", nombre: "Embarazo", requiereFin: true },
+  { id: "diabetes", nombre: "Diabetes", requiereFin: false },
+  { id: "miopia", nombre: "Miopía", requiereFin: false },
+  { id: "hipertension", nombre: "Hipertensión", requiereFin: false },
+  { id: "rehab_motriz", nombre: "Rehabilitación motriz", requiereFin: true },
+  { id: "kinesiologia", nombre: "Kinesiología", requiereFin: true },
+  { id: "psicoterapia", nombre: "Psicoterapia", requiereFin: true },
+  { id: "fonoaudiologia", nombre: "Fonoaudiología", requiereFin: true },
+  { id: "otra", nombre: "Otra", requiereFin: false },
+];
+
+const requiereFechaFin = (id: string) =>
+  SITUACIONES_TERAPEUTICAS.find(s => s.id === id)?.requiereFin ?? false;
+
+
 export function AgregarAfiliado() {
   const navigate = useNavigate();
 
@@ -559,38 +576,67 @@ const validate = () => {
           </div>
         </div>
         {/* SITUACIONES TERAPÉUTICAS (Titular) */}
+        {/* SITUACIONES TERAPÉUTICAS (Titular) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Situaciones Terapéuticas
           </h2>
+
           <div className="space-y-2">
             {situaciones.length === 0 && (
               <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
             )}
+
             {situaciones.map((s, idx) => (
-              <div key={idx} className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Situación"
-                  value={s.situacion}
-                  onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
-                  className="p-2 border border-gray-300 rounded"
-                />
-                <input
-                  type="date"
-                  value={s.fechaFinalizacion || ""}
-                  onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
-                  className="p-2 border border-gray-300 rounded"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeSituacion(idx)}
-                  className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
-                >
-                  Eliminar
-                </button>
+              <div key={idx} className="grid grid-cols-3 gap-4 items-end">
+                {/* Select de situación terapéutica */}
+                <div className="flex flex-col">
+                  <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
+                  <select
+                    value={s.situacion}
+                    onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                  >
+                    <option value="">-- Seleccionar --</option>
+                    <option value="embarazo">Embarazo</option>
+                    <option value="diabetes">Diabetes</option>
+                    <option value="miopia">Miopía</option>
+                    <option value="hipertension">Hipertensión</option>
+                    <option value="rehab_motriz">Rehabilitación motriz</option>
+                    <option value="kinesiologia">Kinesiología</option>
+                    <option value="psicoterapia">Psicoterapia</option>
+                    <option value="fonoaudiologia">Fonoaudiología</option>
+                    <option value="otra">Otra</option>
+                  </select>
+                </div>
+
+                {/* Campo de fecha (solo visible para situaciones que tienen fin) */}
+                {["embarazo", "rehab_motriz", "kinesiologia", "psicoterapia", "fonoaudiologia"].includes(s.situacion) && (
+                  <div className="flex flex-col">
+                    <label className="text-sm font-semibold mb-1">Fecha de finalización</label>
+                    <input
+                      type="date"
+                      value={s.fechaFinalizacion || ""}
+                      onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
+                      className="p-2 border border-gray-300 rounded"
+                    />
+                  </div>
+                )}
+
+                {/* Botón eliminar */}
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => removeSituacion(idx)}
+                    className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </div>
             ))}
+
+            {/* Botón agregar */}
             <button
               type="button"
               onClick={addSituacion}
@@ -600,6 +646,7 @@ const validate = () => {
             </button>
           </div>
         </div>
+
 
         {/* FAMILIARES A CARGO */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">

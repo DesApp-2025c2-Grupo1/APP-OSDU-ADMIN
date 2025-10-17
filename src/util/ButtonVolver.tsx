@@ -10,10 +10,9 @@ export function ButtonVolver({ text, onClick }: ButtonVolverProps) {
   return (
     <button
       onClick={onClick}
-      type='button'
+      type="button"
       className="
         inline-flex items-center gap-3
-        mt-2 ml-2
         border border-black
         bg-gray-800 text-gray-200 
         px-6 py-2 
@@ -23,8 +22,9 @@ export function ButtonVolver({ text, onClick }: ButtonVolverProps) {
         focus:outline-none focus:ring-2 focus:ring-gray-800 focus:ring-offset-2
       "
     >
-    <ReplayIcon fontSize="small"/>
+      <ReplayIcon fontSize="small" />
       {text}
     </button>
+
   );
 }
