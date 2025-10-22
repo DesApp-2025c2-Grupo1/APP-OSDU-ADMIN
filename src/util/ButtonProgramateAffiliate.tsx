@@ -11,7 +11,6 @@ export function ButtonProgramateAffiliate({ text, onClick }: ButtonProgramateAff
       onClick={onClick}
       className="
         inline-flex items-center gap-3
-        mt-2 ml-2
         bg-[#5FA92C] text-white 
         px-6 py-2 
         border border-black
