@@ -31,55 +31,55 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
             Datos Generales
           </h2>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* 👇 Responsive: 1 columna en mobile, 2 en md+ */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="font-semibold mb-1 bg-gray-100 px-2">CUIL / CUIT</label>
-              <p className="p-2 border border-gray-200 rounded">{provider.cuilCuit}</p>
+              <label className="font-semibold mb-1 bg-gray-100 px-2 block">CUIL / CUIT</label>
+              <p className="p-2 border border-gray-200 rounded break-words">{provider.cuilCuit}</p>
             </div>
 
             <div>
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Nombre Completo</label>
-              <p className="p-2 border border-gray-200 rounded">{provider.nombreCompleto}</p>
+              <label className="font-semibold mb-1 bg-gray-100 px-2 block">Nombre Completo</label>
+              <p className="p-2 border border-gray-200 rounded break-words">{provider.nombreCompleto}</p>
             </div>
 
             <div>
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo</label>
-              <p className="p-2 border border-gray-200 rounded capitalize">
-                {provider.tipo}
-              </p>
+              <label className="font-semibold mb-1 bg-gray-100 px-2 block">Tipo</label>
+              <p className="p-2 border border-gray-200 rounded capitalize">{provider.tipo}</p>
             </div>
 
             {provider.integraCentroMedico && (
               <div>
-                <label className="font-semibold mb-1 bg-gray-100 px-2">Centro Médico</label>
-                <p className="p-2 border border-gray-200 rounded">
+                <label className="font-semibold mb-1 bg-gray-100 px-2 block">Centro Médico</label>
+                <p className="p-2 border border-gray-200 rounded break-words">
                   {provider.integraCentroMedico.nombre}
                 </p>
               </div>
             )}
 
-            <div>
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Especialidades</label>
-              <p className="p-2 border border-gray-200 rounded">
+            <div className="md:col-span-2">
+              <label className="font-semibold mb-1 bg-gray-100 px-2 block">Especialidades</label>
+              <p className="p-2 border border-gray-200 rounded break-words">
                 {provider.especialidades.join(", ")}
               </p>
             </div>
 
             <div>
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Teléfonos</label>
-              <p className="p-2 border border-gray-200 rounded">
+              <label className="font-semibold mb-1 bg-gray-100 px-2 block">Teléfonos</label>
+              <p className="p-2 border border-gray-200 rounded break-words">
                 {provider.telefonos.join(" / ")}
               </p>
             </div>
 
             <div>
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Emails</label>
-              <p className="p-2 border border-gray-200 rounded">
+              <label className="font-semibold mb-1 bg-gray-100 px-2 block">Emails</label>
+              <p className="p-2 border border-gray-200 rounded break-words">
                 {provider.emails.join(" / ")}
               </p>
             </div>
           </div>
         </div>
+
 
         {/* Direcciones de atención */}
         {provider.direcciones.length > 0 && (
