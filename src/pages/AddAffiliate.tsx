@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ButtonVolver } from "../util/ButtonVolver";
+import {ButtonProgramateAffiliate} from "../util/ButtonProgramateAffiliate";
 import { useNavigate } from "react-router-dom";
 import type { Affiliate as AffiliateType } from "../components/AffiliatesTable";
 
@@ -296,11 +297,22 @@ const validate = () => {
 
   return (
     <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 mx-auto mt-6 shadow">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Crear nuevo afiliado</h1>
-        <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
+      {/* Header*/}
+      <div className="flex flex-col items-center sm:items-start mb-6 gap-4">
+        <h1 className="text-2xl font-semibold text-gray-800 text-center sm:text-left">
+          Crear nuevo afiliado
+        </h1>
+
+        <div className="flex flex-wrap justify-center sm:justify-start gap-3">
+          <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
+          <ButtonProgramateAffiliate
+            text="Programar Alta"
+            onClick={() => navigate("/home")}
+          />
+        </div>
       </div>
+
+
 
       <div className="mx-auto w-full max-w-4xl space-y-8">
         {/* DATOS DE AFILIADO (Titular) */}

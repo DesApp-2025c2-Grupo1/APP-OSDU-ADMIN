@@ -4,6 +4,9 @@ import type { Prestador, PrestadorTipo, DireccionAtencion, DiaSemana } from "../
 import { SPECIALTIES } from "../data/specialties";
 import { providersMock } from "../data/providers";
 
+
+type BloqueHorario = { dias: DiaSemana[]; desde: string; hasta: string };
+
 export function AddProvider() {
   const navigate = useNavigate();
 
@@ -15,27 +18,27 @@ export function AddProvider() {
   const [telefonos, setTelefonos] = useState<string[]>([""]);
   const [emails, setEmails] = useState<string[]>([""]);
   const [direcciones, setDirecciones] = useState<DireccionAtencion[]>([
-    { calle: "", numero: "", localidad: "", provincia: "", cp: "", horarios: [] },
+    { calle: "", numero: "", localidad: "", provincia: "", cp: "", horarios: [{ dias: [], desde: "", hasta: "" }] as unknown as BloqueHorario[] },
   ]);
 
-  // --- Solo para profesionales ---
+
   const [centros] = useState(providersMock.filter((p) => p.tipo === "centro"));
   const [integraCentro, setIntegraCentro] = useState<string>("");
 
-  // --- Validaciones simples ---
+  
   const [error, setError] = useState("");
 
-  // --- Manejo de telefonos ---
+
   const handleAgregarTelefono = () => setTelefonos([...telefonos, ""]);
   const handleEliminarTelefono = (index: number) =>
     setTelefonos(telefonos.filter((_, i) => i !== index));
 
-  // --- Manejo de emails ---
+
   const handleAgregarEmail = () => setEmails([...emails, ""]);
   const handleEliminarEmail = (index: number) =>
     setEmails(emails.filter((_, i) => i !== index));
 
-  // --- Manejo de especialidades ---
+
   const handleAgregarEspecialidad = () => setEspecialidades([...especialidades, ""]);
   const handleEspecialidadChange = (index: number, valor: string) => {
     const nuevas = [...especialidades];
@@ -46,18 +49,21 @@ export function AddProvider() {
     setEspecialidades(especialidades.filter((_, i) => i !== index));
   };
 
-  // --- Manejo de direcciones ---
+
   const handleDireccionChange = (index: number, campo: string, valor: string) => {
     const nuevas = [...direcciones];
     (nuevas[index] as any)[campo] = valor;
     setDirecciones(nuevas);
   };
   const handleAgregarDireccion = () =>
-    setDirecciones([...direcciones, { calle: "", numero: "", localidad: "", provincia: "", cp: "", horarios: [] }]);
+    setDirecciones([
+      ...direcciones,
+      { calle: "", numero: "", localidad: "", provincia: "", cp: "", horarios: [{ dias: [], desde: "", hasta: "" }] as unknown as BloqueHorario[] },
+    ]);
   const handleEliminarDireccion = (index: number) =>
     setDirecciones(direcciones.filter((_, i) => i !== index));
 
-  // --- Manejo de días de atención ---
+
   const diasSemana: { id: DiaSemana; label: string }[] = [
     { id: 1, label: "Lun" },
     { id: 2, label: "Mar" },
@@ -67,18 +73,47 @@ export function AddProvider() {
     { id: 6, label: "Sáb" },
   ];
 
-  const toggleDia = (direccionIndex: number, dia: DiaSemana) => {
+  const addBloque = (dirIdx: number) => {
     const nuevas = [...direcciones];
-    const horarios = nuevas[direccionIndex].horarios;
-    if (!horarios[0]) horarios[0] = { dias: [], desde: "", hasta: "" };
-    const dias = horarios[0].dias.includes(dia)
-      ? horarios[0].dias.filter((d) => d !== dia)
-      : [...horarios[0].dias, dia];
-    horarios[0].dias = dias;
+    (nuevas[dirIdx].horarios as unknown as BloqueHorario[]).push({ dias: [], desde: "", hasta: "" });
     setDirecciones(nuevas);
   };
 
-  // --- Guardar ---
+  const removeBloque = (dirIdx: number, bloqueIdx: number) => {
+    const nuevas = [...direcciones];
+    const hs = nuevas[dirIdx].horarios as unknown as BloqueHorario[];
+    hs.splice(bloqueIdx, 1);
+    if (hs.length === 0) hs.push({ dias: [], desde: "", hasta: "" });
+    setDirecciones(nuevas);
+  };
+
+  const toggleDia = (dirIdx: number, bloqueIdx: number, dia: DiaSemana) => {
+    const nuevas = [...direcciones];
+    const hs = nuevas[dirIdx].horarios as unknown as BloqueHorario[];
+    const bloque = hs[bloqueIdx] || { dias: [], desde: "", hasta: "" };
+    const esta = bloque.dias.includes(dia);
+    bloque.dias = esta ? bloque.dias.filter((d) => d !== dia) : [...bloque.dias, dia];
+    hs[bloqueIdx] = bloque;
+    setDirecciones(nuevas);
+  };
+
+  const setDesde = (dirIdx: number, bloqueIdx: number, value: string) => {
+    const nuevas = [...direcciones];
+    const hs = nuevas[dirIdx].horarios as unknown as BloqueHorario[];
+    hs[bloqueIdx] = hs[bloqueIdx] || { dias: [], desde: "", hasta: "" };
+    hs[bloqueIdx].desde = value;
+    setDirecciones(nuevas);
+  };
+
+  const setHasta = (dirIdx: number, bloqueIdx: number, value: string) => {
+    const nuevas = [...direcciones];
+    const hs = nuevas[dirIdx].horarios as unknown as BloqueHorario[];
+    hs[bloqueIdx] = hs[bloqueIdx] || { dias: [], desde: "", hasta: "" };
+    hs[bloqueIdx].hasta = value;
+    setDirecciones(nuevas);
+  };
+
+
   const handleGuardar = () => {
     if (!tipo) return setError("Debe seleccionar si es profesional o centro médico.");
     if (!cuilCuit.trim() || !nombreCompleto.trim())
@@ -328,45 +363,59 @@ export function AddProvider() {
                   />
                 </div>
 
-                {/* Horario */}
+                {/* Horarios: múltiples bloques */}
                 <div className="mt-4">
                   <p className="text-sm text-gray-600 mb-2">Días y horarios:</p>
-                  <div className="flex gap-2 flex-wrap mb-2">
-                    {diasSemana.map((d) => (
-                      <label key={d.id} className="flex items-center gap-1 text-sm">
+
+                  {(dir.horarios as unknown as BloqueHorario[]).map((h, bIdx) => (
+                    <div key={bIdx} className="mb-3 border rounded-lg p-3 bg-white">
+                      <div className="flex gap-2 flex-wrap mb-2">
+                        {diasSemana.map((d) => (
+                          <label key={d.id} className="flex items-center gap-1 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={h.dias.includes(d.id)}
+                              onChange={() => toggleDia(idx, bIdx, d.id)}
+                            />
+                            {d.label}
+                          </label>
+                        ))}
+                      </div>
+
+                      <div className="flex gap-4">
                         <input
-                          type="checkbox"
-                          checked={dir.horarios[0]?.dias.includes(d.id) || false}
-                          onChange={() => toggleDia(idx, d.id)}
+                          type="time"
+                          value={h.desde || ""}
+                          onChange={(e) => setDesde(idx, bIdx, e.target.value)}
+                          className="border border-gray-300 rounded-lg px-3 py-2"
                         />
-                        {d.label}
-                      </label>
-                    ))}
-                  </div>
-                  <div className="flex gap-4">
-                    <input
-                      type="time"
-                      value={dir.horarios[0]?.desde || ""}
-                      onChange={(e) => {
-                        const nuevas = [...direcciones];
-                        if (!nuevas[idx].horarios[0]) nuevas[idx].horarios[0] = { dias: [], desde: "", hasta: "" };
-                        nuevas[idx].horarios[0].desde = e.target.value;
-                        setDirecciones(nuevas);
-                      }}
-                      className="border border-gray-300 rounded-lg px-3 py-2"
-                    />
-                    <input
-                      type="time"
-                      value={dir.horarios[0]?.hasta || ""}
-                      onChange={(e) => {
-                        const nuevas = [...direcciones];
-                        if (!nuevas[idx].horarios[0]) nuevas[idx].horarios[0] = { dias: [], desde: "", hasta: "" };
-                        nuevas[idx].horarios[0].hasta = e.target.value;
-                        setDirecciones(nuevas);
-                      }}
-                      className="border border-gray-300 rounded-lg px-3 py-2"
-                    />
-                  </div>
+                        <input
+                          type="time"
+                          value={h.hasta || ""}
+                          onChange={(e) => setHasta(idx, bIdx, e.target.value)}
+                          className="border border-gray-300 rounded-lg px-3 py-2"
+                        />
+                      </div>
+
+                      {(dir.horarios as unknown as BloqueHorario[]).length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeBloque(idx, bIdx)}
+                          className="mt-2 text-red-500 font-semibold text-sm"
+                        >
+                          Eliminar franja
+                        </button>
+                      )}
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => addBloque(idx)}
+                    className="text-[#5FA92C] text-sm font-semibold"
+                  >
+                    + Agregar franja horaria
+                  </button>
                 </div>
 
                 {direcciones.length > 1 && (
