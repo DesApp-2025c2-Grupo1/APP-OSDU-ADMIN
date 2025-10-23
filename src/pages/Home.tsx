@@ -91,7 +91,7 @@ export function Home() {
             onClick={() => navigate("/home/agregarAfiliado")}
           />
         </div>
-      </div>  {/* 👈 cierre correcto del div superior */}
+      </div>  {/*  cierre correcto del div superior */}
 
       {/* Tabla */}
       <div className="rounded-md shadow-sm border border-gray-200">

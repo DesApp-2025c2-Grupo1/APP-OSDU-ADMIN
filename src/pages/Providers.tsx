@@ -96,7 +96,7 @@ export function Prestadores() {
     }
   };
 
-  const handleAddProvider = () => navigate("/home/agregarPrestador");
+  const handleAddProvider = () => navigate("/prestadores/agregarPrestador");
 
   return (
     <div className="w-full p-6 space-y-6">
