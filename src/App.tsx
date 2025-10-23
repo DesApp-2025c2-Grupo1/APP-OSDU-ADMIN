@@ -34,7 +34,7 @@ function App() {
             <Route path="/home/grupoFamiliar/:grupoId" element={<GrupoFamiliar />} />
 
             {/*Prestadrores*/}
-            <Route path="/home/agregarPrestador" element={<AddProvider />} />
+            <Route path="/prestadores/agregarPrestador" element={<AddProvider />} />
           </Routes>
         </main>
       </div>

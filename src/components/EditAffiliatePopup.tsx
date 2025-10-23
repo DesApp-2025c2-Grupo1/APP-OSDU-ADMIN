@@ -86,7 +86,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
             Datos de Afiliado
           </h2>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo Documento (*)</label>
               <select
@@ -103,6 +103,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                 <option value="PASAPORTE">Pasaporte</option>
               </select>
             </div>
+
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Nro Documento (*)</label>
               <input
@@ -113,6 +114,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                 className="p-2 border border-gray-300 rounded"
               />
             </div>
+
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Nombres (*)</label>
               <input
@@ -123,6 +125,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                 className="p-2 border border-gray-300 rounded"
               />
             </div>
+
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Apellidos (*)</label>
               <input
@@ -133,6 +136,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                 className="p-2 border border-gray-300 rounded"
               />
             </div>
+
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Fecha nacimiento (*)</label>
               <input
@@ -146,6 +150,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                 className="p-2 border border-gray-300 rounded"
               />
             </div>
+
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Plan Médico (*)</label>
               <select
@@ -167,6 +172,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
           </div>
         </div>
 
+
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Situaciones Terapéuticas
@@ -183,8 +189,9 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                     newSituaciones[idx].situacion = e.target.value;
                     setSituaciones(newSituaciones);
                   }}
-                  className="p-2 border border-gray-300 rounded"
+                  className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
                   placeholder="Situación"
+                  disabled
                 />
                 <input
                   type="text"
@@ -194,8 +201,9 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                     newSituaciones[idx].fechaFinalizacion = e.target.value;
                     setSituaciones(newSituaciones);
                   }}
-                  className="p-2 border border-gray-300 rounded"
+                  className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
                   placeholder="Fecha estimada de finalización"
+                  disabled
                 />
               </div>
             ))}

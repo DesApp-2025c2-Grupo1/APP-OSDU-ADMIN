@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { Prestador, PrestadorTipo, DireccionAtencion, DiaSemana } from "../model/Provider.model";
 import { SPECIALTIES } from "../data/specialties";
 import { providersMock } from "../data/providers";
-
+import { ButtonVolver } from "../util/ButtonVolver";
 
 type BloqueHorario = { dias: DiaSemana[]; desde: string; hasta: string };
 
@@ -145,10 +145,12 @@ export function AddProvider() {
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
       <h1 className="text-2xl font-bold text-[#5FA92C] mb-4">Agregar Prestador</h1>
-
+      <div className="flex items-center gap-2 ">
+        <ButtonVolver text="Volver" onClick={() => navigate("/prestadores")} />
+      </div>
       {/* Selección tipo */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Prestador</label>
+        <label className="block mt-2 text-lg  text-gray-700 mb-2">Tipo de Prestador</label>
         <div className="flex gap-6">
           <label className="flex items-center gap-2">
             <input

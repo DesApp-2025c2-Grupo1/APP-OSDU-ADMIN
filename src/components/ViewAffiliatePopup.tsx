@@ -7,20 +7,18 @@ interface ViewAffiliatePopupProps {
 }
 
 export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupProps) {
-  // Función para determinar el parentesco (la misma que usas en GrupoFamiliar)
   const determinarParentesco = (affiliate: AffiliateType) => {
     if (affiliate.parentesco) return affiliate.parentesco;
-    
-    const partesCredencial = affiliate.credencial.split('-');
+
+    const partesCredencial = affiliate.credencial.split("-");
     if (partesCredencial.length !== 2) return "Familiar a cargo";
-    
+
     const numeroCredencial = parseInt(partesCredencial[1]);
-    
-    switch(numeroCredencial) {
+    switch (numeroCredencial) {
       case 1: return "Titular";
       case 2: return "Cónyuge";
-      case 3: 
-      case 4: 
+      case 3:
+      case 4:
       case 5: return "Hijo";
       default: return "Familiar a cargo";
     }
@@ -44,7 +42,8 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
             Datos de Afiliado
           </h2>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* 👇 Responsive: 1 col en mobile, 2 en >= sm */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo Documento</label>
               <p className="p-2 border border-gray-200 rounded">{affiliate.tipoDocumento}</p>
@@ -69,7 +68,6 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
               <label className="font-semibold mb-1 bg-gray-100 px-2">Plan Médico</label>
               <p className="p-2 border border-gray-200 rounded">{affiliate.planMedico || affiliate.plan}</p>
             </div>
-            {/* NUEVO CAMPO PARENTESCO */}
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2">Parentesco</label>
               <p className="p-2 border border-gray-200 rounded">{determinarParentesco(affiliate)}</p>
