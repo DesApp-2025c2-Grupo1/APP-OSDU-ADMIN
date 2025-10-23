@@ -598,7 +598,6 @@ const validate = () => {
           </div>
         </div>
         {/* SITUACIONES TERAPÉUTICAS (Titular) */}
-        {/* SITUACIONES TERAPÉUTICAS (Titular) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Situaciones Terapéuticas
@@ -609,54 +608,62 @@ const validate = () => {
               <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
             )}
 
-            {situaciones.map((s, idx) => (
-              <div key={idx} className="grid grid-cols-3 gap-4 items-end">
-                {/* Select de situación terapéutica */}
-                <div className="flex flex-col">
-                  <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
-                  <select
-                    value={s.situacion}
-                    onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
-                  >
-                    <option value="">-- Seleccionar --</option>
-                    <option value="embarazo">Embarazo</option>
-                    <option value="diabetes">Diabetes</option>
-                    <option value="miopia">Miopía</option>
-                    <option value="hipertension">Hipertensión</option>
-                    <option value="rehab_motriz">Rehabilitación motriz</option>
-                    <option value="kinesiologia">Kinesiología</option>
-                    <option value="psicoterapia">Psicoterapia</option>
-                    <option value="fonoaudiologia">Fonoaudiología</option>
-                    <option value="otra">Otra</option>
-                  </select>
-                </div>
-
-                {/* Campo de fecha (solo visible para situaciones que tienen fin) */}
-                {["embarazo", "rehab_motriz", "kinesiologia", "psicoterapia", "fonoaudiologia"].includes(s.situacion) && (
+            {situaciones.map((s, idx) => {
+              const tieneFecha = ["embarazo","rehab_motriz","kinesiologia","psicoterapia","fonoaudiologia"].includes(s.situacion);
+              return (
+                <div
+                  key={idx}
+                  className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
+                >
+                  {/* Select */}
                   <div className="flex flex-col">
-                    <label className="text-sm font-semibold mb-1">Fecha de finalización</label>
-                    <input
-                      type="date"
-                      value={s.fechaFinalizacion || ""}
-                      onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
+                    <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
+                    <select
+                      value={s.situacion}
+                      onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
                       className="p-2 border border-gray-300 rounded"
-                    />
+                    >
+                      <option value="">-- Seleccionar --</option>
+                      <option value="embarazo">Embarazo</option>
+                      <option value="diabetes">Diabetes</option>
+                      <option value="miopia">Miopía</option>
+                      <option value="hipertension">Hipertensión</option>
+                      <option value="rehab_motriz">Rehabilitación motriz</option>
+                      <option value="kinesiologia">Kinesiología</option>
+                      <option value="psicoterapia">Psicoterapia</option>
+                      <option value="fonoaudiologia">Fonoaudiología</option>
+                      <option value="otra">Otra</option>
+                    </select>
                   </div>
-                )}
 
-                {/* Botón eliminar */}
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => removeSituacion(idx)}
-                    className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
-                  >
-                    Eliminar
-                  </button>
+                  {/* Fecha*/}
+                  {tieneFecha ? (
+                    <div className="flex flex-col">
+                      <label className="text-sm font-semibold mb-1">Fecha de finalización</label>
+                      <input
+                        type="date"
+                        value={s.fechaFinalizacion || ""}
+                        onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
+                        className="p-2 border border-gray-300 rounded"
+                      />
+                    </div>
+                  ) : (
+                    <div />
+                  )}
+
+                  {/* Botón agregar */}
+                  <div className="justify-self-end">
+                    <button
+                      type="button"
+                      onClick={() => removeSituacion(idx)}
+                      className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Botón agregar */}
             <button
@@ -668,6 +675,7 @@ const validate = () => {
             </button>
           </div>
         </div>
+
 
 
         {/* FAMILIARES A CARGO */}
@@ -803,45 +811,79 @@ const validate = () => {
               <div className="mt-4 p-3 rounded-lg border border-dashed border-gray-300 bg-white">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-semibold text-gray-700 text-sm">Situaciones del familiar</h4>
-                  <button
-                    type="button"
-                    onClick={() => addSituacionFamiliar(i)}
-                    className="text-xs px-3 py-1 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
-                  >
-                    + Agregar situación
-                  </button>
                 </div>
 
-                {(familiar.situaciones?.length ?? 0) === 0 && (
-                  <p className="text-xs text-gray-500">No hay situaciones cargadas.</p>
-                )}
+                <div className="space-y-2">
+                  {situaciones.length === 0 && (
+                    <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
+                  )}
 
-                {(familiar.situaciones || []).map((s, idx) => (
-                  <div key={idx} className="grid grid-cols-2 gap-2 items-start mb-2">
-                    <input
-                      type="text"
-                      placeholder="Situación"
-                      value={s.situacion}
-                      onChange={(e) => updateSituacionFamiliar(i, idx, "situacion", e.target.value)}
-                      className="p-2 border border-gray-300 rounded text-sm"
-                    />
-                    <input
-                      type="date"
-                      value={s.fechaFinalizacion || ""}
-                      onChange={(e) => updateSituacionFamiliar(i, idx, "fechaFinalizacion", e.target.value)}
-                      className="p-2 border border-gray-300 rounded text-sm"
-                    />
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => removeSituacionFamiliar(i, idx)}
-                        className="text-xs px-3 py-1 border border-red-500 text-red-600 rounded hover:bg-red-50"
+                  {situaciones.map((s, idx) => {
+                    const tieneFecha = ["embarazo","rehab_motriz","kinesiologia","psicoterapia","fonoaudiologia"].includes(s.situacion);
+                    return (
+                      <div
+                        key={idx}
+                        className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
                       >
-                        Eliminar
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                        {/* Select */}
+                        <div className="flex flex-col">
+                          <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
+                          <select
+                            value={s.situacion}
+                            onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
+                            className="p-2 border border-gray-300 rounded"
+                          >
+                            <option value="">-- Seleccionar --</option>
+                            <option value="embarazo">Embarazo</option>
+                            <option value="diabetes">Diabetes</option>
+                            <option value="miopia">Miopía</option>
+                            <option value="hipertension">Hipertensión</option>
+                            <option value="rehab_motriz">Rehabilitación motriz</option>
+                            <option value="kinesiologia">Kinesiología</option>
+                            <option value="psicoterapia">Psicoterapia</option>
+                            <option value="fonoaudiologia">Fonoaudiología</option>
+                            <option value="otra">Otra</option>
+                          </select>
+                        </div>
+
+                        {/* Fecha */}
+                        {tieneFecha ? (
+                          <div className="flex flex-col">
+                            <label className="text-sm font-semibold mb-1">Fecha de finalización</label>
+                            <input
+                              type="date"
+                              value={s.fechaFinalizacion || ""}
+                              onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
+                              className="p-2 border border-gray-300 rounded"
+                            />
+                          </div>
+                        ) : (
+                          <div />
+                        )}
+
+                        {/* Botón eliminar */}
+                        <div className="justify-self-end">
+                          <button
+                            type="button"
+                            onClick={() => removeSituacion(idx)}
+                            className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Botón agregar */}
+                  <button
+                    type="button"
+                    onClick={addSituacion}
+                    className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                  >
+                    + Agregar
+                  </button>
+                </div>
               </div>
             </div>
           ))}
