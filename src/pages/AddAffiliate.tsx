@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ButtonVolver } from "../util/ButtonVolver";
 import {ButtonProgramateAffiliate} from "../util/ButtonProgramateAffiliate";
+import AltaProgramadaPopup from "../components/AltaProgramadaPopup";
 import { useNavigate } from "react-router-dom";
 import type { Affiliate as AffiliateType } from "../components/AffiliatesTable";
 
@@ -55,7 +56,7 @@ const requiereFechaFin = (id: string) =>
 
 export function AgregarAfiliado() {
   const navigate = useNavigate();
-
+  const [showAltaPopup, setShowAltaPopup] = useState(false);
   const [formData, setFormData] = useState({
     tipoDocumento: "DNI",
     nroDocumento: "",
@@ -307,12 +308,21 @@ const validate = () => {
           <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
           <ButtonProgramateAffiliate
             text="Programar Alta"
-            onClick={() => navigate("/home")}
+            onClick={() => setShowAltaPopup(true)}
           />
         </div>
       </div>
 
-
+      {showAltaPopup && (
+        <AltaProgramadaPopup
+          onClose={() => setShowAltaPopup(false)}
+          onConfirm={(fechaISO) => {
+            console.log("Alta programada para:", fechaISO);
+            alert(`Alta programada para ${new Date(fechaISO).toLocaleString()}`);
+            setShowAltaPopup(false);
+          }}
+        />
+      )}
 
       <div className="mx-auto w-full max-w-4xl space-y-8">
         {/* DATOS DE AFILIADO (Titular) */}
