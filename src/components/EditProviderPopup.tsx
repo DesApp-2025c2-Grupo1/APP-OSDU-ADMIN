@@ -1,6 +1,19 @@
 import React, { useState } from "react";
 import type { Prestador } from "../model/Provider.model";
 
+type DiaSemana = 1|2|3|4|5|6|0; // ajustá si en tu modelo usás 1..6
+type BloqueHorario = { dias: DiaSemana[]; desde: string; hasta: string };
+
+interface DireccionForm {
+  etiqueta?: string;
+  calle: string;
+  numero: string;
+  localidad: string;
+  provincia: string;
+  cp: string;
+  horarios: BloqueHorario[];
+}
+
 interface EditProviderPopupProps {
   provider: Prestador;
   onClose: () => void;
@@ -12,132 +25,136 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
     cuilCuit: provider.cuilCuit || "",
     nombreCompleto: provider.nombreCompleto || "",
     tipo: provider.tipo || "profesional",
-    // aseguro al menos 1 item
-    especialidades: (provider.especialidades && provider.especialidades.length > 0) ? provider.especialidades : [""],
-    integraCentroMedico: provider.integraCentroMedico || null,
-    telefonos: (provider.telefonos && provider.telefonos.length > 0) ? provider.telefonos : [""],
-    emails: (provider.emails && provider.emails.length > 0) ? provider.emails : [""],
-    direcciones: (provider.direcciones && provider.direcciones.length > 0)
+    especialidades: provider.especialidades?.length ? provider.especialidades : [""],
+    telefonos: provider.telefonos?.length ? provider.telefonos : [""],
+    emails: provider.emails?.length ? provider.emails : [""],
+    direcciones: (provider.direcciones?.length
       ? provider.direcciones
-      : [{ etiqueta: "", calle: "", numero: "", localidad: "", provincia: "", cp: "", horarios: [] as any[] }],
+      : [{ calle: "", numero: "", localidad: "", provincia: "", cp: "", horarios: [{ dias: [], desde: "", hasta: "" }] }]
+    ) as unknown as DireccionForm[],
+    integraCentroMedico: provider.integraCentroMedico || null,
   });
 
-  // --------- handlers básicos ----------
+  // ---------- helpers campos simples ----------
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // telefonos / emails (array simple)
-  const handleArrayChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    field: "telefonos" | "emails",
-    index: number
-  ) => {
-    const newArray = [...formData[field]];
-    newArray[index] = e.target.value;
-    setFormData(prev => ({ ...prev, [field]: newArray }));
+  // ---------- especialidades ----------
+  const setEsp = (i: number, val: string) => {
+    const arr = [...formData.especialidades];
+    arr[i] = val;
+    setFormData(prev => ({ ...prev, especialidades: arr }));
   };
+  const addEsp = () => setFormData(prev => ({ ...prev, especialidades: [...prev.especialidades, ""] }));
+  const delEsp = (i: number) =>
+    setFormData(prev => ({
+      ...prev,
+      especialidades: prev.especialidades.length > 1 ? prev.especialidades.filter((_, idx) => idx !== i) : prev.especialidades
+    }));
 
-  const handleAddToArray = (field: "telefonos" | "emails") => {
+  // ---------- telefonos / emails ----------
+  const setArr = (field: "telefonos" | "emails", i: number, val: string) => {
+    const arr = [...formData[field]];
+    arr[i] = val;
+    setFormData(prev => ({ ...prev, [field]: arr }));
+  };
+  const addArr = (field: "telefonos" | "emails") =>
     setFormData(prev => ({ ...prev, [field]: [...prev[field], ""] }));
+  const delArr = (field: "telefonos" | "emails", i: number) =>
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].length > 1 ? prev[field].filter((_, idx) => idx !== i) : prev[field]
+    }));
+
+  // ---------- direcciones ----------
+  const handleDireccionChange = (i: number, campo: keyof DireccionForm, valor: string) => {
+    const arr = [...formData.direcciones];
+    (arr[i] as any)[campo] = valor;
+    setFormData(prev => ({ ...prev, direcciones: arr }));
+  };
+  const handleAgregarDireccion = () => {
+    setFormData(prev => ({
+      ...prev,
+      direcciones: [
+        ...prev.direcciones,
+        { etiqueta: "", calle: "", numero: "", localidad: "", provincia: "", cp: "", horarios: [{ dias: [], desde: "", hasta: "" }] }
+      ]
+    }));
+  };
+  const handleEliminarDireccion = (i: number) => {
+    setFormData(prev => ({
+      ...prev,
+      direcciones: prev.direcciones.length > 1 ? prev.direcciones.filter((_, idx) => idx !== i) : prev.direcciones
+    }));
   };
 
-  const handleRemoveFromArray = (field: "telefonos" | "emails", index: number) => {
-    setFormData(prev => {
-      if (prev[field].length <= 1) return prev; // dejar al menos 1
-      const newArray = prev[field].filter((_, i) => i !== index);
-      return { ...prev, [field]: newArray };
-    });
+  // ---------- horarios (bloques) ----------
+  const addBloque = (dirIdx: number) => {
+    const arr = [...formData.direcciones];
+    arr[dirIdx].horarios.push({ dias: [], desde: "", hasta: "" });
+    setFormData(prev => ({ ...prev, direcciones: arr }));
+  };
+  const removeBloque = (dirIdx: number, bloqueIdx: number) => {
+    const arr = [...formData.direcciones];
+    arr[dirIdx].horarios.splice(bloqueIdx, 1);
+    if (arr[dirIdx].horarios.length === 0) arr[dirIdx].horarios.push({ dias: [], desde: "", hasta: "" });
+    setFormData(prev => ({ ...prev, direcciones: arr }));
+  };
+  const toggleDia = (dirIdx: number, bloqueIdx: number, dia: DiaSemana) => {
+    const arr = [...formData.direcciones];
+    const bloque = arr[dirIdx].horarios[bloqueIdx];
+    const esta = bloque.dias.includes(dia);
+    bloque.dias = esta ? bloque.dias.filter(d => d !== dia) : [...bloque.dias, dia];
+    setFormData(prev => ({ ...prev, direcciones: arr }));
+  };
+  const setDesde = (dirIdx: number, bloqueIdx: number, value: string) => {
+    const arr = [...formData.direcciones];
+    arr[dirIdx].horarios[bloqueIdx].desde = value;
+    setFormData(prev => ({ ...prev, direcciones: arr }));
+  };
+  const setHasta = (dirIdx: number, bloqueIdx: number, value: string) => {
+    const arr = [...formData.direcciones];
+    arr[dirIdx].horarios[bloqueIdx].hasta = value;
+    setFormData(prev => ({ ...prev, direcciones: arr }));
   };
 
-  // especialidades (array simple)
-  const handleEspecialidadChange = (index: number, value: string) => {
-    const newEspecialidades = [...formData.especialidades];
-    newEspecialidades[index] = value;
-    setFormData(prev => ({ ...prev, especialidades: newEspecialidades }));
-  };
+  const diasSemana: { id: DiaSemana; label: string }[] = [
+    { id: 1, label: "Lun" },
+    { id: 2, label: "Mar" },
+    { id: 3, label: "Mié" },
+    { id: 4, label: "Jue" },
+    { id: 5, label: "Vie" },
+    { id: 6, label: "Sáb" },
+  ];
 
-  const handleAddEspecialidad = () => {
-    setFormData(prev => ({ ...prev, especialidades: [...prev.especialidades, ""] }));
-  };
-
-  const handleRemoveEspecialidad = (index: number) => {
-    setFormData(prev => {
-      if (prev.especialidades.length <= 1) return prev;
-      const arr = prev.especialidades.filter((_, i) => i !== index);
-      return { ...prev, especialidades: arr };
-    });
-  };
-
-  // direcciones (array de objetos)
-  const handleDireccionChange = (index: number, field: string, value: string) => {
-    const newDirecciones = [...formData.direcciones];
-    newDirecciones[index] = { ...newDirecciones[index], [field]: value };
-    setFormData(prev => ({ ...prev, direcciones: newDirecciones }));
-  };
-
-  const handleAddDireccion = () => {
-    const nuevaDireccion = {
-      etiqueta: "",
-      calle: "",
-      numero: "",
-      localidad: "",
-      provincia: "",
-      cp: "",
-      horarios: [] as any[],
-    };
-    setFormData(prev => ({ ...prev, direcciones: [...prev.direcciones, nuevaDireccion] }));
-  };
-
-  const handleRemoveDireccion = (index: number) => {
-    setFormData(prev => {
-      if (prev.direcciones.length <= 1) return prev;
-      const arr = prev.direcciones.filter((_, i) => i !== index);
-      return { ...prev, direcciones: arr };
-    });
-  };
-
-  // guardar
   const handleSave = () => {
-    const updatedProvider: Prestador = {
+    const updated: Prestador = {
       ...provider,
       cuilCuit: formData.cuilCuit,
       nombreCompleto: formData.nombreCompleto,
-      tipo: formData.tipo as Prestador["tipo"],
+      tipo: formData.tipo,
       especialidades: formData.especialidades,
-      integraCentroMedico: formData.integraCentroMedico,
       telefonos: formData.telefonos,
       emails: formData.emails,
-      direcciones: formData.direcciones,
+      direcciones: formData.direcciones as any,
+      integraCentroMedico: formData.integraCentroMedico,
     };
-    onSave(updatedProvider);
+    onSave(updated);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800"
-        >
-          ✕
-        </button>
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800">✕</button>
+        <h1 className="text-2xl font-semibold text-gray-800 mb-6">Editar Prestador</h1>
 
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">
-          Editar Prestador
-        </h1>
-
-        {/* DATOS PRINCIPALES */}
+        {/* DATOS DEL PRESTADOR */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-            Datos del Prestador
-          </h2>
-
-          {/* En mobile: 1 columna / En desktop: 3 columnas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* CUIL / CUIT */}
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Datos del Prestador</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">CUIL / CUIT (*)</label>
               <input
@@ -148,8 +165,6 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                 className="p-2 border border-gray-300 rounded"
               />
             </div>
-
-            {/* Nombre Completo */}
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Nombre Completo (*)</label>
               <input
@@ -161,231 +176,225 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
               />
             </div>
 
-            {/* Tipo de Prestador */}
-            <div className="flex flex-col">
+            {/* Tipo: mostrar sin permitir editar (sin flechita) */}
+            <div className="flex flex-col sm:col-span-2">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo de Prestador</label>
-              <div className="relative">
-                <select
-                  name="tipo"
-                  value={formData.tipo}
-                  disabled
-                  className="p-2 border border-gray-300 rounded bg-gray-100 text-gray-700 cursor-default appearance-none w-full"
-                >
-                  <option value="profesional">Profesional</option>
-                  <option value="centro">Centro Médico</option>
-                </select>
+              <div className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-700 select-none pointer-events-none">
+                <span className="capitalize">{formData.tipo}</span>
               </div>
             </div>
-
-
           </div>
         </div>
 
-
         {/* ESPECIALIDADES */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-            Especialidades
-          </h2>
-          <div className="space-y-2">
-            {formData.especialidades.map((esp, idx) => (
-              <div key={idx} className="flex gap-2">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Especialidades</h2>
+          {formData.especialidades.map((esp, i) => (
+            <div key={i} className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={esp}
+                onChange={(e) => setEsp(i, e.target.value)}
+                className="p-2 border border-gray-300 rounded w-full"
+                placeholder={`Especialidad ${i + 1}`}
+              />
+              {formData.especialidades.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => delEsp(i)}
+                  className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
+                >
+                  X
+                </button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={addEsp} className="text-sm text-[#5FA92C] font-semibold hover:underline">
+            + Agregar especialidad
+          </button>
+        </div>
+
+        {/* CONTACTO */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Contacto</h2>
+
+          {/* Teléfonos (stack en mobile) */}
+          <div className="mb-6">
+            <label className="font-semibold mb-2 block">Teléfonos</label>
+            {formData.telefonos.map((tel, i) => (
+              <div key={i} className="flex gap-2 mb-2">
                 <input
                   type="text"
-                  value={esp}
-                  onChange={(e) => handleEspecialidadChange(idx, e.target.value)}
+                  value={tel}
+                  onChange={(e) => setArr("telefonos", i, e.target.value)}
                   className="p-2 border border-gray-300 rounded w-full"
-                  placeholder={`Especialidad ${idx + 1}`}
                 />
-                {formData.especialidades.length > 1 && (
+                {formData.telefonos.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => handleRemoveEspecialidad(idx)}
+                    onClick={() => delArr("telefonos", i)}
                     className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
-                    title="Eliminar especialidad"
-                    aria-label="Eliminar especialidad"
                   >
                     X
                   </button>
                 )}
               </div>
             ))}
-            <button
-              onClick={handleAddEspecialidad}
-              className="text-sm text-[#5FA92C] font-semibold hover:underline"
-            >
-              + Agregar especialidad
+            <button type="button" onClick={() => addArr("telefonos")} className="text-sm text-[#5FA92C] font-semibold hover:underline">
+              + Agregar teléfono
+            </button>
+          </div>
+
+          {/* Emails */}
+          <div>
+            <label className="font-semibold mb-2 block">Emails</label>
+            {formData.emails.map((mail, i) => (
+              <div key={i} className="flex gap-2 mb-2">
+                <input
+                  type="email"
+                  value={mail}
+                  onChange={(e) => setArr("emails", i, e.target.value)}
+                  className="p-2 border border-gray-300 rounded w-full"
+                />
+                {formData.emails.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => delArr("emails", i)}
+                    className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
+                  >
+                    X
+                  </button>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={() => addArr("emails")} className="text-sm text-[#5FA92C] font-semibold hover:underline">
+              + Agregar email
             </button>
           </div>
         </div>
 
-        {/* CONTACTO */}
-        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-            Contacto
-          </h2>
-
-          {/* En mobile se vuelve una sola columna */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Teléfonos */}
-            <div>
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Teléfonos</label>
-              {formData.telefonos.map((tel, idx) => (
-                <div key={idx} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={tel}
-                    onChange={(e) => handleArrayChange(e, "telefonos", idx)}
-                    className="p-2 border border-gray-300 rounded w-full"
-                  />
-                  {formData.telefonos.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFromArray("telefonos", idx)}
-                      className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
-                      title="Eliminar teléfono"
-                      aria-label="Eliminar teléfono"
-                    >
-                      X
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                onClick={() => handleAddToArray("telefonos")}
-                className="text-sm text-[#5FA92C] font-semibold hover:underline"
-              >
-                + Agregar teléfono
-              </button>
-            </div>
-
-            {/* Emails */}
-            <div>
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Emails</label>
-              {formData.emails.map((mail, idx) => (
-                <div key={idx} className="flex gap-2 mb-2">
-                  <input
-                    type="email"
-                    value={mail}
-                    onChange={(e) => handleArrayChange(e, "emails", idx)}
-                    className="p-2 border border-gray-300 rounded w-full"
-                  />
-                  {formData.emails.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFromArray("emails", idx)}
-                      className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
-                      title="Eliminar email"
-                      aria-label="Eliminar email"
-                    >
-                      X
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                onClick={() => handleAddToArray("emails")}
-                className="text-sm text-[#5FA92C] font-semibold hover:underline"
-              >
-                + Agregar email
-              </button>
-            </div>
-          </div>
-        </div>
-
-
-        {/* DIRECCIONES */}
-        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-            Direcciones
-          </h2>
+        {/* DIRECCIONES (editable como pediste) */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-3 text-gray-700">Direcciones</h2>
 
           {formData.direcciones.map((dir, idx) => (
-            <div key={idx} className="relative grid grid-cols-2 md:grid-cols-3 gap-4 mb-4 border p-3 rounded-lg">
-              {/* Botón eliminar dirección */}
+            <div key={idx} className="border rounded-lg p-4 mb-4 bg-gray-50">
+              {/* Campos base */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <input
+                  placeholder="Calle"
+                  value={dir.calle}
+                  onChange={(e) => handleDireccionChange(idx, "calle", e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                />
+                <input
+                  placeholder="Número"
+                  value={dir.numero}
+                  onChange={(e) => handleDireccionChange(idx, "numero", e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                />
+                <input
+                  placeholder="Localidad"
+                  value={dir.localidad}
+                  onChange={(e) => handleDireccionChange(idx, "localidad", e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                />
+                <input
+                  placeholder="Provincia"
+                  value={dir.provincia}
+                  onChange={(e) => handleDireccionChange(idx, "provincia", e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                />
+                <input
+                  placeholder="Código Postal"
+                  value={dir.cp}
+                  onChange={(e) => handleDireccionChange(idx, "cp", e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                />
+              </div>
+
+              {/* Horarios */}
+              <div className="mt-4">
+                <p className="text-sm text-gray-600 mb-2">Días y horarios:</p>
+
+                {dir.horarios.map((h, bIdx) => (
+                  <div key={bIdx} className="mb-3 border rounded-lg p-3 bg-white">
+                    <div className="flex gap-2 flex-wrap mb-2">
+                      {diasSemana.map((d) => (
+                        <label key={d.id} className="flex items-center gap-1 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={h.dias.includes(d.id)}
+                            onChange={() => toggleDia(idx, bIdx, d.id)}
+                          />
+                          {d.label}
+                        </label>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-4">
+                      <input
+                        type="time"
+                        value={h.desde || ""}
+                        onChange={(e) => setDesde(idx, bIdx, e.target.value)}
+                        className="border border-gray-300 rounded-lg px-3 py-2"
+                      />
+                      <input
+                        type="time"
+                        value={h.hasta || ""}
+                        onChange={(e) => setHasta(idx, bIdx, e.target.value)}
+                        className="border border-gray-300 rounded-lg px-3 py-2"
+                      />
+                    </div>
+
+                    {dir.horarios.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeBloque(idx, bIdx)}
+                        className="mt-2 text-red-500 font-semibold text-sm"
+                      >
+                        Eliminar franja
+                      </button>
+                    )}
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => addBloque(idx)}
+                  className="text-[#5FA92C] text-sm font-semibold"
+                >
+                  + Agregar franja horaria
+                </button>
+              </div>
+
               {formData.direcciones.length > 1 && (
                 <button
                   type="button"
-                  onClick={() => handleRemoveDireccion(idx)}
-                  className="absolute -top-2 -right-2 w-7 h-7 rounded-full border text-red-500 bg-white hover:bg-gray-50"
-                  title="Eliminar dirección"
-                  aria-label="Eliminar dirección"
+                  onClick={() => handleEliminarDireccion(idx)}
+                  className="mt-2 text-red-500 font-semibold text-sm"
                 >
-                  X
+                  Eliminar dirección
                 </button>
               )}
-
-              {/* Fila 1 (mobile): ETIQUETA | CALLE */}
-              <input
-                type="text"
-                value={dir.etiqueta || ""}
-                onChange={(e) => handleDireccionChange(idx, "etiqueta", e.target.value)}
-                className="p-2 border border-gray-300 rounded"
-                placeholder="Etiqueta"
-              />
-              <input
-                type="text"
-                value={dir.calle || ""}
-                onChange={(e) => handleDireccionChange(idx, "calle", e.target.value)}
-                className="p-2 border border-gray-300 rounded"
-                placeholder="Calle"
-              />
-
-              {/* Fila 2 (mobile): NÚMERO | LOCALIDAD */}
-              <input
-                type="text"
-                value={dir.numero || ""}
-                onChange={(e) => handleDireccionChange(idx, "numero", e.target.value)}
-                className="p-2 border border-gray-300 rounded"
-                placeholder="Número"
-              />
-              <input
-                type="text"
-                value={dir.localidad || ""}
-                onChange={(e) => handleDireccionChange(idx, "localidad", e.target.value)}
-                className="p-2 border border-gray-300 rounded"
-                placeholder="Localidad"
-              />
-
-              {/* Fila 3 (mobile): PROVINCIA | CÓDIGO POSTAL */}
-              <input
-                type="text"
-                value={dir.provincia || ""}
-                onChange={(e) => handleDireccionChange(idx, "provincia", e.target.value)}
-                className="p-2 border border-gray-300 rounded"
-                placeholder="Provincia"
-              />
-              <input
-                type="text"
-                value={dir.cp || ""}
-                onChange={(e) => handleDireccionChange(idx, "cp", e.target.value)}
-                className="p-2 border border-gray-300 rounded"
-                placeholder="Código Postal"
-              />
             </div>
           ))}
 
           <button
-            onClick={handleAddDireccion}
-            className="text-sm text-[#5FA92C] font-semibold hover:underline"
+            type="button"
+            onClick={handleAgregarDireccion}
+            className="text-[#5FA92C] text-sm font-semibold"
           >
-            + Agregar dirección
+            + Agregar otra dirección
           </button>
         </div>
 
-
         {/* BOTONES */}
         <div className="flex justify-center gap-4 mt-4">
-          <button
-            onClick={handleSave}
-            className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
-          >
+          <button onClick={handleSave} className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition">
             Guardar Cambios
           </button>
-          <button
-            onClick={onClose}
-            className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition"
-          >
+          <button onClick={onClose} className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition">
             Cancelar
           </button>
         </div>

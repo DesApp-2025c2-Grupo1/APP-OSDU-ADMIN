@@ -6,48 +6,32 @@ interface ViewProviderPopupProps {
   onClose: () => void;
 }
 
-// Utilidad para convertir el número del día (0–6) en texto
+// 0..6
 const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps) {
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 relative">
-        {/* Botón de cierre */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800"
-        >
-          ✕
-        </button>
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800">✕</button>
+        <h1 className="text-2xl font-semibold text-gray-800 mb-6">Detalles del Prestador</h1>
 
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">
-          Detalles del Prestador
-        </h1>
-
-        {/* Datos del Prestador */}
+        {/* DATOS DEL PRESTADOR */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-            Datos Generales
-          </h2>
-
-          {/* 👇 Responsive: 1 columna en mobile, 2 en md+ */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Datos del Prestador</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">CUIL / CUIT</label>
               <p className="p-2 border border-gray-200 rounded break-words">{provider.cuilCuit}</p>
             </div>
-
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Nombre Completo</label>
               <p className="p-2 border border-gray-200 rounded break-words">{provider.nombreCompleto}</p>
             </div>
-
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Tipo</label>
               <p className="p-2 border border-gray-200 rounded capitalize">{provider.tipo}</p>
             </div>
-
             {provider.integraCentroMedico && (
               <div>
                 <label className="font-semibold mb-1 bg-gray-100 px-2 block">Centro Médico</label>
@@ -56,21 +40,38 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
                 </p>
               </div>
             )}
+          </div>
+        </div>
 
-            <div className="md:col-span-2">
-              <label className="font-semibold mb-1 bg-gray-100 px-2 block">Especialidades</label>
-              <p className="p-2 border border-gray-200 rounded break-words">
-                {provider.especialidades.join(", ")}
-              </p>
-            </div>
+        {/* ESPECIALIDADES */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+            Especialidades
+          </h2>
 
+          {provider.especialidades && provider.especialidades.length > 0 ? (
+            <ul className="space-y-2">
+              {provider.especialidades.map((esp, i) => (
+                <li key={i} className="p-2 border border-gray-200 rounded break-words">
+                  {esp}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500">Sin especialidades.</p>
+          )}
+        </div>
+
+        {/* CONTACTO */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Contacto</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Teléfonos</label>
               <p className="p-2 border border-gray-200 rounded break-words">
                 {provider.telefonos.join(" / ")}
               </p>
             </div>
-
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Emails</label>
               <p className="p-2 border border-gray-200 rounded break-words">
@@ -80,14 +81,10 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
           </div>
         </div>
 
-
-        {/* Direcciones de atención */}
+        {/* DIRECCIONES (formato de detalles) */}
         {provider.direcciones.length > 0 && (
           <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-            <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-              Direcciones de Atención
-            </h2>
-
+            <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Direcciones de Atención</h2>
             {provider.direcciones.map((dir: DireccionAtencion, idx: number) => (
               <div key={idx} className="mb-6 p-3 border border-gray-300 rounded bg-gray-50">
                 <h3 className="font-semibold text-gray-700 mb-2">
@@ -97,7 +94,6 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
                   {dir.calle} {dir.numero || ""}, {dir.provincia || ""} ({dir.cp})
                 </p>
 
-                {/* Horarios dentro de cada dirección */}
                 {dir.horarios.length > 0 && (
                   <div className="mt-3">
                     <h4 className="font-semibold text-gray-700 mb-1">Horarios:</h4>
@@ -107,12 +103,8 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
                           key={hIdx}
                           className="p-2 border border-gray-300 rounded bg-white flex justify-between"
                         >
-                          <span>
-                            {h.dias.map(d => diasSemana[d]).join(", ")}
-                          </span>
-                          <span className="text-gray-600">
-                            {h.desde} - {h.hasta}
-                          </span>
+                          <span>{[...h.dias].sort((a, b) => a - b).map(d => diasSemana[d]).join(", ")}</span>
+                          <span className="text-gray-600">{h.desde} - {h.hasta}</span>
                         </li>
                       ))}
                     </ul>
@@ -123,12 +115,8 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
           </div>
         )}
 
-        {/* Botón de cierre */}
         <div className="flex justify-center mt-4">
-          <button
-            onClick={onClose}
-            className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition"
-          >
+          <button onClick={onClose} className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition">
             Cerrar
           </button>
         </div>
