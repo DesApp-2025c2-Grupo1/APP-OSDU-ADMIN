@@ -25,7 +25,7 @@ export function AddProvider() {
   const [centros] = useState(providersMock.filter((p) => p.tipo === "centro"));
   const [integraCentro, setIntegraCentro] = useState<string>("");
 
-  
+
   const [error, setError] = useState("");
 
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AffiliatesTable } from "../components/AffiliatesTable";
 import type { Affiliate } from "../components/AffiliatesTable";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
@@ -7,7 +7,8 @@ import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
 import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup";
 import { EditAffiliatePopup } from "../components/EditAffiliatePopup";
 import SearchDropdown from "../components/SearchDropdown";
-import { affiliates } from "../data/affiliates";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const OPTIONS = [
   { value: "dni", label: "DNI" },
@@ -29,8 +30,37 @@ export function Home() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewPopup, setShowViewPopup] = useState(false);
   const [showEditPopup, setShowEditPopup] = useState(false);
+  const [affiliatesData, setAffiliatesData] = useState<Affiliate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchAffiliates = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await fetch(API_URL + "/affiliates");
+        
+        if (!response.ok) {
+          throw new Error("Error al obtener los afiliados");
+        }
+        
+        const data = await response.json();
+        setAffiliatesData(data.affiliates);
+        // console.log("Afiliados obtenidos:", data.affiliates);
+      } catch (error) {
+        console.error("Error al obtener los afiliados:", error);
+        setError((error as Error).message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAffiliates();
+  }, []);
 
   const fieldMap: Record<string, (a: Affiliate) => string> = {
     dni: (a) => a.dni,
@@ -41,38 +71,83 @@ export function Home() {
   };
 
   const filtered = useMemo(() => {
-    if (!query) return affiliates;
+    if (!query) return affiliatesData;
     const q = norm(query);
-    return affiliates.filter((a) => norm(fieldMap[field](a)).includes(q));
-  }, [field, query]);
+    return affiliatesData.filter((a) => norm(fieldMap[field](a)).includes(q));
+  }, [field, query, affiliatesData]);
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
+    // IMPORTANTE: Siempre establecer el afiliado seleccionado primero
     setSelectedAffiliate(affiliate);
 
     if (option === "Editar") {
       setShowEditPopup(true);
     }
+    
     if (option === "Ver grupo familiar") {
-      const grupoFamiliarId = affiliate.credencial.split("-")[0];
-      navigate(`/home/grupoFamiliar/${grupoFamiliarId}`);
+      console.log("Navegando a grupo familiar:", affiliate.idGrupoFamiliarFK);
+      navigate(`/home/grupoFamiliar/${affiliate.idGrupoFamiliarFK}`);
     }
+    
     if (option === "Ver detalles") {
       setShowViewPopup(true);
     }
+    
     if (option === "Dar de baja") {
       setShowDeleteDialog(true);
     }
   };
 
-  const handleConfirmDelete = () => {
-    if (selectedAffiliate) {
+  const handleConfirmDelete = async () => {
+    if (!selectedAffiliate) return;
+
+    try {
+      // Aquí iría la lógica para dar de baja en el backend
+      // const response = await fetch(`${API_URL}/affiliates/${selectedAffiliate.dni}`, {
+      //   method: 'DELETE',
+      // });
+      
       console.log("Afiliado dado de baja:", selectedAffiliate);
+      
+      // Actualizar la lista de afiliados removiendo el eliminado
+      setAffiliatesData(prev => 
+        prev.filter(a => a.credencial !== selectedAffiliate.credencial)
+      );
+      
+    } catch (error) {
+      console.error("Error al dar de baja:", error);
+    } finally {
+      setShowDeleteDialog(false);
+      setSelectedAffiliate(null);
     }
-    setShowDeleteDialog(false);
-    setSelectedAffiliate(null);
   };
 
-      return (
+  const handleSaveEdit = async (updatedAffiliate: Affiliate) => {
+    try {
+      // Aquí iría la lógica para actualizar en el backend
+      // const response = await fetch(`${API_URL}/affiliates/${updatedAffiliate.dni}`, {
+      //   method: 'PUT',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(updatedAffiliate),
+      // });
+      
+      console.log("Afiliado editado:", updatedAffiliate);
+      
+      // Actualizar la lista local
+      setAffiliatesData(prev => 
+        prev.map(a => 
+          a.credencial === updatedAffiliate.credencial ? updatedAffiliate : a
+        )
+      );
+      
+      setShowEditPopup(false);
+      setSelectedAffiliate(null);
+    } catch (error) {
+      console.error("Error al editar:", error);
+    }
+  };
+
+  return (
     <div className="w-full p-6 space-y-4">
       {/* Barra superior */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
@@ -84,38 +159,67 @@ export function Home() {
           className="w-full md:w-2/3"
         />
 
-        {/* ➕ Botón: pegado a la izquierda en mobile, normal en desktop */}
+        {/* ➕ Botón */}
         <div className="self-start md:self-auto">
           <ButtonAddAffiliate
             text="Agregar Afiliado"
             onClick={() => navigate("/home/agregarAfiliado")}
           />
         </div>
-      </div>  {/*  cierre correcto del div superior */}
-
-      {/* Tabla */}
-      <div className="rounded-md shadow-sm border border-gray-200">
-        <AffiliatesTable affiliates={filtered} onOptionClick={handleOptionClick} />
       </div>
 
-      {/* Popup para Ver */}
+      {/* Estado de carga */}
+      {isLoading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5FA92C]"></div>
+          <span className="ml-3 text-gray-600">Cargando afiliados...</span>
+        </div>
+      )}
+
+      {/* Estado de error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          Error: {error}
+        </div>
+      )}
+
+      {/* Tabla */}
+      {!isLoading && !error && (
+        <div className="rounded-md shadow-sm border border-gray-200">
+          <AffiliatesTable 
+            affiliates={filtered} 
+            onOptionClick={handleOptionClick} 
+          />
+        </div>
+      )}
+
+      {/* Mensaje si no hay resultados */}
+      {!isLoading && !error && filtered.length === 0 && affiliatesData.length > 0 && (
+        <div className="text-center py-8 text-gray-500">
+          No se encontraron resultados para "{query}"
+        </div>
+      )}
+
+      {/* Popup para Ver Detalles */}
       {showViewPopup && selectedAffiliate && (
         <ViewAffiliatePopup
           affiliate={selectedAffiliate}
-          onClose={() => setShowViewPopup(false)}
+          onClose={() => {
+            setShowViewPopup(false);
+            setSelectedAffiliate(null);
+          }}
         />
       )}
-
 
       {/* Popup para Editar */}
       {showEditPopup && selectedAffiliate && (
         <EditAffiliatePopup
           affiliate={selectedAffiliate}
-          onClose={() => setShowEditPopup(false)}
-          onSave={(updatedAffiliate) => {
-            console.log("Afiliado editado:", updatedAffiliate);
+          onClose={() => {
             setShowEditPopup(false);
+            setSelectedAffiliate(null);
           }}
+          onSave={handleSaveEdit}
         />
       )}
 
@@ -123,7 +227,10 @@ export function Home() {
       {showDeleteDialog && selectedAffiliate && (
         <ConfirmDeleteDialog
           open={showDeleteDialog}
-          onClose={() => setShowDeleteDialog(false)}
+          onClose={() => {
+            setShowDeleteDialog(false);
+            setSelectedAffiliate(null);
+          }}
           onConfirm={handleConfirmDelete}
           affiliateName={selectedAffiliate.nombre}
           affiliateSurname={selectedAffiliate.apellido}

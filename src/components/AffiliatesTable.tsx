@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { OptionsMenu } from "./OptionsMenu";
 import { EditAffiliatePopup } from "./EditAffiliatePopup";
@@ -8,21 +8,20 @@ import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 
 export type Affiliate = {
   credencial: string;
-  dni: string;
   nombre: string;
   apellido: string;
   fechaNacimiento: string;
-  plan: string;
   direccion: string;
   parentesco?: string;
-  tipoDocumento?: string;
-  nroDocumento?: string;
-  planMedico?: string;
+  tipoDocumento: string;
+  dni: string;
+  plan: string;
   telefono?: string;
   telefono2?: string;
   email?: string;
   email2?: string;
   direccion2?: string;
+  idGrupoFamiliarFK: number;
   situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>;
 };
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import SearchDropdown from "../components/SearchDropdown";

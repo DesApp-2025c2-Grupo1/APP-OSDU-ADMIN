@@ -1,9 +1,5 @@
 import React, { useState } from "react";
-import { ButtonVolver } from "../util/ButtonVolver";
-import {ButtonProgramateAffiliate} from "../util/ButtonProgramateAffiliate";
-import AltaProgramadaPopup from "../components/AltaProgramadaPopup";
 import { useNavigate } from "react-router-dom";
-import type { Affiliate as AffiliateType } from "../components/AffiliatesTable";
 
 interface Situacion {
   situacion: string;
@@ -15,7 +11,7 @@ interface Familiar {
   nroDocumento: string;
   nombre: string;
   apellido: string;
-  fechaNacimiento: string; // yyyy-mm-dd (input date)
+  fechaNacimiento: string;
   parentesco: string;
   telefono?: string;
   email?: string;
@@ -23,13 +19,10 @@ interface Familiar {
   direccion2?: string;
   usaDireccionTitular?: boolean;
   usaContactoTitular?: boolean;
-  situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>; 
+  situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>;
 }
 
-// Helpers
-const getCredPrefix = (cred: string) => (cred || "").split("-")[0]?.trim() || "";
-const buildChildCredential = (prefix: string, index: number) =>
-  `${prefix}-${String(index).padStart(2, "0")}`;
+const API_URL = import.meta.env.VITE_API_URL;
 
 const isoToDDMMYYYY = (iso: string) => {
   if (!iso) return "";
@@ -37,7 +30,6 @@ const isoToDDMMYYYY = (iso: string) => {
   return `${d}/${m}/${y}`;
 };
 
-// catálogos situaciones
 const SITUACIONES_TERAPEUTICAS = [
   { id: "embarazo", nombre: "Embarazo", requiereFin: true },
   { id: "diabetes", nombre: "Diabetes", requiereFin: false },
@@ -50,20 +42,16 @@ const SITUACIONES_TERAPEUTICAS = [
   { id: "otra", nombre: "Otra", requiereFin: false },
 ];
 
-const requiereFechaFin = (id: string) =>
-  SITUACIONES_TERAPEUTICAS.find(s => s.id === id)?.requiereFin ?? false;
-
-
 export function AgregarAfiliado() {
   const navigate = useNavigate();
   const [showAltaPopup, setShowAltaPopup] = useState(false);
   const [formData, setFormData] = useState({
     tipoDocumento: "DNI",
-    nroDocumento: "",
+    dni: "",
     nombre: "",
     apellido: "",
-    fechaNacimiento: "", // yyyy-mm-dd
-    planMedico: "210",
+    fechaNacimiento: "",
+    plan: "",
     credencial: "",
     telefono: "",
     telefono2: "",
@@ -78,7 +66,7 @@ export function AgregarAfiliado() {
   const [showEmail2, setShowEmail2] = useState(false);
   const [showAddress2, setShowAddress2] = useState(false);
 
-  const [situaciones, setSituaciones] = useState<Situacion[]>([]); 
+  const [situaciones, setSituaciones] = useState<Situacion[]>([]);
   const [familiares, setFamiliares] = useState<Familiar[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -105,7 +93,6 @@ export function AgregarAfiliado() {
     });
   };
 
-  // Familiares
   const agregarFamiliar = () => {
     const nuevoFamiliar: Familiar = {
       tipoDocumento: "DNI",
@@ -116,6 +103,7 @@ export function AgregarAfiliado() {
       parentesco: "Hijo",
       telefono: "",
       email: "",
+      direccion: "",
       usaDireccionTitular: true,
       usaContactoTitular: false,
       situaciones: [],
@@ -127,7 +115,7 @@ export function AgregarAfiliado() {
     setFamiliares((prev) => prev.filter((_, i) => i !== posicion));
   };
 
-  const cambiarDatoFamiliar = (posicion: number, campo: keyof Familiar, valor: string) => {
+  const cambiarDatoFamiliar = (posicion: number, campo: keyof Familiar, valor: any) => {
     setFamiliares((prev) => {
       const next = [...prev];
       next[posicion] = { ...next[posicion], [campo]: valor };
@@ -135,7 +123,6 @@ export function AgregarAfiliado() {
     });
   };
 
-  // Situaciones por FAMILIAR 
   const addSituacionFamiliar = (i: number) => {
     setFamiliares((prev) => {
       const next = [...prev];
@@ -169,86 +156,50 @@ export function AgregarAfiliado() {
     });
   };
 
-  // Validación mínima del titular
-const validate = () => {
-  const newErrors: Record<string, string> = {};
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
 
-  // ---- Validación Titular ----
-  if (!formData.nroDocumento?.trim()) newErrors.nroDocumento = "Requerido";
-  if (!formData.nombre?.trim()) newErrors.nombre = "Requerido";
-  if (!formData.apellido?.trim()) newErrors.apellido = "Requerido";
+    if (!formData.dni?.trim()) newErrors.dni = "Requerido";
+    if (!formData.nombre?.trim()) newErrors.nombre = "Requerido";
+    if (!formData.apellido?.trim()) newErrors.apellido = "Requerido";
 
-  if (!formData.fechaNacimiento) newErrors.fechaNacimiento = "Requerido";
-  else {
-    const fechaNac = new Date(formData.fechaNacimiento);
-    const hoy = new Date();
-    if (fechaNac > hoy) newErrors.fechaNacimiento = "La fecha no puede ser futura";
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (formData.email && !emailRegex.test(formData.email))
-    newErrors.email = "Formato de email inválido";
-  if (formData.email2 && !emailRegex.test(formData.email2))
-    newErrors.email2 = "Formato de email inválido";
-
-  if (!formData.planMedico) newErrors.planMedico = "Requerido";
-
-  // ---- Validación Familiares ----
-  familiares.forEach((f, index) => {
-    const prefix = `familiares[${index}]`;
-    if (!f.nroDocumento?.trim()) newErrors[`${prefix}.nroDocumento`] = "Requerido";
-    if (!f.nombre?.trim()) newErrors[`${prefix}.nombre`] = "Requerido";
-    if (!f.apellido?.trim()) newErrors[`${prefix}.apellido`] = "Requerido";
-
-    if (!f.fechaNacimiento) {
-      newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
+    if (!formData.fechaNacimiento) {
+      newErrors.fechaNacimiento = "Requerido";
     } else {
-      const fechaNac = new Date(f.fechaNacimiento);
+      const fechaNac = new Date(formData.fechaNacimiento);
       const hoy = new Date();
-      if (fechaNac > hoy) newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+      if (fechaNac > hoy) newErrors.fechaNacimiento = "La fecha no puede ser futura";
     }
 
-    if (f.email && !emailRegex.test(f.email))
-      newErrors[`${prefix}.email`] = "Formato de email inválido";
-  });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email))
+      newErrors.email = "Formato de email inválido";
+    if (formData.email2 && !emailRegex.test(formData.email2))
+      newErrors.email2 = "Formato de email inválido";
 
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
+    if (!formData.plan) newErrors.plan = "Requerido";
 
-  
+    familiares.forEach((f, index) => {
+      const prefix = `familiares[${index}]`;
+      if (!f.nroDocumento?.trim()) newErrors[`${prefix}.nroDocumento`] = "Requerido";
+      if (!f.nombre?.trim()) newErrors[`${prefix}.nombre`] = "Requerido";
+      if (!f.apellido?.trim()) newErrors[`${prefix}.apellido`] = "Requerido";
 
-  const mapFamiliaresToAffiliates = (lista: Familiar[], titular: typeof formData): AffiliateType[] => {
-    const prefix = getCredPrefix(titular.credencial) || titular.nroDocumento || "GRP";
+      if (!f.fechaNacimiento) {
+        newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
+      } else {
+        const fechaNac = new Date(f.fechaNacimiento);
+        const hoy = new Date();
+        if (fechaNac > hoy) newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+      }
 
-    return lista.map((f, idx) => {
-      const fechaNac = f.fechaNacimiento ? isoToDDMMYYYY(f.fechaNacimiento) : "";
-
-      const situacionesPayload = (f.situaciones || []).map(s => ({
-        situacion: s.situacion,
-        fechaFinalizacion: isoToDDMMYYYY(s.fechaFinalizacion || ""),
-      }));
-
-      return {
-        credencial: buildChildCredential(prefix, idx + 1),
-        dni: f.nroDocumento,
-        nombre: f.nombre,
-        apellido: f.apellido,
-        fechaNacimiento: fechaNac,
-        plan: titular.planMedico,
-        planMedico: titular.planMedico,
-        direccion: f.usaDireccionTitular ? titular.direccion : (f.direccion || ""),
-        direccion2: f.usaDireccionTitular ? titular.direccion2 : (f.direccion2 || ""),
-        telefono: f.usaContactoTitular ? titular.telefono : (f.telefono || ""),
-        email: f.usaContactoTitular ? titular.email : (f.email || ""),
-        parentesco: f.parentesco,
-        tipoDocumento: f.tipoDocumento,
-        nroDocumento: f.nroDocumento,
-        situaciones: situacionesPayload,
-      } as AffiliateType;
+      if (f.email && !emailRegex.test(f.email))
+        newErrors[`${prefix}.email`] = "Formato de email inválido";
     });
-  };
 
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -257,77 +208,75 @@ const validate = () => {
     setLoading(true);
     setSuccess(null);
 
-    const titular: AffiliateType = {
-      credencial: formData.credencial,
-      dni: formData.nroDocumento,
-      nombre: formData.nombre,
-      apellido: formData.apellido,
-      fechaNacimiento: isoToDDMMYYYY(formData.fechaNacimiento),
-      plan: formData.planMedico,
-      planMedico: formData.planMedico,
-      direccion: formData.direccion,
-      direccion2: formData.direccion2,
-      telefono: formData.telefono,
-      telefono2: formData.telefono2,
-      email: formData.email,
-      email2: formData.email2,
-      parentesco: "Titular",
-      tipoDocumento: formData.tipoDocumento,
-      nroDocumento: formData.nroDocumento,
-      situaciones: (situaciones || []).map(s => ({
-        situacion: s.situacion,
-        fechaFinalizacion: isoToDDMMYYYY(s.fechaFinalizacion || ""),
-      })),
-    };
-
     try {
-      const familiaresMapped = mapFamiliaresToAffiliates(familiares, formData);
-      const grupo: AffiliateType[] = [titular, ...familiaresMapped];
+      // Construir el payload según el formato esperado
+      const payload = {
+        dni: formData.dni,
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        email: formData.email || undefined,
+        telefono: formData.telefono || undefined,
+        direccion: formData.direccion || undefined,
+        plan: parseInt(formData.plan) || undefined,
+        familiares: familiares.map(f => ({
+          dni: f.nroDocumento,
+          nombre: f.nombre,
+          apellido: f.apellido,
+          parentesco: f.parentesco,
+          email: f.usaContactoTitular ? formData.email : (f.email || undefined),
+          telefono: f.usaContactoTitular ? formData.telefono : (f.telefono || undefined),
+          direccion: f.usaDireccionTitular ? formData.direccion : (f.direccion || undefined),
+        }))
+      };
 
-      await new Promise((res) => setTimeout(res, 700));
-      console.log("Grupo familiar a guardar:", grupo);
+      const response = await fetch(`${API_URL}/affiliates`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al crear el afiliado");
+      }
 
       setLoading(false);
       setSuccess("Afiliado y familiares creados con éxito");
-      setTimeout(() => navigate("/home"), 700);
+      setTimeout(() => navigate("/home"), 1500);
     } catch (err) {
       setLoading(false);
-      setErrors((prev) => ({ ...prev, submit: "Error al guardar" }));
+      setErrors((prev) => ({ ...prev, submit: "Error al guardar: " + (err as Error).message }));
     }
   };
 
   return (
     <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 mx-auto mt-6 shadow">
-      {/* Header*/}
       <div className="flex flex-col items-center sm:items-start mb-6 gap-4">
         <h1 className="text-2xl font-semibold text-gray-800 text-center sm:text-left">
           Crear nuevo afiliado
         </h1>
 
         <div className="flex flex-wrap justify-center sm:justify-start gap-3">
-          <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
-          <ButtonProgramateAffiliate
-            text="Programar Alta"
+          <button
+            onClick={() => navigate("/home")}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            Volver
+          </button>
+          <button
             onClick={() => setShowAltaPopup(true)}
-          />
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Programar Alta
+          </button>
         </div>
       </div>
-
-      {showAltaPopup && (
-        <AltaProgramadaPopup
-          onClose={() => setShowAltaPopup(false)}
-          onConfirm={(fechaISO) => {
-            console.log("Alta programada para:", fechaISO);
-            alert(`Alta programada para ${new Date(fechaISO).toLocaleString()}`);
-            setShowAltaPopup(false);
-          }}
-        />
-      )}
 
       <div className="mx-auto w-full max-w-4xl space-y-8">
         {/* DATOS DE AFILIADO (Titular) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-green-600 text-lg font-semibold mb-4 border-b-2 border-green-600 pb-1">
             Datos de Afiliado (Titular)
           </h2>
           <div className="grid grid-cols-2 gap-4">
@@ -340,9 +289,9 @@ const validate = () => {
                 className="p-2 border border-gray-300 rounded"
               >
                 <option value="DNI">DNI</option>
-                <option value="LE">CUIL</option>
+                <option value="CUIL">CUIL</option>
                 <option value="CUIT">CUIT</option>
-                <option value="LC">DOCUMENTO EXTRANJERO</option>
+                <option value="DOCUMENTO EXTRANJERO">DOCUMENTO EXTRANJERO</option>
                 <option value="CDI">CDI</option>
                 <option value="PASAPORTE">Pasaporte</option>
               </select>
@@ -352,13 +301,13 @@ const validate = () => {
               <label className="font-semibold mb-1 bg-gray-100 px-2">Nro Documento (*)</label>
               <input
                 type="text"
-                name="nroDocumento"
-                value={formData.nroDocumento}
+                name="dni"
+                value={formData.dni}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
               />
-              {errors.nroDocumento && (
-                <p className="text-red-500 text-sm mt-1">{errors.nroDocumento}</p>
+              {errors.dni && (
+                <p className="text-red-500 text-sm mt-1">{errors.dni}</p>
               )}
             </div>
 
@@ -403,60 +352,30 @@ const validate = () => {
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Plan Médico (*)</label>
               <select
-                name="planMedico"
-                value={formData.planMedico}
+                name="plan"
+                value={formData.plan}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
               >
-                <option value="210">210</option>
-                <option value="310">310</option>
-                <option value="410">410</option>
-                <option value="510">510</option>
-                <option value="Bronce">Bronce</option>
-                <option value="Plata">Plata</option>
-                <option value="Oro">Oro</option>
-                <option value="Platino">Platino</option>
+                <option value="">Seleccionar...</option>
+                <option value="1">Plan 1</option>
+                <option value="2">Plan 2</option>
+                <option value="3">Plan 3</option>
               </select>
-              {errors.planMedico && (
-                <p className="text-red-500 text-sm mt-1">{errors.planMedico}</p>
+              {errors.plan && (
+                <p className="text-red-500 text-sm mt-1">{errors.plan}</p>
               )}
-            </div>
-
-            <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Credencial</label>
-              <input
-                type="text"
-                name="credencial"
-                value={formData.credencial}
-                onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
-                placeholder="Ej: ABC123-00 (el prefijo agrupa familiares)"
-                disabled
-                readOnly
-              />
-            </div>
-
-            <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Parentesco</label>
-              <input
-                type="text"
-                value="Titular"
-                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
-                disabled
-                readOnly
-              />
             </div>
           </div>
         </div>
 
         {/* DATOS DE CONTACTO */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-green-600 text-lg font-semibold mb-4 border-b-2 border-green-600 pb-1">
             Datos de Contacto
           </h2>
-          <div className="grid grid-cols-2 gap-4">
-            {/* Teléfono */}
-            <div className="flex flex-col col-span-2">
+          <div className="grid grid-cols-1 gap-4">
+            <div className="flex flex-col">
               <label className="font-semibold mb-1">Teléfono</label>
               <input
                 type="text"
@@ -466,43 +385,9 @@ const validate = () => {
                 className="p-2 border border-gray-300 rounded"
                 placeholder="Teléfono"
               />
-
-              {showPhone2 && (
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="text"
-                    name="telefono2"
-                    value={formData.telefono2}
-                    onChange={handleInputChange}
-                    className="flex-1 p-2 border border-gray-300 rounded"
-                    placeholder="Teléfono adicional"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({ ...prev, telefono2: "" }));
-                      setShowPhone2(false);
-                    }}
-                    className="px-3 py-2 border rounded hover:bg-gray-50"
-                  >
-                    Quitar
-                  </button>
-                </div>
-              )}
-
-              {!showPhone2 && (
-                <button
-                  type="button"
-                  onClick={() => setShowPhone2(true)}
-                  className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
-                >
-                  + Agregar otro
-                </button>
-              )}
             </div>
 
-            {/* Email */}
-            <div className="flex flex-col col-span-2">
+            <div className="flex flex-col">
               <label className="font-semibold mb-1">Email</label>
               <input
                 type="email"
@@ -513,45 +398,9 @@ const validate = () => {
                 placeholder="Email"
               />
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-
-              {showEmail2 && (
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="email"
-                    name="email2"
-                    value={formData.email2}
-                    onChange={handleInputChange}
-                    className="flex-1 p-2 border border-gray-300 rounded"
-                    placeholder="Email adicional"
-                  />
-                  {errors.email2 && <p className="text-red-500 text-xs mt-1">{errors.email2}</p>}
-                  
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({ ...prev, email2: "" }));
-                      setShowEmail2(false);
-                    }}
-                    className="px-3 py-2 border rounded hover:bg-gray-50"
-                  >
-                    Quitar
-                  </button>
-                </div>
-              )}
-
-              {!showEmail2 && (
-                <button
-                  type="button"
-                  onClick={() => setShowEmail2(true)}
-                  className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
-                >
-                  + Agregar otro
-                </button>
-              )}
             </div>
 
-            {/* Dirección */}
-            <div className="flex flex-col col-span-2">
+            <div className="flex flex-col">
               <label className="font-semibold mb-1">Dirección</label>
               <input
                 type="text"
@@ -561,126 +410,13 @@ const validate = () => {
                 className="p-2 border border-gray-300 rounded"
                 placeholder="Dirección"
               />
-
-              {showAddress2 && (
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="text"
-                    name="direccion2"
-                    value={formData.direccion2}
-                    onChange={handleInputChange}
-                    className="flex-1 p-2 border border-gray-300 rounded"
-                    placeholder="Dirección adicional"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({ ...prev, direccion2: "" }));
-                      setShowAddress2(false);
-                    }}
-                    className="px-3 py-2 border rounded hover:bg-gray-50"
-                  >
-                    Quitar
-                  </button>
-                </div>
-              )}
-
-              {!showAddress2 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAddress2(true)}
-                  className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
-                >
-                  + Agregar otro
-                </button>
-              )}
             </div>
           </div>
         </div>
-        {/* SITUACIONES TERAPÉUTICAS (Titular) */}
-        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-            Situaciones Terapéuticas
-          </h2>
-
-          <div className="space-y-2">
-            {situaciones.length === 0 && (
-              <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
-            )}
-
-            {situaciones.map((s, idx) => {
-              const tieneFecha = ["embarazo","rehab_motriz","kinesiologia","psicoterapia","fonoaudiologia"].includes(s.situacion);
-              return (
-                <div
-                  key={idx}
-                  className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
-                >
-                  {/* Select */}
-                  <div className="flex flex-col">
-                    <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
-                    <select
-                      value={s.situacion}
-                      onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
-                      className="p-2 border border-gray-300 rounded"
-                    >
-                      <option value="">-- Seleccionar --</option>
-                      <option value="embarazo">Embarazo</option>
-                      <option value="diabetes">Diabetes</option>
-                      <option value="miopia">Miopía</option>
-                      <option value="hipertension">Hipertensión</option>
-                      <option value="rehab_motriz">Rehabilitación motriz</option>
-                      <option value="kinesiologia">Kinesiología</option>
-                      <option value="psicoterapia">Psicoterapia</option>
-                      <option value="fonoaudiologia">Fonoaudiología</option>
-                      <option value="otra">Otra</option>
-                    </select>
-                  </div>
-
-                  {/* Fecha*/}
-                  {tieneFecha ? (
-                    <div className="flex flex-col">
-                      <label className="text-sm font-semibold mb-1">Fecha de finalización</label>
-                      <input
-                        type="date"
-                        value={s.fechaFinalizacion || ""}
-                        onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
-                        className="p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                  ) : (
-                    <div />
-                  )}
-
-                  {/* Botón agregar */}
-                  <div className="justify-self-end">
-                    <button
-                      type="button"
-                      onClick={() => removeSituacion(idx)}
-                      className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Botón agregar */}
-            <button
-              type="button"
-              onClick={addSituacion}
-              className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
-            >
-              + Agregar
-            </button>
-          </div>
-        </div>
-
-
 
         {/* FAMILIARES A CARGO */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-green-600 text-lg font-semibold mb-4 border-b-2 border-green-600 pb-1">
             Familiares a Cargo
           </h2>
 
@@ -710,11 +446,8 @@ const validate = () => {
                     className="p-2 border border-gray-300 rounded"
                   >
                     <option value="DNI">DNI</option>
-                    <option value="LE">CUIL</option>
+                    <option value="CUIL">CUIL</option>
                     <option value="CUIT">CUIT</option>
-                    <option value="LC">DOCUMENTO EXTRANJERO</option>
-                    <option value="CDI">CDI</option>
-                    <option value="PASAPORTE">Pasaporte</option>
                   </select>
                 </div>
 
@@ -779,111 +512,71 @@ const validate = () => {
                   >
                     <option value="Cónyuge">Cónyuge</option>
                     <option value="Hijo">Hijo</option>
+                    <option value="Hija">Hija</option>
                     <option value="Familiar a cargo">Familiar a cargo</option>
                   </select>
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="font-semibold mb-1 text-sm">Teléfono</label>
-                  <input
-                    type="text"
-                    value={familiar.telefono || ""}
-                    onChange={(e) => cambiarDatoFamiliar(i, "telefono", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
-                  />
+                <div className="flex flex-col col-span-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={familiar.usaContactoTitular}
+                      onChange={(e) => cambiarDatoFamiliar(i, "usaContactoTitular", e.target.checked)}
+                    />
+                    <span className="text-sm">Usar contacto del titular</span>
+                  </label>
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="font-semibold mb-1 text-sm">Email</label>
-                  <input
-                    type="email"
-                    value={familiar.email || ""}
-                    onChange={(e) => cambiarDatoFamiliar(i, "email", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
-                  />
-                  {errors[`familiares[${i}].email`] && (
-                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].email`]}</p>
-                  )}
+                {!familiar.usaContactoTitular && (
+                  <>
+                    <div className="flex flex-col">
+                      <label className="font-semibold mb-1 text-sm">Teléfono</label>
+                      <input
+                        type="text"
+                        value={familiar.telefono || ""}
+                        onChange={(e) => cambiarDatoFamiliar(i, "telefono", e.target.value)}
+                        className="p-2 border border-gray-300 rounded"
+                      />
+                    </div>
+
+                    <div className="flex flex-col">
+                      <label className="font-semibold mb-1 text-sm">Email</label>
+                      <input
+                        type="email"
+                        value={familiar.email || ""}
+                        onChange={(e) => cambiarDatoFamiliar(i, "email", e.target.value)}
+                        className="p-2 border border-gray-300 rounded"
+                      />
+                      {errors[`familiares[${i}].email`] && (
+                        <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].email`]}</p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <div className="flex flex-col col-span-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={familiar.usaDireccionTitular}
+                      onChange={(e) => cambiarDatoFamiliar(i, "usaDireccionTitular", e.target.checked)}
+                    />
+                    <span className="text-sm">Usar dirección del titular</span>
+                  </label>
                 </div>
-              </div>
 
-              {/* Situaciones del familiar */}
-              <div className="mt-4 p-3 rounded-lg border border-dashed border-gray-300 bg-white">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-gray-700 text-sm">Situaciones del familiar</h4>
-                </div>
-
-                <div className="space-y-2">
-                  {situaciones.length === 0 && (
-                    <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
-                  )}
-
-                  {situaciones.map((s, idx) => {
-                    const tieneFecha = ["embarazo","rehab_motriz","kinesiologia","psicoterapia","fonoaudiologia"].includes(s.situacion);
-                    return (
-                      <div
-                        key={idx}
-                        className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
-                      >
-                        {/* Select */}
-                        <div className="flex flex-col">
-                          <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
-                          <select
-                            value={s.situacion}
-                            onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
-                            className="p-2 border border-gray-300 rounded"
-                          >
-                            <option value="">-- Seleccionar --</option>
-                            <option value="embarazo">Embarazo</option>
-                            <option value="diabetes">Diabetes</option>
-                            <option value="miopia">Miopía</option>
-                            <option value="hipertension">Hipertensión</option>
-                            <option value="rehab_motriz">Rehabilitación motriz</option>
-                            <option value="kinesiologia">Kinesiología</option>
-                            <option value="psicoterapia">Psicoterapia</option>
-                            <option value="fonoaudiologia">Fonoaudiología</option>
-                            <option value="otra">Otra</option>
-                          </select>
-                        </div>
-
-                        {/* Fecha */}
-                        {tieneFecha ? (
-                          <div className="flex flex-col">
-                            <label className="text-sm font-semibold mb-1">Fecha de finalización</label>
-                            <input
-                              type="date"
-                              value={s.fechaFinalizacion || ""}
-                              onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
-                              className="p-2 border border-gray-300 rounded"
-                            />
-                          </div>
-                        ) : (
-                          <div />
-                        )}
-
-                        {/* Botón eliminar */}
-                        <div className="justify-self-end">
-                          <button
-                            type="button"
-                            onClick={() => removeSituacion(idx)}
-                            className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Botón agregar */}
-                  <button
-                    type="button"
-                    onClick={addSituacion}
-                    className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
-                  >
-                    + Agregar
-                  </button>
-                </div>
+                {!familiar.usaDireccionTitular && (
+                  <div className="flex flex-col col-span-2">
+                    <label className="font-semibold mb-1 text-sm">Dirección</label>
+                    <input
+                      type="text"
+                      value={familiar.direccion || ""}
+                      onChange={(e) => cambiarDatoFamiliar(i, "direccion", e.target.value)}
+                      className="p-2 border border-gray-300 rounded"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -891,13 +584,11 @@ const validate = () => {
           <button
             type="button"
             onClick={agregarFamiliar}
-            className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+            className="text-sm px-4 py-2 border-2 border-green-600 text-green-600 rounded font-semibold hover:bg-green-600 hover:text-white transition"
           >
             + Agregar Familiar
           </button>
         </div>
-
-
       </div>
 
       {/* BOTONES */}
@@ -905,7 +596,7 @@ const validate = () => {
         <button
           type="submit"
           onClick={handleSubmit}
-          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
+          className="bg-green-600 text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
           disabled={loading}
         >
           {loading ? "Guardando..." : "Crear Afiliado"}
