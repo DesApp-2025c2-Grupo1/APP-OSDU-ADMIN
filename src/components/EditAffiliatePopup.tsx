@@ -44,7 +44,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const updatedAffiliate: AffiliateType = {
       credencial: formData.credencial,
       dni: formData.nroDocumento || formData.dni || "",
@@ -65,8 +65,33 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
       situaciones: situaciones,
     };
 
-    onSave(updatedAffiliate);
-    onClose();
+    try {
+      const response = await fetch("http://localhost:3000/affiliates", {
+        method: "PUT", // o POST dependiendo de tu backend
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          dni: affiliate.dni,          // DNI actual
+          new_dni: updatedAffiliate.dni, // DNI actualizado
+          nombre: updatedAffiliate.nombre,
+          apellido: updatedAffiliate.apellido,
+          direccion: updatedAffiliate.direccion,
+          // agrega más campos si tu API lo requiere
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al actualizar el afiliado");
+      }
+
+      const data = await response.json();
+      onSave(updatedAffiliate); // Actualiza el estado en el frontend
+      onClose();
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo actualizar el afiliado");
+    }
   };
 
   return (

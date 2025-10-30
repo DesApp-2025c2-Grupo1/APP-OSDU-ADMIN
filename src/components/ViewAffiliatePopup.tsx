@@ -1,4 +1,3 @@
-import React from "react";
 import type { Affiliate as AffiliateType } from "./AffiliatesTable";
 
 interface ViewAffiliatePopupProps {
@@ -62,7 +61,7 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
             </div>
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2">Fecha nacimiento</label>
-              <p className="p-2 border border-gray-200 rounded">{affiliate.fechaNacimiento}</p>
+              <p className="p-2 border border-gray-200 rounded">{affiliate.fecha_nacimiento}</p>
             </div>
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2">Plan Médico</label>

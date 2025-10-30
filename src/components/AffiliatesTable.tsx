@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { OptionsMenu } from "./OptionsMenu";
 import { EditAffiliatePopup } from "./EditAffiliatePopup";
@@ -9,9 +9,10 @@ import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 export type Affiliate = {
   credencial: string;
   dni: string;
+  idGrupoFamiliarFK: number,
   nombre: string;
   apellido: string;
-  fechaNacimiento: string;
+  fecha_nacimiento: string;
   plan: string;
   direccion: string;
   parentesco?: string;
@@ -107,7 +108,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
                   <td className="px-4 py-2 text-sm">{a.dni}</td>
                   <td className="px-4 py-2 text-sm">{a.nombre}</td>
                   <td className="px-4 py-2 text-sm">{a.apellido}</td>
-                  <td className="px-4 py-2 text-sm">{a.fechaNacimiento}</td>
+                  <td className="px-4 py-2 text-sm">{a.fecha_nacimiento}</td>
                   <td className="px-4 py-2 text-sm">{a.plan}</td>
                   <td className="px-4 py-2 text-sm">{a.direccion}</td>
                   <td className="px-4 py-2 text-center relative">
@@ -168,7 +169,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
-                    <div className="text-sm">{a.fechaNacimiento}</div>
+                    <div className="text-sm">{a.fecha_nacimiento}</div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 uppercase">Plan</div>

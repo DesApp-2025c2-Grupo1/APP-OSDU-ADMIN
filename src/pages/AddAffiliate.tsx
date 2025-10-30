@@ -1,9 +1,15 @@
 import React, { useState } from "react";
 import { ButtonVolver } from "../util/ButtonVolver";
-import {ButtonProgramateAffiliate} from "../util/ButtonProgramateAffiliate";
+import { ButtonProgramateAffiliate } from "../util/ButtonProgramateAffiliate";
 import AltaProgramadaPopup from "../components/AltaProgramadaPopup";
 import { useNavigate } from "react-router-dom";
-import type { Affiliate as AffiliateType } from "../components/AffiliatesTable";
+import {
+  PLAN_MAP,
+  dateToISO,
+  mapEmails,
+  mapTelefonos,
+  mapSituaciones
+} from "../helpers/AffiliateApiHelpers";
 
 interface Situacion {
   situacion: string;
@@ -15,7 +21,7 @@ interface Familiar {
   nroDocumento: string;
   nombre: string;
   apellido: string;
-  fechaNacimiento: string; // yyyy-mm-dd (input date)
+  fechaNacimiento: string;
   parentesco: string;
   telefono?: string;
   email?: string;
@@ -23,36 +29,8 @@ interface Familiar {
   direccion2?: string;
   usaDireccionTitular?: boolean;
   usaContactoTitular?: boolean;
-  situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>; 
+  situaciones?: Situacion[];
 }
-
-// Helpers
-const getCredPrefix = (cred: string) => (cred || "").split("-")[0]?.trim() || "";
-const buildChildCredential = (prefix: string, index: number) =>
-  `${prefix}-${String(index).padStart(2, "0")}`;
-
-const isoToDDMMYYYY = (iso: string) => {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-};
-
-// catálogos situaciones
-const SITUACIONES_TERAPEUTICAS = [
-  { id: "embarazo", nombre: "Embarazo", requiereFin: true },
-  { id: "diabetes", nombre: "Diabetes", requiereFin: false },
-  { id: "miopia", nombre: "Miopía", requiereFin: false },
-  { id: "hipertension", nombre: "Hipertensión", requiereFin: false },
-  { id: "rehab_motriz", nombre: "Rehabilitación motriz", requiereFin: true },
-  { id: "kinesiologia", nombre: "Kinesiología", requiereFin: true },
-  { id: "psicoterapia", nombre: "Psicoterapia", requiereFin: true },
-  { id: "fonoaudiologia", nombre: "Fonoaudiología", requiereFin: true },
-  { id: "otra", nombre: "Otra", requiereFin: false },
-];
-
-const requiereFechaFin = (id: string) =>
-  SITUACIONES_TERAPEUTICAS.find(s => s.id === id)?.requiereFin ?? false;
-
 
 export function AgregarAfiliado() {
   const navigate = useNavigate();
@@ -62,7 +40,7 @@ export function AgregarAfiliado() {
     nroDocumento: "",
     nombre: "",
     apellido: "",
-    fechaNacimiento: "", // yyyy-mm-dd
+    fechaNacimiento: "",
     planMedico: "210",
     credencial: "",
     telefono: "",
@@ -78,7 +56,7 @@ export function AgregarAfiliado() {
   const [showEmail2, setShowEmail2] = useState(false);
   const [showAddress2, setShowAddress2] = useState(false);
 
-  const [situaciones, setSituaciones] = useState<Situacion[]>([]); 
+  const [situaciones, setSituaciones] = useState<Situacion[]>([]);
   const [familiares, setFamiliares] = useState<Familiar[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -105,7 +83,6 @@ export function AgregarAfiliado() {
     });
   };
 
-  // Familiares
   const agregarFamiliar = () => {
     const nuevoFamiliar: Familiar = {
       tipoDocumento: "DNI",
@@ -127,7 +104,7 @@ export function AgregarAfiliado() {
     setFamiliares((prev) => prev.filter((_, i) => i !== posicion));
   };
 
-  const cambiarDatoFamiliar = (posicion: number, campo: keyof Familiar, valor: string) => {
+  const cambiarDatoFamiliar = (posicion: number, campo: keyof Familiar, valor: any) => {
     setFamiliares((prev) => {
       const next = [...prev];
       next[posicion] = { ...next[posicion], [campo]: valor };
@@ -135,7 +112,6 @@ export function AgregarAfiliado() {
     });
   };
 
-  // Situaciones por FAMILIAR 
   const addSituacionFamiliar = (i: number) => {
     setFamiliares((prev) => {
       const next = [...prev];
@@ -169,86 +145,51 @@ export function AgregarAfiliado() {
     });
   };
 
-  // Validación mínima del titular
-const validate = () => {
-  const newErrors: Record<string, string> = {};
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
 
-  // ---- Validación Titular ----
-  if (!formData.nroDocumento?.trim()) newErrors.nroDocumento = "Requerido";
-  if (!formData.nombre?.trim()) newErrors.nombre = "Requerido";
-  if (!formData.apellido?.trim()) newErrors.apellido = "Requerido";
+    // Validación Titular
+    if (!formData.nroDocumento?.trim()) newErrors.nroDocumento = "Requerido";
+    if (!formData.nombre?.trim()) newErrors.nombre = "Requerido";
+    if (!formData.apellido?.trim()) newErrors.apellido = "Requerido";
 
-  if (!formData.fechaNacimiento) newErrors.fechaNacimiento = "Requerido";
-  else {
-    const fechaNac = new Date(formData.fechaNacimiento);
-    const hoy = new Date();
-    if (fechaNac > hoy) newErrors.fechaNacimiento = "La fecha no puede ser futura";
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (formData.email && !emailRegex.test(formData.email))
-    newErrors.email = "Formato de email inválido";
-  if (formData.email2 && !emailRegex.test(formData.email2))
-    newErrors.email2 = "Formato de email inválido";
-
-  if (!formData.planMedico) newErrors.planMedico = "Requerido";
-
-  // ---- Validación Familiares ----
-  familiares.forEach((f, index) => {
-    const prefix = `familiares[${index}]`;
-    if (!f.nroDocumento?.trim()) newErrors[`${prefix}.nroDocumento`] = "Requerido";
-    if (!f.nombre?.trim()) newErrors[`${prefix}.nombre`] = "Requerido";
-    if (!f.apellido?.trim()) newErrors[`${prefix}.apellido`] = "Requerido";
-
-    if (!f.fechaNacimiento) {
-      newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
-    } else {
-      const fechaNac = new Date(f.fechaNacimiento);
+    if (!formData.fechaNacimiento) newErrors.fechaNacimiento = "Requerido";
+    else {
+      const fechaNac = new Date(formData.fechaNacimiento);
       const hoy = new Date();
-      if (fechaNac > hoy) newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+      if (fechaNac > hoy) newErrors.fechaNacimiento = "La fecha no puede ser futura";
     }
 
-    if (f.email && !emailRegex.test(f.email))
-      newErrors[`${prefix}.email`] = "Formato de email inválido";
-  });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email))
+      newErrors.email = "Formato de email inválido";
+    if (formData.email2 && !emailRegex.test(formData.email2))
+      newErrors.email2 = "Formato de email inválido";
 
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
+    if (!formData.planMedico) newErrors.planMedico = "Requerido";
 
-  
+    // Validación Familiares
+    familiares.forEach((f, index) => {
+      const prefix = `familiares[${index}]`;
+      if (!f.nroDocumento?.trim()) newErrors[`${prefix}.nroDocumento`] = "Requerido";
+      if (!f.nombre?.trim()) newErrors[`${prefix}.nombre`] = "Requerido";
+      if (!f.apellido?.trim()) newErrors[`${prefix}.apellido`] = "Requerido";
 
-  const mapFamiliaresToAffiliates = (lista: Familiar[], titular: typeof formData): AffiliateType[] => {
-    const prefix = getCredPrefix(titular.credencial) || titular.nroDocumento || "GRP";
+      if (!f.fechaNacimiento) {
+        newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
+      } else {
+        const fechaNac = new Date(f.fechaNacimiento);
+        const hoy = new Date();
+        if (fechaNac > hoy) newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+      }
 
-    return lista.map((f, idx) => {
-      const fechaNac = f.fechaNacimiento ? isoToDDMMYYYY(f.fechaNacimiento) : "";
-
-      const situacionesPayload = (f.situaciones || []).map(s => ({
-        situacion: s.situacion,
-        fechaFinalizacion: isoToDDMMYYYY(s.fechaFinalizacion || ""),
-      }));
-
-      return {
-        credencial: buildChildCredential(prefix, idx + 1),
-        dni: f.nroDocumento,
-        nombre: f.nombre,
-        apellido: f.apellido,
-        fechaNacimiento: fechaNac,
-        plan: titular.planMedico,
-        planMedico: titular.planMedico,
-        direccion: f.usaDireccionTitular ? titular.direccion : (f.direccion || ""),
-        direccion2: f.usaDireccionTitular ? titular.direccion2 : (f.direccion2 || ""),
-        telefono: f.usaContactoTitular ? titular.telefono : (f.telefono || ""),
-        email: f.usaContactoTitular ? titular.email : (f.email || ""),
-        parentesco: f.parentesco,
-        tipoDocumento: f.tipoDocumento,
-        nroDocumento: f.nroDocumento,
-        situaciones: situacionesPayload,
-      } as AffiliateType;
+      if (f.email && !emailRegex.test(f.email))
+        newErrors[`${prefix}.email`] = "Formato de email inválido";
     });
-  };
 
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -256,49 +197,71 @@ const validate = () => {
 
     setLoading(true);
     setSuccess(null);
-
-    const titular: AffiliateType = {
-      credencial: formData.credencial,
-      dni: formData.nroDocumento,
-      nombre: formData.nombre,
-      apellido: formData.apellido,
-      fechaNacimiento: isoToDDMMYYYY(formData.fechaNacimiento),
-      plan: formData.planMedico,
-      planMedico: formData.planMedico,
-      direccion: formData.direccion,
-      direccion2: formData.direccion2,
-      telefono: formData.telefono,
-      telefono2: formData.telefono2,
-      email: formData.email,
-      email2: formData.email2,
-      parentesco: "Titular",
-      tipoDocumento: formData.tipoDocumento,
-      nroDocumento: formData.nroDocumento,
-      situaciones: (situaciones || []).map(s => ({
-        situacion: s.situacion,
-        fechaFinalizacion: isoToDDMMYYYY(s.fechaFinalizacion || ""),
-      })),
-    };
+    setErrors({});
 
     try {
-      const familiaresMapped = mapFamiliaresToAffiliates(familiares, formData);
-      const grupo: AffiliateType[] = [titular, ...familiaresMapped];
+      // Construir payload para la API
+      const payload = {
+        dni: formData.nroDocumento,
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        direccion: formData.direccion || "",
+        fecha_nacimiento: dateToISO(formData.fechaNacimiento),
+        plan: PLAN_MAP[formData.planMedico] || 1,
+        emails: mapEmails(formData.email, formData.email2),
+        telefonos: mapTelefonos(formData.telefono, formData.telefono2),
+        situaciones: mapSituaciones(situaciones),
+        familiares: familiares.map(f => ({
+          dni: f.nroDocumento,
+          nombre: f.nombre,
+          apellido: f.apellido,
+          parentesco: f.parentesco,
+          fecha_nacimiento: dateToISO(f.fechaNacimiento),
+          direccion: f.usaDireccionTitular ? formData.direccion : (f.direccion || ""),
+          emails: f.usaContactoTitular
+            ? mapEmails(formData.email, formData.email2)
+            : mapEmails(f.email),
+          telefonos: f.usaContactoTitular
+            ? mapTelefonos(formData.telefono, formData.telefono2)
+            : mapTelefonos(f.telefono),
+          situaciones: mapSituaciones(f.situaciones || []),
+        })),
+      };
 
-      await new Promise((res) => setTimeout(res, 700));
-      console.log("Grupo familiar a guardar:", grupo);
+      console.log("Payload enviado:", JSON.stringify(payload, null, 2));
+
+      const response = await fetch(import.meta.env.BASE_URL + "/affiliates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log("Respuesta del servidor:", result);
 
       setLoading(false);
       setSuccess("Afiliado y familiares creados con éxito");
-      setTimeout(() => navigate("/home"), 700);
+
+      // Redirigir después de 1 segundo
+      setTimeout(() => navigate("/home"), 1000);
     } catch (err) {
       setLoading(false);
-      setErrors((prev) => ({ ...prev, submit: "Error al guardar" }));
+      const errorMessage = err instanceof Error ? err.message : "Error al guardar el afiliado";
+      setErrors({ submit: errorMessage });
+      console.error("Error al crear afiliado:", err);
     }
   };
 
   return (
     <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 mx-auto mt-6 shadow">
-      {/* Header*/}
+      {/* Header */}
       <div className="flex flex-col items-center sm:items-start mb-6 gap-4">
         <h1 className="text-2xl font-semibold text-gray-800 text-center sm:text-left">
           Crear nuevo afiliado
@@ -422,21 +385,7 @@ const validate = () => {
               )}
             </div>
 
-            <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Credencial</label>
-              <input
-                type="text"
-                name="credencial"
-                value={formData.credencial}
-                onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
-                placeholder="Ej: ABC123-00 (el prefijo agrupa familiares)"
-                disabled
-                readOnly
-              />
-            </div>
-
-            <div className="flex flex-col">
+            <div className="flex flex-col col-span-2">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Parentesco</label>
               <input
                 type="text"
@@ -525,7 +474,7 @@ const validate = () => {
                     placeholder="Email adicional"
                   />
                   {errors.email2 && <p className="text-red-500 text-xs mt-1">{errors.email2}</p>}
-                  
+
                   <button
                     type="button"
                     onClick={() => {
@@ -597,6 +546,7 @@ const validate = () => {
             </div>
           </div>
         </div>
+
         {/* SITUACIONES TERAPÉUTICAS (Titular) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
@@ -609,13 +559,12 @@ const validate = () => {
             )}
 
             {situaciones.map((s, idx) => {
-              const tieneFecha = ["embarazo","rehab_motriz","kinesiologia","psicoterapia","fonoaudiologia"].includes(s.situacion);
+              const tieneFecha = ["embarazo", "rehab_motriz", "kinesiologia", "psicoterapia", "fonoaudiologia"].includes(s.situacion);
               return (
                 <div
                   key={idx}
                   className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
                 >
-                  {/* Select */}
                   <div className="flex flex-col">
                     <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
                     <select
@@ -636,7 +585,6 @@ const validate = () => {
                     </select>
                   </div>
 
-                  {/* Fecha*/}
                   {tieneFecha ? (
                     <div className="flex flex-col">
                       <label className="text-sm font-semibold mb-1">Fecha de finalización</label>
@@ -651,7 +599,6 @@ const validate = () => {
                     <div />
                   )}
 
-                  {/* Botón agregar */}
                   <div className="justify-self-end">
                     <button
                       type="button"
@@ -665,7 +612,6 @@ const validate = () => {
               );
             })}
 
-            {/* Botón agregar */}
             <button
               type="button"
               onClick={addSituacion}
@@ -675,8 +621,6 @@ const validate = () => {
             </button>
           </div>
         </div>
-
-
 
         {/* FAMILIARES A CARGO */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
@@ -779,32 +723,73 @@ const validate = () => {
                   >
                     <option value="Cónyuge">Cónyuge</option>
                     <option value="Hijo">Hijo</option>
+                    <option value="Hija">Hija</option>
                     <option value="Familiar a cargo">Familiar a cargo</option>
                   </select>
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="font-semibold mb-1 text-sm">Teléfono</label>
-                  <input
-                    type="text"
-                    value={familiar.telefono || ""}
-                    onChange={(e) => cambiarDatoFamiliar(i, "telefono", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
-                  />
+                {/* Checkboxes para usar datos del titular */}
+                <div className="col-span-2 flex flex-col gap-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={familiar.usaDireccionTitular}
+                      onChange={(e) => cambiarDatoFamiliar(i, "usaDireccionTitular", e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    Usar dirección del titular
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={familiar.usaContactoTitular}
+                      onChange={(e) => cambiarDatoFamiliar(i, "usaContactoTitular", e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    Usar teléfono y email del titular
+                  </label>
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="font-semibold mb-1 text-sm">Email</label>
-                  <input
-                    type="email"
-                    value={familiar.email || ""}
-                    onChange={(e) => cambiarDatoFamiliar(i, "email", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
-                  />
-                  {errors[`familiares[${i}].email`] && (
-                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].email`]}</p>
-                  )}
-                </div>
+                {/* Mostrar campos de contacto solo si NO usa los del titular */}
+                {!familiar.usaContactoTitular && (
+                  <>
+                    <div className="flex flex-col">
+                      <label className="font-semibold mb-1 text-sm">Teléfono</label>
+                      <input
+                        type="text"
+                        value={familiar.telefono || ""}
+                        onChange={(e) => cambiarDatoFamiliar(i, "telefono", e.target.value)}
+                        className="p-2 border border-gray-300 rounded"
+                      />
+                    </div>
+
+                    <div className="flex flex-col">
+                      <label className="font-semibold mb-1 text-sm">Email</label>
+                      <input
+                        type="email"
+                        value={familiar.email || ""}
+                        onChange={(e) => cambiarDatoFamiliar(i, "email", e.target.value)}
+                        className="p-2 border border-gray-300 rounded"
+                      />
+                      {errors[`familiares[${i}].email`] && (
+                        <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].email`]}</p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Mostrar campo de dirección solo si NO usa la del titular */}
+                {!familiar.usaDireccionTitular && (
+                  <div className="flex flex-col col-span-2">
+                    <label className="font-semibold mb-1 text-sm">Dirección</label>
+                    <input
+                      type="text"
+                      value={familiar.direccion || ""}
+                      onChange={(e) => cambiarDatoFamiliar(i, "direccion", e.target.value)}
+                      className="p-2 border border-gray-300 rounded"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Situaciones del familiar */}
@@ -814,23 +799,22 @@ const validate = () => {
                 </div>
 
                 <div className="space-y-2">
-                  {situaciones.length === 0 && (
+                  {(!familiar.situaciones || familiar.situaciones.length === 0) && (
                     <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
                   )}
 
-                  {situaciones.map((s, idx) => {
-                    const tieneFecha = ["embarazo","rehab_motriz","kinesiologia","psicoterapia","fonoaudiologia"].includes(s.situacion);
+                  {(familiar.situaciones || []).map((s, idx) => {
+                    const tieneFecha = ["embarazo", "rehab_motriz", "kinesiologia", "psicoterapia", "fonoaudiologia"].includes(s.situacion);
                     return (
                       <div
                         key={idx}
                         className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
                       >
-                        {/* Select */}
                         <div className="flex flex-col">
                           <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
                           <select
                             value={s.situacion}
-                            onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
+                            onChange={(e) => updateSituacionFamiliar(i, idx, "situacion", e.target.value)}
                             className="p-2 border border-gray-300 rounded"
                           >
                             <option value="">-- Seleccionar --</option>
@@ -846,14 +830,13 @@ const validate = () => {
                           </select>
                         </div>
 
-                        {/* Fecha */}
                         {tieneFecha ? (
                           <div className="flex flex-col">
                             <label className="text-sm font-semibold mb-1">Fecha de finalización</label>
                             <input
                               type="date"
                               value={s.fechaFinalizacion || ""}
-                              onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
+                              onChange={(e) => updateSituacionFamiliar(i, idx, "fechaFinalizacion", e.target.value)}
                               className="p-2 border border-gray-300 rounded"
                             />
                           </div>
@@ -861,11 +844,10 @@ const validate = () => {
                           <div />
                         )}
 
-                        {/* Botón eliminar */}
                         <div className="justify-self-end">
                           <button
                             type="button"
-                            onClick={() => removeSituacion(idx)}
+                            onClick={() => removeSituacionFamiliar(i, idx)}
                             className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
                           >
                             Eliminar
@@ -875,13 +857,12 @@ const validate = () => {
                     );
                   })}
 
-                  {/* Botón agregar */}
                   <button
                     type="button"
-                    onClick={addSituacion}
+                    onClick={() => addSituacionFamiliar(i)}
                     className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
                   >
-                    + Agregar
+                    + Agregar Situación
                   </button>
                 </div>
               </div>
@@ -896,8 +877,6 @@ const validate = () => {
             + Agregar Familiar
           </button>
         </div>
-
-
       </div>
 
       {/* BOTONES */}
@@ -905,7 +884,7 @@ const validate = () => {
         <button
           type="submit"
           onClick={handleSubmit}
-          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
+          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
           {loading ? "Guardando..." : "Crear Afiliado"}
@@ -914,13 +893,23 @@ const validate = () => {
           type="button"
           onClick={() => navigate("/home")}
           className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition"
+          disabled={loading}
         >
           Cancelar
         </button>
       </div>
 
-      {errors.submit && <p className="text-red-500 text-center mt-2">{errors.submit}</p>}
-      {success && <p className="text-green-600 text-center mt-2">{success}</p>}
+      {errors.submit && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
+          <p className="text-red-600 text-center font-semibold">{errors.submit}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+          <p className="text-green-600 text-center font-semibold">{success}</p>
+        </div>
+      )}
     </div>
   );
 }
