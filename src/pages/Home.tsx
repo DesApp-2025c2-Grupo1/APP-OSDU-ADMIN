@@ -76,7 +76,7 @@ export function Home() {
     <div className="w-full p-6 space-y-4">
       {/* Barra superior */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-        {/* 🔍 Buscador */}
+        {/* Buscador */}
         <SearchDropdown
           options={OPTIONS}
           placeholder="Buscar"
@@ -84,7 +84,7 @@ export function Home() {
           className="w-full md:w-2/3"
         />
 
-        {/* ➕ Botón: pegado a la izquierda en mobile, normal en desktop */}
+        {/* Botón: pegado a la izquierda en mobile, normal en desktop */}
         <div className="self-start md:self-auto">
           <ButtonAddAffiliate
             text="Agregar Afiliado"

@@ -6,7 +6,6 @@ interface ViewProviderPopupProps {
   onClose: () => void;
 }
 
-// 0..6
 const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps) {
@@ -94,22 +93,6 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
                   {dir.calle} {dir.numero || ""}, {dir.provincia || ""} ({dir.cp})
                 </p>
 
-                {dir.horarios.length > 0 && (
-                  <div className="mt-3">
-                    <h4 className="font-semibold text-gray-700 mb-1">Horarios:</h4>
-                    <ul className="space-y-1">
-                      {dir.horarios.map((h: HorarioAtencion, hIdx: number) => (
-                        <li
-                          key={hIdx}
-                          className="p-2 border border-gray-300 rounded bg-white flex justify-between"
-                        >
-                          <span>{[...h.dias].sort((a, b) => a - b).map(d => diasSemana[d]).join(", ")}</span>
-                          <span className="text-gray-600">{h.desde} - {h.hasta}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
               </div>
             ))}
           </div>

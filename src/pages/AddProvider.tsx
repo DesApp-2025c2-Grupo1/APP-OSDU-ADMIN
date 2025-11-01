@@ -365,60 +365,7 @@ export function AddProvider() {
                   />
                 </div>
 
-                {/* Horarios: múltiples bloques */}
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600 mb-2">Días y horarios:</p>
 
-                  {(dir.horarios as unknown as BloqueHorario[]).map((h, bIdx) => (
-                    <div key={bIdx} className="mb-3 border rounded-lg p-3 bg-white">
-                      <div className="flex gap-2 flex-wrap mb-2">
-                        {diasSemana.map((d) => (
-                          <label key={d.id} className="flex items-center gap-1 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={h.dias.includes(d.id)}
-                              onChange={() => toggleDia(idx, bIdx, d.id)}
-                            />
-                            {d.label}
-                          </label>
-                        ))}
-                      </div>
-
-                      <div className="flex gap-4">
-                        <input
-                          type="time"
-                          value={h.desde || ""}
-                          onChange={(e) => setDesde(idx, bIdx, e.target.value)}
-                          className="border border-gray-300 rounded-lg px-3 py-2"
-                        />
-                        <input
-                          type="time"
-                          value={h.hasta || ""}
-                          onChange={(e) => setHasta(idx, bIdx, e.target.value)}
-                          className="border border-gray-300 rounded-lg px-3 py-2"
-                        />
-                      </div>
-
-                      {(dir.horarios as unknown as BloqueHorario[]).length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeBloque(idx, bIdx)}
-                          className="mt-2 text-red-500 font-semibold text-sm"
-                        >
-                          Eliminar franja
-                        </button>
-                      )}
-                    </div>
-                  ))}
-
-                  <button
-                    type="button"
-                    onClick={() => addBloque(idx)}
-                    className="text-[#5FA92C] text-sm font-semibold"
-                  >
-                    + Agregar franja horaria
-                  </button>
-                </div>
 
                 {direcciones.length > 1 && (
                   <button

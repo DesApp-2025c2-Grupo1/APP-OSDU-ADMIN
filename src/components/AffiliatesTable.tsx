@@ -36,7 +36,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showViewPopup] = useState(false); // usado en Home
+  const [showViewPopup] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
 
@@ -74,6 +74,14 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
     setShowDeleteDialog(false);
     setSelectedAffiliate(null);
   };
+
+  const handleScheduleDelete = (isoDateTime: string) => {
+  console.log("Baja programada para:", selectedAffiliate, "en", isoDateTime);
+  alert(`Baja programada para ${new Date(isoDateTime).toLocaleString()}`);
+  setShowDeleteDialog(false);
+  setSelectedAffiliate(null);
+};
+
 
   // Paginación
   const totalPages = Math.max(1, Math.ceil(affiliates.length / itemsPerPage));

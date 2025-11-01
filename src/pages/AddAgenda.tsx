@@ -33,7 +33,6 @@ export function AddAgenda({ onClose, onSave }: AddAgendaProps) {
         });
         setEspecialidadesDisponibles(especialidades);
         
-        // Auto-seleccionar la primera especialidad si hay solo una
         if (especialidades.length === 1) {
           setFormData(prev => ({ ...prev, especialidadId: especialidades[0].id }));
         }

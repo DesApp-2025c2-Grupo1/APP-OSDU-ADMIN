@@ -90,7 +90,6 @@ export function Agenda() {
     { id: "domingo", label: "Domingo" },
   ];
 
-  // 
 
   const handleFiltroChange = (campo: keyof FiltrosAgenda, valor: any) => {
     if (campo === "prestador") {
@@ -200,7 +199,7 @@ export function Agenda() {
     }
     return dias.join(", ");
   };
-//
+
 
   return (
     <div className="w-full p-6 space-y-6">
