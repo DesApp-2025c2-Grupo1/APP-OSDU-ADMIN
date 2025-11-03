@@ -241,16 +241,18 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
       )}
 
       {showDeleteDialog && selectedAffiliate && (
-        <ConfirmDeleteDialog
-          open={showDeleteDialog}
-          onClose={() => setShowDeleteDialog(false)}
-          onConfirm={handleConfirmDelete}
-          affiliateName={selectedAffiliate.nombre}
-          affiliateSurname={selectedAffiliate.apellido}
-          affiliateDni={selectedAffiliate.dni}
-          affiliateCredencial={selectedAffiliate.credencial}
-        />
-      )}
+      <ConfirmDeleteDialog
+    open={showDeleteDialog}
+    onClose={() => setShowDeleteDialog(false)}
+    onConfirm={handleConfirmDelete}
+    onSchedule={handleScheduleDelete}   // ✅ <---- esta línea es la que faltaba
+    affiliateName={selectedAffiliate.nombre}
+    affiliateSurname={selectedAffiliate.apellido}
+    affiliateDni={selectedAffiliate.dni}
+    affiliateCredencial={selectedAffiliate.credencial}
+  />
+)}
+
     </>
   );
 }
