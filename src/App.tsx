@@ -9,7 +9,7 @@ import { Otros } from "./pages/Others";
 import { AgregarAfiliado } from "./pages/AddAffiliate";
 import { GrupoFamiliar } from "./pages/GrupoFamiliar";
 import { AddProvider } from "./pages/AddProvider";
-
+import { AddAgendaPage } from "./pages/AddAgenda"; // Importar el nuevo componente
 
 function App() {
   return (
@@ -20,7 +20,6 @@ function App() {
         <main className="p-6 flex-1">
           <Routes>
             {/* redirección inicial */}
-            {/*  */}
             <Route path="/" element={<Navigate to="/home" replace />} />
 
             {/* páginas principales */}
@@ -33,8 +32,11 @@ function App() {
             <Route path="/home/agregarAfiliado" element={<AgregarAfiliado />} />
             <Route path="/home/grupoFamiliar/:grupoId" element={<GrupoFamiliar />} />
 
-            {/*Prestadrores*/}
+            {/* Prestadores */}
             <Route path="/prestadores/agregarPrestador" element={<AddProvider />} />
+
+            {/* Nueva ruta para agregar agenda */}
+            <Route path="/agenda/nueva" element={<AddAgendaPage />} />
           </Routes>
         </main>
       </div>

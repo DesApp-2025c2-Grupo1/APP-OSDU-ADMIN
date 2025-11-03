@@ -1,11 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { providersMock } from "../data/providers";
 import { SPECIALTIES } from "../data/specialties";
-import { AddAgenda } from "../pages/AddAgenda";
 import { ViewAgendaPopup } from "../components/ViewAgendaPopup";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import { AgendaTable } from "../components/AgendaTable";
 import { ConfirmDeleteAgendaDialog } from "../components/ConfirmDeleteAgendaDialog";
+import { EditAgendaPopup } from "../components/EditAgendaPopup";
 
 export interface HorarioAgenda {
   id: string;
@@ -25,11 +26,19 @@ interface FiltrosAgenda {
 }
 
 export function Agenda() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Estados principales
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
-  const [mostrarPopup, setMostrarPopup] = useState(false);
   const [viewingAgenda, setViewingAgenda] = useState<HorarioAgenda | null>(null);
   const [openViewPopup, setOpenViewPopup] = useState(false);
   const [agendaToDelete, setAgendaToDelete] = useState<HorarioAgenda | null>(null);
+  const [editingAgenda, setEditingAgenda] = useState<HorarioAgenda | null>(null);
+
+  // Búsqueda y filtros
+  const [busquedaPrestador, setBusquedaPrestador] = useState("");
+  const [mostrarDropdownPrestador, setMostrarDropdownPrestador] = useState(false);
 
   const [filtros, setFiltros] = useState<FiltrosAgenda>({
     prestador: "",
@@ -59,6 +68,25 @@ export function Agenda() {
     },
   ]);
 
+  // Efecto: si se viene desde AddAgenda
+  useEffect(() => {
+    if (location.state?.nuevaAgenda) {
+      setHorarios((prev) => [...prev, location.state.nuevaAgenda]);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
+
+  // Filtrado de prestadores
+  const prestadoresFiltrados = useMemo(() => {
+    if (!busquedaPrestador.trim()) return providersMock;
+    const busqueda = busquedaPrestador.toLowerCase();
+    return providersMock.filter(
+      (p) =>
+        p.nombreCompleto.toLowerCase().includes(busqueda) ||
+        p.tipo.toLowerCase().includes(busqueda)
+    );
+  }, [busquedaPrestador]);
+
   const prestadores = useMemo(() => {
     return providersMock.map((provider) => ({
       id: provider.id,
@@ -81,23 +109,41 @@ export function Agenda() {
   }, [filtros.prestador, prestadores]);
 
   const diasSemana = [
-    { id: "lunes", label: "Lunes" },
-    { id: "martes", label: "Martes" },
-    { id: "miercoles", label: "Miércoles" },
-    { id: "jueves", label: "Jueves" },
-    { id: "viernes", label: "Viernes" },
-    { id: "sabado", label: "Sábado" },
-    { id: "domingo", label: "Domingo" },
+    { id: "Lunes", label: "Lunes" },
+    { id: "Martes", label: "Martes" },
+    { id: "Miércoles", label: "Miércoles" },
+    { id: "Jueves", label: "Jueves" },
+    { id: "Viernes", label: "Viernes" },
+    { id: "Sábado", label: "Sábado" },
+    { id: "Domingo", label: "Domingo" },
   ];
 
+  // Handlers de búsqueda
+  const handleBusquedaPrestadorChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const valor = e.target.value;
+    setBusquedaPrestador(valor);
+    setMostrarDropdownPrestador(true);
+    if (!valor.trim()) {
+      setFiltros((prev) => ({ ...prev, prestador: "", especialidad: "" }));
+    }
+  };
 
+  const seleccionarPrestador = (prestadorId: string, nombreCompleto: string) => {
+    setFiltros((prev) => ({
+      ...prev,
+      prestador: prestadorId,
+      especialidad: "",
+    }));
+    setBusquedaPrestador(nombreCompleto);
+    setMostrarDropdownPrestador(false);
+  };
+
+  // Filtros
   const handleFiltroChange = (campo: keyof FiltrosAgenda, valor: any) => {
     if (campo === "prestador") {
-      setFiltros((prev) => ({
-        ...prev,
-        prestador: valor,
-        especialidad: "",
-      }));
+      setFiltros((prev) => ({ ...prev, prestador: valor, especialidad: "" }));
     } else {
       setFiltros((prev) => ({ ...prev, [campo]: valor }));
     }
@@ -123,15 +169,12 @@ export function Agenda() {
       duracionTurno: 30,
       dias: [],
     });
+    setBusquedaPrestador("");
   };
 
+  // Acciones menú
   const toggleMenu = (id: string) => {
     setMenuAbierto(menuAbierto === id ? null : id);
-  };
-
-  const handleEditarAgenda = (id: string) => {
-    console.log("Editar agenda:", id);
-    setMenuAbierto(null);
   };
 
   const handleVerDetalle = (id: string) => {
@@ -143,48 +186,35 @@ export function Agenda() {
     setMenuAbierto(null);
   };
 
+  const handleEditarAgenda = (id: string) => {
+    const agenda = horarios.find((h) => h.id === id);
+    if (agenda) setEditingAgenda(agenda);
+    setMenuAbierto(null);
+  };
+
+  const handleSaveEditedAgenda = (updatedAgenda: HorarioAgenda) => {
+    setHorarios((prev) =>
+      prev.map((h) => (h.id === updatedAgenda.id ? updatedAgenda : h))
+    );
+    setEditingAgenda(null);
+  };
+
   const handleEliminarAgenda = (id: string) => {
     const agenda = horarios.find((h) => h.id === id);
-    if (agenda) {
-      setAgendaToDelete(agenda);
-    }
+    if (agenda) setAgendaToDelete(agenda);
     setMenuAbierto(null);
   };
 
   const confirmEliminarAgenda = () => {
     if (agendaToDelete) {
-      console.log("Eliminar agenda:", agendaToDelete.id);
       setHorarios((prev) => prev.filter((h) => h.id !== agendaToDelete.id));
       setAgendaToDelete(null);
     }
   };
 
-  const cancelEliminarAgenda = () => {
-    setAgendaToDelete(null);
-  };
+  const cancelEliminarAgenda = () => setAgendaToDelete(null);
 
-  const handleAgregarAgenda = () => {
-    setMostrarPopup(true);
-  };
-
-  const handleGuardarAgenda = (data: any) => {
-    const prestador = providersMock.find((p) => p.id === data.prestadorId);
-    const especialidad =
-      SPECIALTIES.find((s) => s.id === data.especialidadId)?.nombre || "";
-
-    const nuevaAgenda: HorarioAgenda = {
-      id: crypto.randomUUID(),
-      prestador: prestador ? prestador.nombreCompleto : "",
-      especialidad,
-      lugar: data.lugarAtencion,
-      dias: data.dias.split(",").map((d: string) => d.trim()),
-      horario: data.horario,
-      duracion: parseInt(data.duracionTurno) || 0,
-    };
-
-    setHorarios((prev) => [...prev, nuevaAgenda]);
-    setMostrarPopup(false);
-  };
+  const handleAgregarAgenda = () => navigate("/agenda/nueva");
 
   const formatDias = (dias: string[]) => {
     if (
@@ -200,7 +230,6 @@ export function Agenda() {
     return dias.join(", ");
   };
 
-
   return (
     <div className="w-full p-6 space-y-6">
       {/* Header */}
@@ -212,20 +241,30 @@ export function Agenda() {
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {/* Prestador */}
-          <div className="flex flex-col">
+          <div className="flex flex-col relative">
             <label className="font-semibold mb-2 text-gray-700">Prestador</label>
-            <select
-              value={filtros.prestador}
-              onChange={(e) => handleFiltroChange("prestador", e.target.value)}
-              className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
-            >
-              <option value="">Seleccionar</option>
-              {prestadores.map((prestador) => (
-                <option key={prestador.id} value={prestador.id}>
-                  {prestador.nombre} ({prestador.tipo})
-                </option>
-              ))}
-            </select>
+            <input
+              type="text"
+              value={busquedaPrestador}
+              onChange={handleBusquedaPrestadorChange}
+              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
+              placeholder="Buscar prestador..."
+            />
+            {mostrarDropdownPrestador && busquedaPrestador && (
+              <ul className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded shadow z-50 max-h-48 overflow-y-auto">
+                {prestadoresFiltrados.map((p) => (
+                  <li
+                    key={p.id}
+                    onClick={() =>
+                      seleccionarPrestador(p.id, p.nombreCompleto )
+                    }
+                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                  >
+                    {p.nombreCompleto}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Especialidad */}
@@ -318,23 +357,28 @@ export function Agenda() {
         formatDias={formatDias}
       />
 
-      {/* Popup Nueva Agenda */}
-      {mostrarPopup && (
-        <AddAgenda onClose={() => setMostrarPopup(false)} onSave={handleGuardarAgenda} />
-      )}
-
-      {/* Popup Ver Detalle Agenda */}
+      {/* Popups */}
       {openViewPopup && viewingAgenda && (
-        <ViewAgendaPopup agenda={viewingAgenda} onClose={() => setOpenViewPopup(false)} />
+        <ViewAgendaPopup
+          agenda={viewingAgenda}
+          onClose={() => setOpenViewPopup(false)}
+        />
       )}
 
-      {/* Popup de Confirmación para Eliminar Agenda */}
       <ConfirmDeleteAgendaDialog
         open={agendaToDelete !== null}
         onClose={cancelEliminarAgenda}
         onConfirm={confirmEliminarAgenda}
         agenda={agendaToDelete}
       />
+
+      {editingAgenda && (
+        <EditAgendaPopup
+          agenda={editingAgenda}
+          onClose={() => setEditingAgenda(null)}
+          onSave={handleSaveEditedAgenda}
+        />
+      )}
     </div>
   );
 }
