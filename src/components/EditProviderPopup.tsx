@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { Prestador } from "../model/Provider.model";
 
-type DiaSemana = 1|2|3|4|5|6|0; // ajustá si en tu modelo usás 1..6
+type DiaSemana = 1|2|3|4|5|6|0; 
 type BloqueHorario = { dias: DiaSemana[]; desde: string; hasta: string };
 
 interface DireccionForm {
@@ -313,60 +313,6 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                 />
               </div>
 
-              {/* Horarios */}
-              <div className="mt-4">
-                <p className="text-sm text-gray-600 mb-2">Días y horarios:</p>
-
-                {dir.horarios.map((h, bIdx) => (
-                  <div key={bIdx} className="mb-3 border rounded-lg p-3 bg-white">
-                    <div className="flex gap-2 flex-wrap mb-2">
-                      {diasSemana.map((d) => (
-                        <label key={d.id} className="flex items-center gap-1 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={h.dias.includes(d.id)}
-                            onChange={() => toggleDia(idx, bIdx, d.id)}
-                          />
-                          {d.label}
-                        </label>
-                      ))}
-                    </div>
-
-                    <div className="flex gap-4">
-                      <input
-                        type="time"
-                        value={h.desde || ""}
-                        onChange={(e) => setDesde(idx, bIdx, e.target.value)}
-                        className="border border-gray-300 rounded-lg px-3 py-2"
-                      />
-                      <input
-                        type="time"
-                        value={h.hasta || ""}
-                        onChange={(e) => setHasta(idx, bIdx, e.target.value)}
-                        className="border border-gray-300 rounded-lg px-3 py-2"
-                      />
-                    </div>
-
-                    {dir.horarios.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeBloque(idx, bIdx)}
-                        className="mt-2 text-red-500 font-semibold text-sm"
-                      >
-                        Eliminar franja
-                      </button>
-                    )}
-                  </div>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={() => addBloque(idx)}
-                  className="text-[#5FA92C] text-sm font-semibold"
-                >
-                  + Agregar franja horaria
-                </button>
-              </div>
 
               {formData.direcciones.length > 1 && (
                 <button

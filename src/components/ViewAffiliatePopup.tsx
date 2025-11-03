@@ -42,7 +42,7 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
             Datos de Afiliado
           </h2>
 
-          {/* 👇 Responsive: 1 col en mobile, 2 en >= sm */}
+          {/*Responsive: 1 col en mobile, 2 en >= sm */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo Documento</label>

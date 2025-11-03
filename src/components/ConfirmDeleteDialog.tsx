@@ -1,7 +1,11 @@
+import React, { useState } from "react";
+import BajaProgramadaPopup from "./BajaProgramadaPopup";
+
 interface ConfirmDeleteDialogProps {
   open: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void;                  
+  onSchedule: (fechaISO: string) => void; 
   affiliateName: string;
   affiliateSurname: string;
   affiliateDni: string;
@@ -12,11 +16,14 @@ export function ConfirmDeleteDialog({
   open,
   onClose,
   onConfirm,
+  onSchedule,
   affiliateName,
   affiliateSurname,
   affiliateDni,
   affiliateCredencial,
 }: ConfirmDeleteDialogProps) {
+  const [showScheduler, setShowScheduler] = useState(false);
+
   if (!open) return null;
 
   const isTitular = affiliateCredencial.endsWith("-01");
@@ -28,7 +35,7 @@ export function ConfirmDeleteDialog({
         <div className="text-4xl text-red-600 mb-4">⚠️</div>
 
         {/* Mensaje */}
-        {isTitular && (
+        {isTitular ? (
           <>
             <p className="text-gray-800 text-base mb-6">
               ¿Está seguro que desea dar de baja al afiliado <br />
@@ -38,12 +45,10 @@ export function ConfirmDeleteDialog({
               ?
             </p>
             <p className="text-red-600 text-sm mb-6">
-              Si elimina este afiliado se eliminaran todos los miembros del grupo familiar.
+              Si elimina este afiliado se eliminarán todos los miembros del grupo familiar.
             </p>
           </>
-        )}
-
-        {!isTitular && (
+        ) : (
           <p className="text-gray-800 text-base mb-6">
             ¿Está seguro que desea dar de baja al afiliado <br />
             <b>
@@ -53,14 +58,22 @@ export function ConfirmDeleteDialog({
           </p>
         )}
 
-        {/* Botones */}
-        <div className="flex justify-around mt-4 gap-3">
+        {/* Botonera */}
+        <div className="flex justify-center gap-3">
           <button
             onClick={onClose}
             className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded-md font-medium transition"
           >
             No, cancelar
           </button>
+
+          <button
+            onClick={() => setShowScheduler(true)}
+            className="bg-[#5FA92C] hover:brightness-95 text-white px-4 py-2 rounded-md font-medium transition"
+          >
+            Baja programada
+          </button>
+
           <button
             onClick={onConfirm}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition"
@@ -69,6 +82,17 @@ export function ConfirmDeleteDialog({
           </button>
         </div>
       </div>
+
+      {showScheduler && (
+        <BajaProgramadaPopup
+          onClose={() => setShowScheduler(false)}
+          onConfirm={(iso) => {
+            setShowScheduler(false);
+            onSchedule(iso);
+          }}
+          title="Programar baja"
+        />
+      )}
     </div>
   );
 }

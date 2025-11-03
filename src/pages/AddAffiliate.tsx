@@ -78,7 +78,10 @@ export function AgregarAfiliado() {
   const [showEmail2, setShowEmail2] = useState(false);
   const [showAddress2, setShowAddress2] = useState(false);
 
+  // Situaciones del TITULAR
   const [situaciones, setSituaciones] = useState<Situacion[]>([]); 
+
+  // Familiares
   const [familiares, setFamiliares] = useState<Familiar[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -91,6 +94,7 @@ export function AgregarAfiliado() {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
+  // ---- Situaciones TITULAR ----
   const addSituacion = () =>
     setSituaciones((prev) => [...prev, { situacion: "", fechaFinalizacion: "" }]);
 
@@ -105,7 +109,7 @@ export function AgregarAfiliado() {
     });
   };
 
-  // Familiares
+  // ---- Familiares ----
   const agregarFamiliar = () => {
     const nuevoFamiliar: Familiar = {
       tipoDocumento: "DNI",
@@ -135,7 +139,7 @@ export function AgregarAfiliado() {
     });
   };
 
-  // Situaciones por FAMILIAR 
+  // ---- Situaciones por FAMILIAR ----
   const addSituacionFamiliar = (i: number) => {
     setFamiliares((prev) => {
       const next = [...prev];
@@ -169,54 +173,52 @@ export function AgregarAfiliado() {
     });
   };
 
-  // Validación mínima del titular
-const validate = () => {
-  const newErrors: Record<string, string> = {};
+  // ---- Validación ----
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
 
-  // ---- Validación Titular ----
-  if (!formData.nroDocumento?.trim()) newErrors.nroDocumento = "Requerido";
-  if (!formData.nombre?.trim()) newErrors.nombre = "Requerido";
-  if (!formData.apellido?.trim()) newErrors.apellido = "Requerido";
+    // Titular
+    if (!formData.nroDocumento?.trim()) newErrors.nroDocumento = "Requerido";
+    if (!formData.nombre?.trim()) newErrors.nombre = "Requerido";
+    if (!formData.apellido?.trim()) newErrors.apellido = "Requerido";
 
-  if (!formData.fechaNacimiento) newErrors.fechaNacimiento = "Requerido";
-  else {
-    const fechaNac = new Date(formData.fechaNacimiento);
-    const hoy = new Date();
-    if (fechaNac > hoy) newErrors.fechaNacimiento = "La fecha no puede ser futura";
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (formData.email && !emailRegex.test(formData.email))
-    newErrors.email = "Formato de email inválido";
-  if (formData.email2 && !emailRegex.test(formData.email2))
-    newErrors.email2 = "Formato de email inválido";
-
-  if (!formData.planMedico) newErrors.planMedico = "Requerido";
-
-  // ---- Validación Familiares ----
-  familiares.forEach((f, index) => {
-    const prefix = `familiares[${index}]`;
-    if (!f.nroDocumento?.trim()) newErrors[`${prefix}.nroDocumento`] = "Requerido";
-    if (!f.nombre?.trim()) newErrors[`${prefix}.nombre`] = "Requerido";
-    if (!f.apellido?.trim()) newErrors[`${prefix}.apellido`] = "Requerido";
-
-    if (!f.fechaNacimiento) {
-      newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
-    } else {
-      const fechaNac = new Date(f.fechaNacimiento);
+    if (!formData.fechaNacimiento) newErrors.fechaNacimiento = "Requerido";
+    else {
+      const fechaNac = new Date(formData.fechaNacimiento);
       const hoy = new Date();
-      if (fechaNac > hoy) newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+      if (fechaNac > hoy) newErrors.fechaNacimiento = "La fecha no puede ser futura";
     }
 
-    if (f.email && !emailRegex.test(f.email))
-      newErrors[`${prefix}.email`] = "Formato de email inválido";
-  });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email))
+      newErrors.email = "Formato de email inválido";
+    if (formData.email2 && !emailRegex.test(formData.email2))
+      newErrors.email2 = "Formato de email inválido";
 
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
+    if (!formData.planMedico) newErrors.planMedico = "Requerido";
 
-  
+    // Familiares
+    familiares.forEach((f, index) => {
+      const prefix = `familiares[${index}]`;
+      if (!f.nroDocumento?.trim()) newErrors[`${prefix}.nroDocumento`] = "Requerido";
+      if (!f.nombre?.trim()) newErrors[`${prefix}.nombre`] = "Requerido";
+      if (!f.apellido?.trim()) newErrors[`${prefix}.apellido`] = "Requerido";
+
+      if (!f.fechaNacimiento) {
+        newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
+      } else {
+        const fechaNac = new Date(f.fechaNacimiento);
+        const hoy = new Date();
+        if (fechaNac > hoy) newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+      }
+
+      if (f.email && !emailRegex.test(f.email))
+        newErrors[`${prefix}.email`] = "Formato de email inválido";
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const mapFamiliaresToAffiliates = (lista: Familiar[], titular: typeof formData): AffiliateType[] => {
     const prefix = getCredPrefix(titular.credencial) || titular.nroDocumento || "GRP";
@@ -248,7 +250,6 @@ const validate = () => {
       } as AffiliateType;
     });
   };
-
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -597,6 +598,7 @@ const validate = () => {
             </div>
           </div>
         </div>
+
         {/* SITUACIONES TERAPÉUTICAS (Titular) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
@@ -651,7 +653,7 @@ const validate = () => {
                     <div />
                   )}
 
-                  {/* Botón agregar */}
+                  {/* Botón eliminar */}
                   <div className="justify-self-end">
                     <button
                       type="button"
@@ -675,8 +677,6 @@ const validate = () => {
             </button>
           </div>
         </div>
-
-
 
         {/* FAMILIARES A CARGO */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
@@ -814,11 +814,11 @@ const validate = () => {
                 </div>
 
                 <div className="space-y-2">
-                  {situaciones.length === 0 && (
+                  {(familiar.situaciones?.length || 0) === 0 && (
                     <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
                   )}
 
-                  {situaciones.map((s, idx) => {
+                  {familiar.situaciones?.map((s, idx) => {
                     const tieneFecha = ["embarazo","rehab_motriz","kinesiologia","psicoterapia","fonoaudiologia"].includes(s.situacion);
                     return (
                       <div
@@ -830,7 +830,7 @@ const validate = () => {
                           <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
                           <select
                             value={s.situacion}
-                            onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
+                            onChange={(e) => updateSituacionFamiliar(i, idx, "situacion", e.target.value)}
                             className="p-2 border border-gray-300 rounded"
                           >
                             <option value="">-- Seleccionar --</option>
@@ -853,7 +853,7 @@ const validate = () => {
                             <input
                               type="date"
                               value={s.fechaFinalizacion || ""}
-                              onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
+                              onChange={(e) => updateSituacionFamiliar(i, idx, "fechaFinalizacion", e.target.value)}
                               className="p-2 border border-gray-300 rounded"
                             />
                           </div>
@@ -865,7 +865,7 @@ const validate = () => {
                         <div className="justify-self-end">
                           <button
                             type="button"
-                            onClick={() => removeSituacion(idx)}
+                            onClick={() => removeSituacionFamiliar(i, idx)}
                             className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
                           >
                             Eliminar
@@ -878,7 +878,7 @@ const validate = () => {
                   {/* Botón agregar */}
                   <button
                     type="button"
-                    onClick={addSituacion}
+                    onClick={() => addSituacionFamiliar(i)}
                     className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
                   >
                     + Agregar

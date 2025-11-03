@@ -1,6 +1,6 @@
 import React from "react";
 import type { HorarioAgenda } from "../pages/Agenda";
-import { OptionsMenu } from "./OptionsMenu"; // Asegúrate de importar el componente
+import { OptionsMenu } from "./OptionsMenu";
 
 interface AgendaTableProps {
   horarios: HorarioAgenda[];

@@ -1,7 +1,7 @@
 import type { Prestador } from "../model/Provider.model";
 
 export const providersMock: Prestador[] = [
-  // === Centros Médicos ===
+  //Centros Médicos
   {
     id: "centro-italiano",
     cuilCuit: "30-12345678-9",
@@ -73,7 +73,7 @@ export const providersMock: Prestador[] = [
     ],
   },
 
-  // === Profesionales Independientes ===
+  // Profesionales Independientes
   {
     id: "prof-favaloro",
     cuilCuit: "21-1780879-3",
@@ -191,7 +191,7 @@ export const providersMock: Prestador[] = [
     ],
   },
 
-  // === Profesionales que integran Centros ===
+  //Profesionales que integran Centros
   {
     id: "prof-mansilla",
     cuilCuit: "27-10000009-2",
