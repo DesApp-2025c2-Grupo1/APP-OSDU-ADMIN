@@ -6,6 +6,7 @@ import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup";
 import { EditAffiliatePopup } from "../components/EditAffiliatePopup";
 import { OptionsMenu } from "../components/OptionsMenu";
 import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
+import ScheduledSuccessPopup from "../components/BajaExitosaPopup"; // asegúrate que exporte default
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import { ButtonVolver } from "../util/ButtonVolver";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
@@ -21,12 +22,18 @@ export function GrupoFamiliar() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAddFamiliarPopup, setShowAddFamiliarPopup] = useState(false);
 
+  // popup de éxito
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successISO, setSuccessISO] = useState<string>("");
+  const [successName, setSuccessName] = useState<string>("");
+
   const members = useMemo(
     () => affiliates.filter((a) => a.credencial.startsWith(`${grupoId}-`)),
     [grupoId]
   );
 
-  const titular = members.find((m) => m.parentesco?.toLowerCase() === "titular") || members[0];
+  const titular =
+    members.find((m) => m.parentesco?.toLowerCase() === "titular") || members[0];
   const planFijo = "210";
 
   const determinarParentesco = (affiliate: Affiliate) => {
@@ -85,7 +92,18 @@ export function GrupoFamiliar() {
     setSelectedAffiliate(null);
   };
 
-  // Paginacion mobile
+  // Baja programada -> abre popup de éxito
+  const handleScheduleDelete = (isoDateTime: string) => {
+    if (selectedAffiliate) {
+      setShowDeleteDialog(false);
+      setSuccessISO(isoDateTime);
+      setSuccessName(`${selectedAffiliate.nombre} ${selectedAffiliate.apellido}`);
+      setShowSuccess(true);
+      setSelectedAffiliate(null);
+    }
+  };
+
+  // Paginación mobile
   const nonTitularMembers = useMemo(
     () => (titular ? members.filter((m) => m.credencial !== titular.credencial) : members),
     [members, titular]
@@ -98,29 +116,24 @@ export function GrupoFamiliar() {
   const endIndex = startIndex + itemsPerPage;
   const currentMembers = nonTitularMembers.slice(startIndex, endIndex);
 
-  // tamaño de botones
-  const buttonBase = "w-36 h-12 flex justify-center items-center rounded font-semibold";
-
+  // UI
   if (!titular || members.length === 0) {
     return (
       <div className="w-full p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Ver Grupo Familiar</h1>
 
-          {/* desktop */}
           <div className="hidden md:flex items-center gap-4 [&>*]:w-36 [&>*]:h-12">
             <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
             <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
           </div>
         </div>
 
-        {/* mobile */}
         <div className="md:hidden grid grid-cols-2 gap-3 mb-4 [&>*]:w-full [&>*]:h-12">
           <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
           <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
         </div>
 
-        {/* titular principal */}
         <div className="mb-6 p-4 border rounded-md bg-gray-50">
           <div className="inline-block text-xs font-semibold bg-[#5FA92C] text-white px-2 py-1 rounded mb-2">TITULAR</div>
           <p><strong>Nombre:</strong> {titular?.nombre} {titular?.apellido}</p>
@@ -147,21 +160,18 @@ export function GrupoFamiliar() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Ver Grupo Familiar</h1>
 
-        {/* Desktop*/}
         <div className="hidden md:flex items-center gap-4 [&>*]:w-36 [&>*]:h-12">
           <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
           <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
         </div>
-
       </div>
 
-      {/* Mobile*/}
       <div className="md:hidden grid grid-cols-2 gap-3 mb-4 [&>*]:w-full [&>*]:h-12">
         <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
         <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
       </div>
 
-      {/*Mobile titular principal */}
+      {/* TITULAR (mobile) */}
       <div className="md:hidden mb-4 p-4 border rounded-lg bg-white shadow-sm">
         <div className="inline-block text-xs font-semibold bg-[#5FA92C] text-white px-2 py-1 rounded mb-2">TITULAR</div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
@@ -188,17 +198,13 @@ export function GrupoFamiliar() {
         </div>
       </div>
 
-      {/*Desktop Tabla */}
+      {/* TABLA (desktop) */}
       <div className="hidden md:block rounded-lg border border-gray-300 shadow-md bg-white mb-4">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-[#5FA92C] text-white">
             <tr>
               {["Credencial", "DNI", "Nombre", "Apellido", "Fecha Nac.", "Dirección", "Parentesco", ""].map((h) => (
-                <th
-                  key={h}
-                  scope="col"
-                  className="px-4 py-2 text-left text-sm font-medium uppercase tracking-wider"
-                >
+                <th key={h} className="px-4 py-2 text-left text-sm font-medium uppercase tracking-wider">
                   {h}
                 </th>
               ))}
@@ -227,7 +233,7 @@ export function GrupoFamiliar() {
         </table>
       </div>
 
-      {/*Mobile miembros con paginacion*/}
+      {/* TARJETAS (mobile) */}
       <div className="md:hidden space-y-3 mb-2">
         {currentMembers.length === 0 && (
           <div className="text-center text-sm text-gray-500 py-4">
@@ -236,22 +242,20 @@ export function GrupoFamiliar() {
         )}
 
         {currentMembers.map((m) => (
-          <div key={m.credencial} className="border border-gray-200 rounded-lg shadow-sm p-3 bg-white">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <div className="text-xs text-gray-500 uppercase">Credencial</div>
-                <div className="font-semibold">{m.credencial}</div>
-              </div>
-              <OptionsMenu
-                affiliate={m}
-                onOptionClick={handleOptionClick}
-                options={["Editar", "Ver detalles", "Dar de baja"]}
-              />
+          <div key={m.credencial} className="border border-gray-200 rounded-lg shadow-sm p-4 bg-white">
+            <div className="mb-3">
+              <div className="text-xs text-gray-500 uppercase">Credencial</div>
+              <div className="font-semibold break-all">{m.credencial}</div>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="text-xs text-gray-500 uppercase">DNI</div>
                 <div className="text-sm">{m.dni}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
+                <div className="text-sm">{m.fechaNacimiento}</div>
               </div>
               <div>
                 <div className="text-xs text-gray-500 uppercase">Nombre</div>
@@ -260,10 +264,6 @@ export function GrupoFamiliar() {
               <div>
                 <div className="text-xs text-gray-500 uppercase">Apellido</div>
                 <div className="text-sm">{m.apellido}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
-                <div className="text-sm">{m.fechaNacimiento}</div>
               </div>
               <div className="col-span-2">
                 <div className="text-xs text-gray-500 uppercase">Dirección</div>
@@ -274,9 +274,34 @@ export function GrupoFamiliar() {
                 <div className="text-sm">{determinarParentesco(m)}</div>
               </div>
             </div>
+
+            {/* Botones responsive como en Prestadores */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                onClick={() => handleOptionClick("Ver detalles", m)}
+                className="px-3 py-2 text-sm border rounded-md border-gray-300 hover:bg-gray-50"
+              >
+                Ver detalles
+              </button>
+              <button
+                onClick={() => handleOptionClick("Editar", m)}
+                className="px-3 py-2 text-sm border-2 rounded-md border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white font-semibold"
+              >
+                Editar
+              </button>
+              <button
+                onClick={() => handleOptionClick("Dar de baja", m)}
+                className="px-3 py-2 text-sm border-2 rounded-md border-red-500 text-red-600 hover:bg-red-50 font-semibold"
+              >
+                Dar de baja
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
+
+      {/* Paginación mobile */}
       <div className="md:hidden bg-white px-3 py-2 mt-2 flex items-center justify-between border border-gray-200 rounded">
         <span className="text-sm text-gray-700">
           {nonTitularMembers.length === 0 ? 0 : startIndex + 1}
@@ -306,7 +331,7 @@ export function GrupoFamiliar() {
         </div>
       </div>
 
-     
+      {/* popups */}
       {showAddFamiliarPopup && (
         <AddFamiliarPopup
           grupoId={grupoId}
@@ -333,16 +358,25 @@ export function GrupoFamiliar() {
           open={showDeleteDialog}
           onClose={() => setShowDeleteDialog(false)}
           onConfirm={handleConfirmDelete}
+          onSchedule={handleScheduleDelete}  // popup de éxito
           affiliateName={selectedAffiliate.nombre}
           affiliateSurname={selectedAffiliate.apellido}
           affiliateDni={selectedAffiliate.dni}
           affiliateCredencial={selectedAffiliate.credencial}
         />
       )}
+
+      <ScheduledSuccessPopup
+        open={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        fechaISO={successISO}
+        nombre={successName}
+      />
     </div>
   );
 }
 
+/* ====== AddFamiliarPopup (el tuyo, con fixes de backticks) ====== */
 interface AddFamiliarPopupProps {
   grupoId: string | undefined;
   planFijo: string;
@@ -363,7 +397,9 @@ function AddFamiliarPopup({ grupoId, planFijo, onClose, onSave }: AddFamiliarPop
     direccion: "",
   });
 
-  const [situaciones, setSituaciones] = useState<Array<{ situacion: string; fechaFinalizacion: string }>>([]);
+  const [situaciones, setSituaciones] = useState<
+    Array<{ situacion: string; fechaFinalizacion: string }>
+  >([]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -406,49 +442,91 @@ function AddFamiliarPopup({ grupoId, planFijo, onClose, onSave }: AddFamiliarPop
           ✕
         </button>
 
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">Agregar Familiar al Grupo {grupoId}</h1>
+        <h1 className="text-2xl font-semibold text-gray-800 mb-6">
+          Agregar Familiar al Grupo {grupoId}
+        </h1>
 
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
           <p className="text-blue-800 font-semibold">
             Plan del grupo familiar: <span className="text-green-600">{planFijo}</span>
           </p>
-          <p className="text-blue-600 text-sm">Todos los miembros del grupo familiar comparten el mismo plan médico.</p>
+          <p className="text-blue-600 text-sm">
+            Todos los miembros del grupo familiar comparten el mismo plan médico.
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Tipo Documento</label>
-              <select name="tipoDocumento" value={formData.tipoDocumento} onChange={handleInputChange} className="p-2 border border-gray-300 rounded">
+              <select
+                name="tipoDocumento"
+                value={formData.tipoDocumento}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              >
                 <option value="DNI">DNI</option>
-                <option value="LE">CUIL</option>
+                <option value="CUIL">CUIL</option>
                 <option value="PASAPORTE">Pasaporte</option>
               </select>
             </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Nro Documento *</label>
-              <input type="text" name="nroDocumento" value={formData.nroDocumento} onChange={handleInputChange} className="p-2 border border-gray-300 rounded" required />
+              <input
+                type="text"
+                name="nroDocumento"
+                value={formData.nroDocumento}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                required
+              />
             </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Nombres *</label>
-              <input type="text" name="nombre" value={formData.nombre} onChange={handleInputChange} className="p-2 border border-gray-300 rounded" required />
+              <input
+                type="text"
+                name="nombre"
+                value={formData.nombre}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                required
+              />
             </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Apellidos *</label>
-              <input type="text" name="apellido" value={formData.apellido} onChange={handleInputChange} className="p-2 border border-gray-300 rounded" required />
+              <input
+                type="text"
+                name="apellido"
+                value={formData.apellido}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                required
+              />
             </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Fecha Nacimiento *</label>
-              <input type="date" name="fechaNacimiento" value={formData.fechaNacimiento} onChange={handleInputChange} className="p-2 border border-gray-300 rounded" required />
+              <input
+                type="date"
+                name="fechaNacimiento"
+                value={formData.fechaNacimiento}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                required
+              />
             </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Parentesco *</label>
-              <select name="parentesco" value={formData.parentesco} onChange={handleInputChange} className="p-2 border border-gray-300 rounded">
+              <select
+                name="parentesco"
+                value={formData.parentesco}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              >
                 <option value="Cónyuge">Cónyuge</option>
                 <option value="Hijo">Hijo</option>
                 <option value="Familiar a cargo">Familiar a cargo</option>
@@ -457,25 +535,49 @@ function AddFamiliarPopup({ grupoId, planFijo, onClose, onSave }: AddFamiliarPop
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Teléfono</label>
-              <input type="text" name="telefono" value={formData.telefono} onChange={handleInputChange} className="p-2 border border-gray-300 rounded" />
+              <input
+                type="text"
+                name="telefono"
+                value={formData.telefono}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
             </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Email</label>
-              <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="p-2 border border-gray-300 rounded" />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
             </div>
 
             <div className="flex flex-col col-span-2">
               <label className="font-semibold mb-1">Dirección</label>
-              <input type="text" name="direccion" value={formData.direccion} onChange={handleInputChange} className="p-2 border border-gray-300 rounded" />
+              <input
+                type="text"
+                name="direccion"
+                value={formData.direccion}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
             </div>
           </div>
 
           <div className="mt-6 p-4 border border-gray-200 rounded-lg">
-            <h3 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Situaciones Terapéuticas</h3>
+            <h3 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+              Situaciones Terapéuticas
+            </h3>
 
             <div className="space-y-3">
-              {situaciones.length === 0 && <p className="text-sm text-gray-500 text-center py-2">No hay situaciones terapéuticas agregadas</p>}
+              {situaciones.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-2">
+                  No hay situaciones terapéuticas agregadas
+                </p>
+              )}
 
               {situaciones.map((situacion, index) => (
                 <div key={index} className="grid grid-cols-3 gap-3 items-end">
