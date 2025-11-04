@@ -236,26 +236,26 @@ export function GrupoFamiliar() {
       {/* TARJETAS (mobile) */}
       <div className="md:hidden space-y-3 mb-2">
         {currentMembers.length === 0 && (
-          <div className="text-center text-sm text-gray-500 py-4">No hay más miembros para mostrar.</div>
+          <div className="text-center text-sm text-gray-500 py-4">
+            No hay más miembros para mostrar.
+          </div>
         )}
 
         {currentMembers.map((m) => (
-          <div key={m.credencial} className="border border-gray-200 rounded-lg shadow-sm p-3 bg-white">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <div className="text-xs text-gray-500 uppercase">Credencial</div>
-                <div className="font-semibold">{m.credencial}</div>
-              </div>
-              <OptionsMenu
-                affiliate={m}
-                onOptionClick={handleOptionClick}
-                options={["Editar", "Ver detalles", "Dar de baja"]}
-              />
+          <div key={m.credencial} className="border border-gray-200 rounded-lg shadow-sm p-4 bg-white">
+            <div className="mb-3">
+              <div className="text-xs text-gray-500 uppercase">Credencial</div>
+              <div className="font-semibold break-all">{m.credencial}</div>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="text-xs text-gray-500 uppercase">DNI</div>
                 <div className="text-sm">{m.dni}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
+                <div className="text-sm">{m.fechaNacimiento}</div>
               </div>
               <div>
                 <div className="text-xs text-gray-500 uppercase">Nombre</div>
@@ -264,10 +264,6 @@ export function GrupoFamiliar() {
               <div>
                 <div className="text-xs text-gray-500 uppercase">Apellido</div>
                 <div className="text-sm">{m.apellido}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
-                <div className="text-sm">{m.fechaNacimiento}</div>
               </div>
               <div className="col-span-2">
                 <div className="text-xs text-gray-500 uppercase">Dirección</div>
@@ -278,9 +274,32 @@ export function GrupoFamiliar() {
                 <div className="text-sm">{determinarParentesco(m)}</div>
               </div>
             </div>
+
+            {/* Botones responsive como en Prestadores */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                onClick={() => handleOptionClick("Ver detalles", m)}
+                className="px-3 py-2 text-sm border rounded-md border-gray-300 hover:bg-gray-50"
+              >
+                Ver detalles
+              </button>
+              <button
+                onClick={() => handleOptionClick("Editar", m)}
+                className="px-3 py-2 text-sm border-2 rounded-md border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white font-semibold"
+              >
+                Editar
+              </button>
+              <button
+                onClick={() => handleOptionClick("Dar de baja", m)}
+                className="px-3 py-2 text-sm border-2 rounded-md border-red-500 text-red-600 hover:bg-red-50 font-semibold"
+              >
+                Dar de baja
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
 
       {/* Paginación mobile */}
       <div className="md:hidden bg-white px-3 py-2 mt-2 flex items-center justify-between border border-gray-200 rounded">

@@ -37,31 +37,33 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showViewPopup] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
 
-  // ⬇️ estado para el popup de éxito (sin romper responsive)
+  // popup de éxito
   const [showSuccess, setShowSuccess] = useState(false);
   const [successISO, setSuccessISO] = useState<string>("");
   const [successName, setSuccessName] = useState<string>("");
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
-    if (option === "Editar") {
+    const opt = option.trim().toLowerCase();
+
+    if (opt === "editar") {
       setSelectedAffiliate(affiliate);
       setShowEditPopup(true);
       return;
     }
-    if (option === "Ver detalles") {
-      onOptionClick?.(option, affiliate);
+    if (opt === "ver detalles") {
+      onOptionClick?.("Ver detalles", affiliate);
       return;
     }
-    if (option === "Ver grupo familiar") {
+    // acepta ambas variantes de texto
+    if (opt === "ver miembros del grupo familiar" || opt === "ver grupo familiar") {
       const grupoFamiliarId = affiliate.credencial.split("-")[0];
       navigate(`/home/grupoFamiliar/${grupoFamiliarId}`);
       return;
     }
-    if (option === "Dar de baja") {
+    if (opt === "dar de baja") {
       setSelectedAffiliate(affiliate);
       setShowDeleteDialog(true);
       return;
@@ -81,18 +83,16 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
     setSelectedAffiliate(null);
   };
 
-  // ⬇️ reemplaza el alert por el popup visual
   const handleScheduleDelete = (isoDateTime: string) => {
-    if (selectedAffiliate) {
-      setShowDeleteDialog(false);
-      setSuccessISO(isoDateTime);
-      setSuccessName(`${selectedAffiliate.nombre} ${selectedAffiliate.apellido}`);
-      setShowSuccess(true);
-      setSelectedAffiliate(null);
-    }
+    if (!selectedAffiliate) return;
+    setShowDeleteDialog(false);
+    setSuccessISO(isoDateTime);
+    setSuccessName(`${selectedAffiliate.nombre} ${selectedAffiliate.apellido}`);
+    setShowSuccess(true);
+    setSelectedAffiliate(null);
   };
 
-  // Paginación (igual que tenías)
+  // paginación
   const totalPages = Math.max(1, Math.ceil(affiliates.length / itemsPerPage));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * itemsPerPage;
@@ -102,6 +102,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
   return (
     <>
       <div className="rounded-lg border border-gray-300 shadow-md bg-white">
+        {/* DESKTOP: tabla con OptionsMenu */}
         <div className="hidden md:block">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-[#5FA92C] text-white">
@@ -127,11 +128,11 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
                   <td className="px-4 py-2 text-sm">{a.fechaNacimiento}</td>
                   <td className="px-4 py-2 text-sm">{a.plan}</td>
                   <td className="px-4 py-2 text-sm">{a.direccion}</td>
-                  <td className="px-4 py-2 text-center relative">
+                  <td className="px-2 py-2 text-right w-10">
                     <OptionsMenu
-                      affiliate={a}
-                      onOptionClick={handleOptionClick}
-                      options={["Editar", "Ver grupo familiar", "Ver detalles", "Dar de baja"]}
+                      affiliate={{ credencial: a.credencial, dni: a.dni, nombre: a.nombre, apellido: a.apellido }}
+                      options={["Editar", "Ver Detalles", "Dar de Baja", "Ver Grupo Familiar"]}
+                      onOptionClick={(opt) => handleOptionClick(opt, a)}
                     />
                   </td>
                 </tr>
@@ -148,7 +149,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
           </table>
         </div>
 
-        {/*mobile tarjetas (sin tocar)*/}
+        {/* MOBILE: cards con botones como Prestadores + botón azul extra */}
         <div className="md:hidden p-3">
           {currentAffiliates.length === 0 && (
             <div className="px-2 py-6 text-center text-sm text-gray-500">
@@ -158,22 +159,20 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
 
           <div className="flex flex-col gap-3">
             {currentAffiliates.map((a) => (
-              <div key={a.credencial} className="border border-gray-200 rounded-lg shadow-sm p-3 bg-white">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase">Credencial</div>
-                    <div className="font-semibold">{a.credencial}</div>
-                  </div>
-                  <OptionsMenu
-                    affiliate={a}
-                    onOptionClick={handleOptionClick}
-                    options={["Editar", "Ver grupo familiar", "Ver detalles", "Dar de baja"]}
-                  />
+              <div key={a.credencial} className="border border-gray-200 rounded-lg shadow-sm p-4 bg-white">
+                <div className="mb-3">
+                  <div className="text-xs text-gray-500 uppercase">Credencial</div>
+                  <div className="font-semibold break-all">{a.credencial}</div>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
+
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <div className="text-xs text-gray-500 uppercase">DNI</div>
                     <div className="text-sm">{a.dni}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
+                    <div className="text-sm">{a.fechaNacimiento}</div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 uppercase">Nombre</div>
@@ -183,11 +182,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
                     <div className="text-xs text-gray-500 uppercase">Apellido</div>
                     <div className="text-sm">{a.apellido}</div>
                   </div>
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
-                    <div className="text-sm">{a.fechaNacimiento}</div>
-                  </div>
-                  <div>
+                  <div className="col-span-2">
                     <div className="text-xs text-gray-500 uppercase">Plan</div>
                     <div className="text-sm">{a.plan}</div>
                   </div>
@@ -196,12 +191,41 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
                     <div className="text-sm">{a.direccion}</div>
                   </div>
                 </div>
+
+                {/* Botones: MISMA estética que Prestadores */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleOptionClick("Ver detalles", a)}
+                    className="px-3 py-2 text-sm border rounded-md border-gray-300 hover:bg-gray-50"
+                  >
+                    Ver detalles
+                  </button>
+                  <button
+                    onClick={() => handleOptionClick("Editar", a)}
+                    className="px-3 py-2 text-sm border-2 rounded-md border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white font-semibold"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleOptionClick("Dar de baja", a)}
+                    className="px-3 py-2 text-sm border-2 rounded-md border-red-500 text-red-600 hover:bg-red-50 font-semibold"
+                  >
+                    Dar de baja
+                  </button>
+
+                  <button
+                    onClick={() => handleOptionClick("Ver miembros del grupo familiar", a)}
+                    className="px-3 py-2 text-sm border-2 rounded-md border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold"
+                  >
+                    Ver miembros del grupo familiar
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* footer paginación (igual) */}
+        {/* footer paginación */}
         <div className="bg-white px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-gray-200">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-700 sm:hidden">
@@ -243,6 +267,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
         </div>
       </div>
 
+      {/* Popups */}
       {showEditPopup && selectedAffiliate && (
         <EditAffiliatePopup
           affiliate={selectedAffiliate}
@@ -256,7 +281,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
           open={showDeleteDialog}
           onClose={() => setShowDeleteDialog(false)}
           onConfirm={handleConfirmDelete}
-          onSchedule={handleScheduleDelete} // ⬅️ usa el popup
+          onSchedule={handleScheduleDelete}
           affiliateName={selectedAffiliate.nombre}
           affiliateSurname={selectedAffiliate.apellido}
           affiliateDni={selectedAffiliate.dni}
@@ -264,7 +289,6 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
         />
       )}
 
-      {/* Popup de éxito (no afecta el layout responsive) */}
       <ScheduledSuccessPopup
         open={showSuccess}
         onClose={() => setShowSuccess(false)}
