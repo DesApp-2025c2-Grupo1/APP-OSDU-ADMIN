@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { OptionsMenu } from "./OptionsMenu";
 import { EditAffiliatePopup } from "./EditAffiliatePopup";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
+import ScheduledSuccessPopup from "./BajaExitosaPopup";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 
@@ -40,6 +41,11 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
 
+  // ⬇️ estado para el popup de éxito (sin romper responsive)
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successISO, setSuccessISO] = useState<string>("");
+  const [successName, setSuccessName] = useState<string>("");
+
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
     if (option === "Editar") {
       setSelectedAffiliate(affiliate);
@@ -75,15 +81,18 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
     setSelectedAffiliate(null);
   };
 
+  // ⬇️ reemplaza el alert por el popup visual
   const handleScheduleDelete = (isoDateTime: string) => {
-  console.log("Baja programada para:", selectedAffiliate, "en", isoDateTime);
-  alert(`Baja programada para ${new Date(isoDateTime).toLocaleString()}`);
-  setShowDeleteDialog(false);
-  setSelectedAffiliate(null);
-};
+    if (selectedAffiliate) {
+      setShowDeleteDialog(false);
+      setSuccessISO(isoDateTime);
+      setSuccessName(`${selectedAffiliate.nombre} ${selectedAffiliate.apellido}`);
+      setShowSuccess(true);
+      setSelectedAffiliate(null);
+    }
+  };
 
-
-  // Paginación
+  // Paginación (igual que tenías)
   const totalPages = Math.max(1, Math.ceil(affiliates.length / itemsPerPage));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * itemsPerPage;
@@ -139,7 +148,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
           </table>
         </div>
 
-        {/*mobile tarjetas*/}
+        {/*mobile tarjetas (sin tocar)*/}
         <div className="md:hidden p-3">
           {currentAffiliates.length === 0 && (
             <div className="px-2 py-6 text-center text-sm text-gray-500">
@@ -191,6 +200,8 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
             ))}
           </div>
         </div>
+
+        {/* footer paginación (igual) */}
         <div className="bg-white px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-gray-200">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-700 sm:hidden">
@@ -241,18 +252,25 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
       )}
 
       {showDeleteDialog && selectedAffiliate && (
-      <ConfirmDeleteDialog
-    open={showDeleteDialog}
-    onClose={() => setShowDeleteDialog(false)}
-    onConfirm={handleConfirmDelete}
-    onSchedule={handleScheduleDelete}   // ✅ <---- esta línea es la que faltaba
-    affiliateName={selectedAffiliate.nombre}
-    affiliateSurname={selectedAffiliate.apellido}
-    affiliateDni={selectedAffiliate.dni}
-    affiliateCredencial={selectedAffiliate.credencial}
-  />
-)}
+        <ConfirmDeleteDialog
+          open={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={handleConfirmDelete}
+          onSchedule={handleScheduleDelete} // ⬅️ usa el popup
+          affiliateName={selectedAffiliate.nombre}
+          affiliateSurname={selectedAffiliate.apellido}
+          affiliateDni={selectedAffiliate.dni}
+          affiliateCredencial={selectedAffiliate.credencial}
+        />
+      )}
 
+      {/* Popup de éxito (no afecta el layout responsive) */}
+      <ScheduledSuccessPopup
+        open={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        fechaISO={successISO}
+        nombre={successName}
+      />
     </>
   );
 }

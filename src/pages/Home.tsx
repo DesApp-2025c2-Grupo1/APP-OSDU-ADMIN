@@ -72,7 +72,7 @@ export function Home() {
     setSelectedAffiliate(null);
   };
 
-      return (
+  return (
     <div className="w-full p-6 space-y-4">
       {/* Barra superior */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
@@ -125,11 +125,13 @@ export function Home() {
           open={showDeleteDialog}
           onClose={() => setShowDeleteDialog(false)}
           onConfirm={handleConfirmDelete}
+          onSchedule={() => { }}   // ← agregá esto
           affiliateName={selectedAffiliate.nombre}
           affiliateSurname={selectedAffiliate.apellido}
           affiliateDni={selectedAffiliate.dni}
           affiliateCredencial={selectedAffiliate.credencial}
         />
+
       )}
     </div>
   );
