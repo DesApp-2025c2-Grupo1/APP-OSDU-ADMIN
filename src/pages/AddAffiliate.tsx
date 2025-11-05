@@ -71,7 +71,6 @@ export function AgregarAfiliado() {
     email2: "",
     direccion: "",
     direccion2: "",
-    parentesco: "Titular",
   });
 
   const [showPhone2, setShowPhone2] = useState(false);
@@ -272,7 +271,6 @@ export function AgregarAfiliado() {
       telefono2: formData.telefono2,
       email: formData.email,
       email2: formData.email2,
-      parentesco: "Titular",
       tipoDocumento: formData.tipoDocumento,
       nroDocumento: formData.nroDocumento,
       situaciones: (situaciones || []).map(s => ({
@@ -340,12 +338,12 @@ export function AgregarAfiliado() {
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
               >
-                <option value="DNI">DNI</option>
-                <option value="LE">CUIL</option>
-                <option value="CUIT">CUIT</option>
-                <option value="LC">DOCUMENTO EXTRANJERO</option>
-                <option value="CDI">CDI</option>
-                <option value="PASAPORTE">Pasaporte</option>
+                <option value="1">DNI</option>
+                <option value="2">CUIL</option>
+                <option value="3">CUIT</option>
+                <option value="4">DOCUMENTO EXTRANJERO</option>
+                <option value="5">CDI</option>
+                <option value="6">Pasaporte</option>
               </select>
             </div>
 
@@ -409,14 +407,14 @@ export function AgregarAfiliado() {
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
               >
-                <option value="210">210</option>
-                <option value="310">310</option>
-                <option value="410">410</option>
-                <option value="510">510</option>
-                <option value="Bronce">Bronce</option>
-                <option value="Plata">Plata</option>
-                <option value="Oro">Oro</option>
-                <option value="Platino">Platino</option>
+                <option value="1">210</option>
+                <option value="2">310</option>
+                <option value="3">410</option>
+                <option value="4">510</option>
+                <option value="5">Bronce</option>
+                <option value="6">Plata</option>
+                <option value="7">Oro</option>
+                <option value="8">Platino</option>
               </select>
               {errors.planMedico && (
                 <p className="text-red-500 text-sm mt-1">{errors.planMedico}</p>
@@ -709,12 +707,12 @@ export function AgregarAfiliado() {
                     onChange={(e) => cambiarDatoFamiliar(i, "tipoDocumento", e.target.value)}
                     className="p-2 border border-gray-300 rounded"
                   >
-                    <option value="DNI">DNI</option>
-                    <option value="LE">CUIL</option>
-                    <option value="CUIT">CUIT</option>
-                    <option value="LC">DOCUMENTO EXTRANJERO</option>
-                    <option value="CDI">CDI</option>
-                    <option value="PASAPORTE">Pasaporte</option>
+                    <option value="1">DNI</option>
+                    <option value="2">CUIL</option>
+                    <option value="3">CUIT</option>
+                    <option value="4">DOCUMENTO EXTRANJERO</option>
+                    <option value="5">CDI</option>
+                    <option value="6">Pasaporte</option>
                   </select>
                 </div>
 
