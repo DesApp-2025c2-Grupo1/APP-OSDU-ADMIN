@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { ButtonVolver } from "../util/ButtonVolver";
-import {ButtonProgramateAffiliate} from "../util/ButtonProgramateAffiliate";
+import { ButtonProgramateAffiliate } from "../util/ButtonProgramateAffiliate";
 import AltaProgramadaPopup from "../components/AltaProgramadaPopup";
 import { useNavigate } from "react-router-dom";
-import type { Affiliate as AffiliateType } from "../components/AffiliatesTable";
+import type { AffiliateRequest, Affiliate as AffiliateType } from "../components/AffiliatesTable";
 
 interface Situacion {
   situacion: string;
@@ -23,7 +23,7 @@ interface Familiar {
   direccion2?: string;
   usaDireccionTitular?: boolean;
   usaContactoTitular?: boolean;
-  situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>; 
+  situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>;
 }
 
 // Helpers
@@ -57,7 +57,7 @@ const requiereFechaFin = (id: string) =>
 export function AgregarAfiliado() {
   const navigate = useNavigate();
   const [showAltaPopup, setShowAltaPopup] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({ // titular
     tipoDocumento: "DNI",
     nroDocumento: "",
     nombre: "",
@@ -78,7 +78,7 @@ export function AgregarAfiliado() {
   const [showAddress2, setShowAddress2] = useState(false);
 
   // Situaciones del TITULAR
-  const [situaciones, setSituaciones] = useState<Situacion[]>([]); 
+  const [situaciones, setSituaciones] = useState<Situacion[]>([]);
 
   // Familiares
   const [familiares, setFamiliares] = useState<Familiar[]>([]);
@@ -231,21 +231,21 @@ export function AgregarAfiliado() {
       }));
 
       return {
-        credencial: buildChildCredential(prefix, idx + 1),
-        dni: f.nroDocumento,
-        nombre: f.nombre,
-        apellido: f.apellido,
-        fechaNacimiento: fechaNac,
-        plan: titular.planMedico,
-        planMedico: titular.planMedico,
-        direccion: f.usaDireccionTitular ? titular.direccion : (f.direccion || ""),
-        direccion2: f.usaDireccionTitular ? titular.direccion2 : (f.direccion2 || ""),
-        telefono: f.usaContactoTitular ? titular.telefono : (f.telefono || ""),
-        email: f.usaContactoTitular ? titular.email : (f.email || ""),
-        parentesco: f.parentesco,
-        tipoDocumento: f.tipoDocumento,
-        nroDocumento: f.nroDocumento,
-        situaciones: situacionesPayload,
+        // credencial: buildChildCredential(prefix, idx + 1),
+        // dni: f.nroDocumento,
+        // nombre: f.nombre,
+        // apellido: f.apellido,
+        // fechaNacimiento: fechaNac,
+        // plan: titular.planMedico,
+        // planMedico: titular.planMedico,
+        // direccion: f.usaDireccionTitular ? titular.direccion : (f.direccion || ""),
+        // direccion2: f.usaDireccionTitular ? titular.direccion2 : (f.direccion2 || ""),
+        // telefono: f.usaContactoTitular ? titular.telefono : (f.telefono || ""),
+        // email: f.usaContactoTitular ? titular.email : (f.email || ""),
+        // parentesco: f.parentesco,
+        // tipoDocumento: f.tipoDocumento,
+        // nroDocumento: f.nroDocumento,
+        // situaciones: situacionesPayload,
       } as AffiliateType;
     });
   };
@@ -257,31 +257,26 @@ export function AgregarAfiliado() {
     setLoading(true);
     setSuccess(null);
 
-    const titular: AffiliateType = {
+    const titular: AffiliateRequest = { //request para enviar
+      tipoDocumento: formData.tipoDocumento,
+      apellido: formData.apellido,
       credencial: formData.credencial,
+      fecha_nacimiento: formData.fechaNacimiento,
+      direccion: formData.direccion,
       dni: formData.nroDocumento,
       nombre: formData.nombre,
-      apellido: formData.apellido,
-      fechaNacimiento: isoToDDMMYYYY(formData.fechaNacimiento),
-      plan: formData.planMedico,
-      planMedico: formData.planMedico,
-      direccion: formData.direccion,
-      direccion2: formData.direccion2,
-      telefono: formData.telefono,
-      telefono2: formData.telefono2,
-      email: formData.email,
-      email2: formData.email2,
-      tipoDocumento: formData.tipoDocumento,
-      nroDocumento: formData.nroDocumento,
-      situaciones: (situaciones || []).map(s => ({
-        situacion: s.situacion,
-        fechaFinalizacion: isoToDDMMYYYY(s.fechaFinalizacion || ""),
-      })),
+      email: [],
+      parentesco: '',
+      plan: 1,
+      telefonos: [],
+      familiares: []
     };
+
+    console.log(titular);
 
     try {
       const familiaresMapped = mapFamiliaresToAffiliates(familiares, formData);
-      const grupo: AffiliateType[] = [titular, ...familiaresMapped];
+      const grupo: AffiliateRequest[] = [titular, ...familiaresMapped];
 
       await new Promise((res) => setTimeout(res, 700));
       console.log("Grupo familiar a guardar:", grupo);
@@ -524,7 +519,7 @@ export function AgregarAfiliado() {
                     placeholder="Email adicional"
                   />
                   {errors.email2 && <p className="text-red-500 text-xs mt-1">{errors.email2}</p>}
-                  
+
                   <button
                     type="button"
                     onClick={() => {
@@ -609,7 +604,7 @@ export function AgregarAfiliado() {
             )}
 
             {situaciones.map((s, idx) => {
-              const tieneFecha = ["embarazo","rehab_motriz","kinesiologia","psicoterapia","fonoaudiologia"].includes(s.situacion);
+              const tieneFecha = ["embarazo", "rehab_motriz", "kinesiologia", "psicoterapia", "fonoaudiologia"].includes(s.situacion);
               return (
                 <div
                   key={idx}
@@ -817,7 +812,7 @@ export function AgregarAfiliado() {
                   )}
 
                   {familiar.situaciones?.map((s, idx) => {
-                    const tieneFecha = ["embarazo","rehab_motriz","kinesiologia","psicoterapia","fonoaudiologia"].includes(s.situacion);
+                    const tieneFecha = ["embarazo", "rehab_motriz", "kinesiologia", "psicoterapia", "fonoaudiologia"].includes(s.situacion);
                     return (
                       <div
                         key={idx}

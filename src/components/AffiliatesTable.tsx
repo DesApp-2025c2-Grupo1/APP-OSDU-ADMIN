@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { OptionsMenu } from "./OptionsMenu";
 import { EditAffiliatePopup } from "./EditAffiliatePopup";
@@ -8,23 +8,62 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 
 export type Affiliate = {
+  grupoFamiliar: number;
+  tipoDocumento: string;
+  apellido: string;
   credencial: string;
+  fecha_nacimiento: string;
+  direccion: string;
   dni: string;
   nombre: string;
-  apellido: string;
-  fechaNacimiento: string;
-  plan: string;
-  direccion: string;
-  parentesco?: string;
-  tipoDocumento?: string;
-  nroDocumento?: string;
-  planMedico?: string;
-  telefono?: string;
-  telefono2?: string;
-  email?: string;
-  email2?: string;
+  parentesco: string;
+
+  email: Array<{
+    idEmail: number;
+    email: string;
+  }>;
+
+  telefonos: Array<{
+    telefono: string;
+  }>;
+
+  plan: {
+    idPlan: number;
+    nombre: string;
+  };
+
+  // Campos opcionales o adicionales
+  fechaNacimiento?: string;
   direccion2?: string;
   situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>;
+};
+
+
+export type AffiliateRequest = {
+  tipoDocumento: string;
+  apellido: string;
+  credencial: string;
+  fecha_nacimiento: string;
+  direccion: string;
+  dni: string;
+  nombre: string;
+  parentesco: string;
+
+  email: Array<{
+    idEmail: number;
+    email: string;
+  }>;
+
+  telefonos: Array<{
+    telefono: string;
+  }>;
+
+  plan: number
+
+  // Campos opcionales o adicionales
+  fechaNacimiento?: string;
+  situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>;
+  familiares?:Array<{}>
 };
 
 interface AffiliatesTableProps {
@@ -84,11 +123,9 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
   };
 
   const handleScheduleDelete = (isoDateTime: string) => {
-    if (!selectedAffiliate) return;
+    console.log("Baja programada para:", selectedAffiliate, "en", isoDateTime);
+    alert(`Baja programada para ${new Date(isoDateTime).toLocaleString()}`);
     setShowDeleteDialog(false);
-    setSuccessISO(isoDateTime);
-    setSuccessName(`${selectedAffiliate.nombre} ${selectedAffiliate.apellido}`);
-    setShowSuccess(true);
     setSelectedAffiliate(null);
   };
 
@@ -107,7 +144,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-[#5FA92C] text-white">
               <tr>
-                {["Credencial","DNI","Nombre","Apellido","Fecha Nac.","Plan","Dirección",""].map((h) => (
+                {["Credencial", "DNI", "Nombre", "Apellido", "Fecha Nac.", "Plan", "Dirección", ""].map((h) => (
                   <th
                     key={h}
                     scope="col"
@@ -125,8 +162,8 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
                   <td className="px-4 py-2 text-sm">{a.dni}</td>
                   <td className="px-4 py-2 text-sm">{a.nombre}</td>
                   <td className="px-4 py-2 text-sm">{a.apellido}</td>
-                  <td className="px-4 py-2 text-sm">{a.fechaNacimiento}</td>
-                  <td className="px-4 py-2 text-sm">{a.plan}</td>
+                  <td className="px-4 py-2 text-sm">{a.fecha_nacimiento}</td>
+                  <td className="px-4 py-2 text-sm">{a.plan.nombre}</td>
                   <td className="px-4 py-2 text-sm">{a.direccion}</td>
                   <td className="px-2 py-2 text-right w-10">
                     <OptionsMenu
@@ -182,9 +219,13 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
                     <div className="text-xs text-gray-500 uppercase">Apellido</div>
                     <div className="text-sm">{a.apellido}</div>
                   </div>
-                  <div className="col-span-2">
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
+                    <div className="text-sm">{a.fecha_nacimiento}</div>
+                  </div>
+                  <div>
                     <div className="text-xs text-gray-500 uppercase">Plan</div>
-                    <div className="text-sm">{a.plan}</div>
+                    <div className="text-sm">{a.plan.nombre}</div>
                   </div>
                   <div className="col-span-2">
                     <div className="text-xs text-gray-500 uppercase">Dirección</div>
@@ -281,7 +322,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
           open={showDeleteDialog}
           onClose={() => setShowDeleteDialog(false)}
           onConfirm={handleConfirmDelete}
-          onSchedule={handleScheduleDelete}
+          onSchedule={handleScheduleDelete}   // ✅ <---- esta línea es la que faltaba
           affiliateName={selectedAffiliate.nombre}
           affiliateSurname={selectedAffiliate.apellido}
           affiliateDni={selectedAffiliate.dni}
