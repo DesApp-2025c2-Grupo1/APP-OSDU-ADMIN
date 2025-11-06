@@ -40,6 +40,7 @@ export function Home() {
   const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -58,7 +59,6 @@ export function Home() {
 
       const data = await response.json();
       const affiliatesData = Array.isArray(data) ? data : data.affiliates;
-
       if (!affiliatesData) throw new Error("No se encontraron afiliados");
 
       setAffiliates(affiliatesData);
@@ -93,9 +93,12 @@ export function Home() {
       case "Editar":
         setShowEditPopup(true);
         break;
-      case "Ver grupo familiar":
-        navigate(`/home/grupoFamiliar/${affiliate.dni}`);
+      case "Ver grupo familiar": {
+        // 👉 Navegá con la BASE de la credencial (antes del guion)
+        const base = affiliate.credencial?.split("-")[0] ?? affiliate.dni;
+        navigate(`/home/grupoFamiliar/${base}`);
         break;
+      }
       case "Ver detalles":
         setShowViewPopup(true);
         break;
@@ -109,19 +112,56 @@ export function Home() {
   const handleConfirmDelete = async () => {
     if (!selectedAffiliate) return;
 
+    setIsDeleting(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/affiliates/${selectedAffiliate.dni}`, {
+      // Si tu API borra por DNI (como en tu ejemplo actual):
+      const res = await fetch(`http://localhost:3000/api/affiliates/${selectedAffiliate.dni}`, {
         method: "DELETE",
       });
 
-      if (!response.ok) throw new Error("Error al eliminar afiliado");
+      if (!res.ok && res.status !== 204) throw new Error("Error al eliminar afiliado");
 
-      // Actualizamos el estado local
-      setAffiliates((prev) => prev.filter((a) => a.dni !== selectedAffiliate.dni));
+      // 🔸 Actualizamos UI:
+      // - Si es TITULAR (sufijo -01), quitamos TODO el grupo (misma base).
+      // - Si es MIEMBRO, quitamos solo esa credencial.
+      const cred = selectedAffiliate.credencial || "";
+      const isTitular = cred.endsWith("-01");
+      const base = cred.split("-")[0];
+
+      setAffiliates((prev) => {
+        if (isTitular && base) {
+          return prev.filter((a) => a.credencial.split("-")[0] !== base);
+        }
+        return prev.filter((a) => a.dni !== selectedAffiliate.dni);
+      });
+
       showToast(`Afiliado ${selectedAffiliate.nombre} eliminado correctamente`);
     } catch (error) {
       console.error("Error al eliminar afiliado:", error);
       showToast("Error al eliminar el afiliado");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+      setSelectedAffiliate(null);
+    }
+  };
+
+  // 🗓️ Baja programada (placeholder – ajustá al endpoint real)
+  const handleScheduleDelete = async (fechaISO: string) => {
+    if (!selectedAffiliate) return;
+    try {
+      await fetch(
+        `http://localhost:3000/api/affiliates/${selectedAffiliate.dni}/schedule-delete`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fecha: fechaISO }),
+        }
+      );
+      showToast(`Baja programada para ${selectedAffiliate.nombre}`);
+    } catch (e) {
+      console.error(e);
+      showToast("No se pudo programar la baja");
     } finally {
       setShowDeleteDialog(false);
       setSelectedAffiliate(null);
@@ -185,7 +225,20 @@ export function Home() {
       ) : (
         <>
           <div className="rounded-md shadow-sm border border-gray-200">
-            <AffiliatesTable affiliates={filtered} onOptionClick={handleOptionClick} />
+            <AffiliatesTable
+              affiliates={filtered}
+              onOptionClick={handleOptionClick}
+              onAffiliateDeleted={(dni) => {
+                setAffiliates(prev => prev.filter(a => a.dni !== dni));
+                showToast("Afiliado eliminado correctamente");
+              }}
+              onAffiliateUpdated={(updated) => {
+                setAffiliates(prev =>
+                  prev.map(a => (a.dni === updated.dni ? updated : a))
+                );
+                showToast("Afiliado actualizado correctamente");
+              }}
+            />
           </div>
 
           {/* Popups */}
@@ -209,11 +262,12 @@ export function Home() {
               open={showDeleteDialog}
               onClose={() => setShowDeleteDialog(false)}
               onConfirm={handleConfirmDelete}
-              onSchedule={() => console.log("Baja programada para:", selectedAffiliate)}
+              onSchedule={handleScheduleDelete}
               affiliateName={selectedAffiliate.nombre}
               affiliateSurname={selectedAffiliate.apellido}
               affiliateDni={selectedAffiliate.dni}
               affiliateCredencial={selectedAffiliate.credencial}
+              isDeleting={isDeleting}
             />
           )}
         </>
