@@ -11,17 +11,42 @@ import { ButtonVolver } from "../util/ButtonVolver";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 
-// Tipo para la respuesta del endpoint
-interface FamilyGroupResponse {
+// Tipo para el afiliado que viene del endpoint
+interface AffiliateFromAPI {
+  grupoFamiliar: number;
+  tipoDocumento: string;
+  apellido: string;
+  credencial: string;
+  direccion: string;
   dni: string;
-  titular: Affiliate;
-  miembros: Affiliate[];
-  plan: {
-    id: string;
-    nombre: string;
-    descripcion: string;
+  email: Array<{ idEmail: number; email: string }>;
+  nombre: string;
+  parentesco: string;
+  telefonos: Array<{ telefono: string }>;
+  plan: { idPlan: number; nombre: string };
+  fecha_nacimiento: string | null;
+}
+
+// Tipo para la respuesta del endpoint
+interface FamilyGroupAPIResponse {
+  affiliates: AffiliateFromAPI[];
+}
+
+// Función para transformar el afiliado del API al formato interno
+function transformAffiliate(apiAffiliate: AffiliateFromAPI): Affiliate {
+  return {
+    credencial: apiAffiliate.credencial,
+    dni: apiAffiliate.dni,
+    nombre: apiAffiliate.nombre,
+    apellido: apiAffiliate.apellido,
+    fechaNacimiento: apiAffiliate.fecha_nacimiento || "",
+    direccion: apiAffiliate.direccion,
+    parentesco: apiAffiliate.parentesco,
+    telefono: apiAffiliate.telefonos?.[0]?.telefono || "",
+    email: apiAffiliate.email?.[0]?.email || "",
+    tipoDocumento: apiAffiliate.tipoDocumento,
+    plan: apiAffiliate.plan.nombre,
   };
-  totalMiembros: number;
 }
 
 export function GrupoFamiliar() {
@@ -35,7 +60,9 @@ export function GrupoFamiliar() {
   const [showAddFamiliarPopup, setShowAddFamiliarPopup] = useState(false);
 
   // Estados para datos del API
-  const [familyData, setFamilyData] = useState<FamilyGroupResponse | null>(null);
+  const [members, setMembers] = useState<Affiliate[]>([]);
+  const [planNombre, setPlanNombre] = useState<string>("");
+  const [grupoFamiliarId, setGrupoFamiliarId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +74,7 @@ export function GrupoFamiliar() {
   // ✅ FETCH del endpoint con el DNI
   useEffect(() => {
     const fetchFamilyGroup = async () => {
+      console.log(dni);
       if (!dni) {
         setError("DNI no proporcionado");
         setLoading(false);
@@ -63,9 +91,22 @@ export function GrupoFamiliar() {
           throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
 
-        const data: FamilyGroupResponse = await response.json();
+        const data: FamilyGroupAPIResponse = await response.json();
         console.log("Grupo familiar cargado:", data);
-        setFamilyData(data);
+
+        if (!data.affiliates || data.affiliates.length === 0) {
+          setError("No se encontraron afiliados en el grupo familiar");
+          setLoading(false);
+          return;
+        }
+
+        // Transformar los datos del API al formato interno
+        const transformedMembers = data.affiliates.map(transformAffiliate);
+        setMembers(transformedMembers);
+        
+        // Guardar el plan y el ID del grupo familiar
+        setPlanNombre(data.affiliates[0].plan.nombre);
+        setGrupoFamiliarId(data.affiliates[0].grupoFamiliar);
       } catch (err) {
         console.error("Error al cargar grupo familiar:", err);
         setError(err instanceof Error ? err.message : "Error desconocido");
@@ -77,15 +118,12 @@ export function GrupoFamiliar() {
     fetchFamilyGroup();
   }, [dni]);
 
-  // Datos derivados del estado
-  const members = useMemo(() => {
-    if (!familyData) return [];
-    return [familyData.titular, ...familyData.miembros];
-  }, [familyData]);
+  // Obtener el titular (el que tiene parentesco "Titular")
+  const titular = useMemo(() => {
+    return members.find(m => m.parentesco === "Titular") || members[0] || null;
+  }, [members]);
 
-  const titular = familyData?.titular || null;
-  const planFijo = familyData?.plan.nombre || "";
-  const dniTitular = familyData?.dni || "";
+  const dniTitular = titular?.dni || dni || "";
 
   const determinarParentesco = (affiliate: Affiliate) => {
     if (affiliate.parentesco) return affiliate.parentesco;
@@ -128,8 +166,13 @@ export function GrupoFamiliar() {
 
       // Recargar datos del grupo familiar
       const refreshResponse = await fetch(`http://localhost:3000/api/affiliates/family/${dni}`);
-      const refreshedData = await refreshResponse.json();
-      setFamilyData(refreshedData);
+      const refreshedData: FamilyGroupAPIResponse = await refreshResponse.json();
+      
+      if (refreshedData.affiliates && refreshedData.affiliates.length > 0) {
+        const transformedMembers = refreshedData.affiliates.map(transformAffiliate);
+        setMembers(transformedMembers);
+        setPlanNombre(refreshedData.affiliates[0].plan.nombre);
+      }
 
       setShowAddFamiliarPopup(false);
     } catch (error) {
@@ -171,13 +214,9 @@ export function GrupoFamiliar() {
       console.log("Afiliado actualizado:", updated);
 
       // Actualizar datos localmente
-      if (familyData) {
-        setFamilyData({
-          ...familyData,
-          titular: familyData.titular.dni === updated.dni ? updated : familyData.titular,
-          miembros: familyData.miembros.map(m => m.dni === updated.dni ? updated : m),
-        });
-      }
+      setMembers(prevMembers => 
+        prevMembers.map(m => m.dni === updated.dni ? updated : m)
+      );
 
       setShowEditPopup(false);
       setSelectedAffiliate(null);
@@ -200,13 +239,9 @@ export function GrupoFamiliar() {
       console.log("Afiliado dado de baja:", selectedAffiliate);
 
       // Actualizar datos localmente
-      if (familyData) {
-        setFamilyData({
-          ...familyData,
-          miembros: familyData.miembros.filter(m => m.dni !== selectedAffiliate.dni),
-          totalMiembros: familyData.totalMiembros - 1,
-        });
-      }
+      setMembers(prevMembers => 
+        prevMembers.filter(m => m.dni !== selectedAffiliate.dni)
+      );
 
       setShowDeleteDialog(false);
       setSelectedAffiliate(null);
@@ -289,12 +324,10 @@ export function GrupoFamiliar() {
           <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
         </div>
 
-        {/* <p className="text-gray-600">No se encontraron miembros para el grupo {grupoId}.</p> */}
-
         {showAddFamiliarPopup && (
           <AddFamiliarPopup
             grupoId={dniTitular}
-            planFijo={planFijo}
+            planFijo={planNombre}
             onClose={() => setShowAddFamiliarPopup(false)}
             onSave={handleSaveFamiliar}
           />
@@ -337,7 +370,7 @@ export function GrupoFamiliar() {
           </div>
           <div>
             <div className="text-xs text-gray-500 uppercase">Plan</div>
-            <div className="text-sm">{planFijo}</div>
+            <div className="text-sm">{planNombre}</div>
           </div>
           <div className="col-span-2">
             <div className="text-xs text-gray-500 uppercase">Dirección</div>
@@ -481,7 +514,7 @@ export function GrupoFamiliar() {
       {showAddFamiliarPopup && (
         <AddFamiliarPopup
           grupoId={dniTitular}
-          planFijo={planFijo}
+          planFijo={planNombre}
           onClose={() => setShowAddFamiliarPopup(false)}
           onSave={handleSaveFamiliar}
         />

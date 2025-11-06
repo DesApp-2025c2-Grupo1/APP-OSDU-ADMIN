@@ -8,6 +8,16 @@ import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup";
 import { EditAffiliatePopup } from "../components/EditAffiliatePopup";
 import SearchDropdown from "../components/SearchDropdown";
 
+// 🔹 Pequeño Toast (notificación visual sin alert)
+const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => (
+  <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
+    {message}
+    <button className="ml-3 font-bold text-white" onClick={onClose}>
+      ×
+    </button>
+  </div>
+);
+
 const OPTIONS = [
   { value: "dni", label: "DNI" },
   { value: "nombre", label: "Nombre" },
@@ -21,41 +31,45 @@ function norm(s: string) {
 }
 
 export function Home() {
-  const [field, setField] = useState<string>(OPTIONS[0].value);
-  const [query, setQuery] = useState<string>("");
-
-  // ✅ CORRECCIÓN: Cambiar AffiliateT por Affiliate
+  const [field, setField] = useState(OPTIONS[0].value);
+  const [query, setQuery] = useState("");
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewPopup, setShowViewPopup] = useState(false);
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
-  // ✅ Carga de datos desde la API
+  // 🟩 Función para mostrar mensaje visual (toast)
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // 🔹 Carga de afiliados desde API
+  const fetchAffiliates = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:3000/api/affiliates");
+      if (!response.ok) throw new Error("Error en la respuesta del servidor");
+
+      const data = await response.json();
+      const affiliatesData = Array.isArray(data) ? data : data.affiliates;
+
+      if (!affiliatesData) throw new Error("No se encontraron afiliados");
+
+      setAffiliates(affiliatesData);
+    } catch (error) {
+      console.error("Error al obtener afiliados:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAffiliates = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("http://localhost:3000/api/affiliates");
-        if (!response.ok) throw new Error("Error en la respuesta del servidor");
-
-        const data = await response.json();
-        const affiliatesData = Array.isArray(data) ? data : data.affiliates;
-
-        if (!affiliatesData) throw new Error("No se encontraron afiliados en la respuesta");
-
-        console.log("Afiliados cargados:", affiliatesData);
-        setAffiliates(affiliatesData);
-      } catch (error) {
-        console.error("Error al obtener afiliados:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchAffiliates();
   }, []);
 
@@ -73,76 +87,68 @@ export function Home() {
     return affiliates.filter((a) => norm(fieldMap[field](a)).includes(q));
   }, [field, query, affiliates]);
 
- const handleOptionClick = (option: string, affiliate: Affiliate) => {
-  setSelectedAffiliate(affiliate);
+  const handleOptionClick = (option: string, affiliate: Affiliate) => {
+    setSelectedAffiliate(affiliate);
+    switch (option) {
+      case "Editar":
+        setShowEditPopup(true);
+        break;
+      case "Ver grupo familiar":
+        navigate(`/home/grupoFamiliar/${affiliate.dni}`);
+        break;
+      case "Ver detalles":
+        setShowViewPopup(true);
+        break;
+      case "Dar de baja":
+        setShowDeleteDialog(true);
+        break;
+    }
+  };
 
-  switch (option) {
-    case "Editar":
-      setShowEditPopup(true);
-      break;
-    case "Ver grupo familiar":
-      console.log("🔍 DNI del afiliado:", affiliate.dni); 
-      navigate(`/home/grupoFamiliar/${affiliate.dni}`); 
-      break;
-    case "Ver detalles":
-      setShowViewPopup(true);
-      break;
-    case "Dar de baja":
-      setShowDeleteDialog(true);
-      break;
-  }
-};
-
+  // 🟧 Confirmar eliminación
   const handleConfirmDelete = async () => {
     if (!selectedAffiliate) return;
 
     try {
-      // Llamada a la API para eliminar
       const response = await fetch(`http://localhost:3000/api/affiliates/${selectedAffiliate.dni}`, {
         method: "DELETE",
       });
 
       if (!response.ok) throw new Error("Error al eliminar afiliado");
 
-      console.log("Afiliado dado de baja:", selectedAffiliate);
-
-      // Actualizar la lista local removiendo el afiliado eliminado
+      // Actualizamos el estado local
       setAffiliates((prev) => prev.filter((a) => a.dni !== selectedAffiliate.dni));
+      showToast(`Afiliado ${selectedAffiliate.nombre} eliminado correctamente`);
     } catch (error) {
       console.error("Error al eliminar afiliado:", error);
-      alert("Error al eliminar el afiliado. Por favor, intenta nuevamente.");
+      showToast("Error al eliminar el afiliado");
     } finally {
       setShowDeleteDialog(false);
       setSelectedAffiliate(null);
     }
   };
 
+  // 🟦 Guardar edición
   const handleSaveEdit = async (updatedAffiliate: Affiliate) => {
     try {
-      // Llamada a la API para actualizar
       const response = await fetch(`http://localhost:3000/api/affiliates/${updatedAffiliate.dni}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedAffiliate),
       });
 
       if (!response.ok) throw new Error("Error al actualizar afiliado");
 
-      const result = await response.json();
-      console.log("Afiliado editado:", result);
-
-      // Actualizar la lista local
       setAffiliates((prev) =>
         prev.map((a) => (a.dni === updatedAffiliate.dni ? updatedAffiliate : a))
       );
 
       setShowEditPopup(false);
       setSelectedAffiliate(null);
+      showToast(`Afiliado ${updatedAffiliate.nombre} actualizado`);
     } catch (error) {
       console.error("Error al actualizar afiliado:", error);
-      alert("Error al actualizar el afiliado. Por favor, intenta nuevamente.");
+      showToast("Error al actualizar el afiliado");
     }
   };
 
@@ -168,7 +174,7 @@ export function Home() {
         </div>
       </div>
 
-      {/* ⚙️ Efecto de carga */}
+      {/* Estado de carga */}
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <div className="flex flex-col items-center">
@@ -178,7 +184,6 @@ export function Home() {
         </div>
       ) : (
         <>
-          {/* Tabla */}
           <div className="rounded-md shadow-sm border border-gray-200">
             <AffiliatesTable affiliates={filtered} onOptionClick={handleOptionClick} />
           </div>
@@ -204,10 +209,7 @@ export function Home() {
               open={showDeleteDialog}
               onClose={() => setShowDeleteDialog(false)}
               onConfirm={handleConfirmDelete}
-              onSchedule={() => {
-                console.log("Baja programada para:", selectedAffiliate);
-                // Aquí puedes implementar la lógica de baja programada
-              }}
+              onSchedule={() => console.log("Baja programada para:", selectedAffiliate)}
               affiliateName={selectedAffiliate.nombre}
               affiliateSurname={selectedAffiliate.apellido}
               affiliateDni={selectedAffiliate.dni}
@@ -216,6 +218,9 @@ export function Home() {
           )}
         </>
       )}
+
+      {/* ✅ Toast visual */}
+      {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
     </div>
   );
 }
