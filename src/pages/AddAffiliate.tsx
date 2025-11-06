@@ -1,9 +1,5 @@
 import React, { useState } from "react";
-import { ButtonVolver } from "../util/ButtonVolver";
-import { ButtonProgramateAffiliate } from "../util/ButtonProgramateAffiliate";
-import AltaProgramadaPopup from "../components/AltaProgramadaPopup";
 import { useNavigate } from "react-router-dom";
-import type { AffiliateRequest, Affiliate as AffiliateType } from "../components/AffiliatesTable";
 
 interface Situacion {
   situacion: string;
@@ -15,7 +11,7 @@ interface Familiar {
   nroDocumento: string;
   nombre: string;
   apellido: string;
-  fechaNacimiento: string; // yyyy-mm-dd (input date)
+  fechaNacimiento: string;
   parentesco: string;
   telefono?: string;
   email?: string;
@@ -26,18 +22,19 @@ interface Familiar {
   situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>;
 }
 
-// Helpers
-const getCredPrefix = (cred: string) => (cred || "").split("-")[0]?.trim() || "";
-const buildChildCredential = (prefix: string, index: number) =>
-  `${prefix}-${String(index).padStart(2, "0")}`;
-
-const isoToDDMMYYYY = (iso: string) => {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
+// Mapeo de situaciones a IDs del backend
+const SITUACIONES_MAP: Record<string, number> = {
+  embarazo: 1,
+  diabetes: 2,
+  miopia: 3,
+  hipertension: 4,
+  rehab_motriz: 5,
+  kinesiologia: 6,
+  psicoterapia: 7,
+  fonoaudiologia: 8,
+  otra: 9,
 };
 
-// catálogos situaciones
 const SITUACIONES_TERAPEUTICAS = [
   { id: "embarazo", nombre: "Embarazo", requiereFin: true },
   { id: "diabetes", nombre: "Diabetes", requiereFin: false },
@@ -50,20 +47,16 @@ const SITUACIONES_TERAPEUTICAS = [
   { id: "otra", nombre: "Otra", requiereFin: false },
 ];
 
-const requiereFechaFin = (id: string) =>
-  SITUACIONES_TERAPEUTICAS.find(s => s.id === id)?.requiereFin ?? false;
-
-
-export function AgregarAfiliado() {
+export function AddAffiliate() {
   const navigate = useNavigate();
   const [showAltaPopup, setShowAltaPopup] = useState(false);
-  const [formData, setFormData] = useState({ // titular
+  const [formData, setFormData] = useState({
     tipoDocumento: "DNI",
     nroDocumento: "",
     nombre: "",
     apellido: "",
-    fechaNacimiento: "", // yyyy-mm-dd
-    planMedico: "210",
+    fechaNacimiento: "",
+    planMedico: "1",
     credencial: "",
     telefono: "",
     telefono2: "",
@@ -76,13 +69,8 @@ export function AgregarAfiliado() {
   const [showPhone2, setShowPhone2] = useState(false);
   const [showEmail2, setShowEmail2] = useState(false);
   const [showAddress2, setShowAddress2] = useState(false);
-
-  // Situaciones del TITULAR
   const [situaciones, setSituaciones] = useState<Situacion[]>([]);
-
-  // Familiares
   const [familiares, setFamiliares] = useState<Familiar[]>([]);
-
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -93,7 +81,6 @@ export function AgregarAfiliado() {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // ---- Situaciones TITULAR ----
   const addSituacion = () =>
     setSituaciones((prev) => [...prev, { situacion: "", fechaFinalizacion: "" }]);
 
@@ -108,7 +95,6 @@ export function AgregarAfiliado() {
     });
   };
 
-  // ---- Familiares ----
   const agregarFamiliar = () => {
     const nuevoFamiliar: Familiar = {
       tipoDocumento: "DNI",
@@ -130,7 +116,7 @@ export function AgregarAfiliado() {
     setFamiliares((prev) => prev.filter((_, i) => i !== posicion));
   };
 
-  const cambiarDatoFamiliar = (posicion: number, campo: keyof Familiar, valor: string) => {
+  const cambiarDatoFamiliar = (posicion: number, campo: keyof Familiar, valor: any) => {
     setFamiliares((prev) => {
       const next = [...prev];
       next[posicion] = { ...next[posicion], [campo]: valor };
@@ -138,7 +124,6 @@ export function AgregarAfiliado() {
     });
   };
 
-  // ---- Situaciones por FAMILIAR ----
   const addSituacionFamiliar = (i: number) => {
     setFamiliares((prev) => {
       const next = [...prev];
@@ -172,17 +157,16 @@ export function AgregarAfiliado() {
     });
   };
 
-  // ---- Validación ----
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    // Titular
     if (!formData.nroDocumento?.trim()) newErrors.nroDocumento = "Requerido";
     if (!formData.nombre?.trim()) newErrors.nombre = "Requerido";
     if (!formData.apellido?.trim()) newErrors.apellido = "Requerido";
 
-    if (!formData.fechaNacimiento) newErrors.fechaNacimiento = "Requerido";
-    else {
+    if (!formData.fechaNacimiento) {
+      newErrors.fechaNacimiento = "Requerido";
+    } else {
       const fechaNac = new Date(formData.fechaNacimiento);
       const hoy = new Date();
       if (fechaNac > hoy) newErrors.fechaNacimiento = "La fecha no puede ser futura";
@@ -196,7 +180,6 @@ export function AgregarAfiliado() {
 
     if (!formData.planMedico) newErrors.planMedico = "Requerido";
 
-    // Familiares
     familiares.forEach((f, index) => {
       const prefix = `familiares[${index}]`;
       if (!f.nroDocumento?.trim()) newErrors[`${prefix}.nroDocumento`] = "Requerido";
@@ -219,37 +202,6 @@ export function AgregarAfiliado() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const mapFamiliaresToAffiliates = (lista: Familiar[], titular: typeof formData): AffiliateType[] => {
-    const prefix = getCredPrefix(titular.credencial) || titular.nroDocumento || "GRP";
-
-    return lista.map((f, idx) => {
-      const fechaNac = f.fechaNacimiento ? isoToDDMMYYYY(f.fechaNacimiento) : "";
-
-      const situacionesPayload = (f.situaciones || []).map(s => ({
-        situacion: s.situacion,
-        fechaFinalizacion: isoToDDMMYYYY(s.fechaFinalizacion || ""),
-      }));
-
-      return {
-        // credencial: buildChildCredential(prefix, idx + 1),
-        // dni: f.nroDocumento,
-        // nombre: f.nombre,
-        // apellido: f.apellido,
-        // fechaNacimiento: fechaNac,
-        // plan: titular.planMedico,
-        // planMedico: titular.planMedico,
-        // direccion: f.usaDireccionTitular ? titular.direccion : (f.direccion || ""),
-        // direccion2: f.usaDireccionTitular ? titular.direccion2 : (f.direccion2 || ""),
-        // telefono: f.usaContactoTitular ? titular.telefono : (f.telefono || ""),
-        // email: f.usaContactoTitular ? titular.email : (f.email || ""),
-        // parentesco: f.parentesco,
-        // tipoDocumento: f.tipoDocumento,
-        // nroDocumento: f.nroDocumento,
-        // situaciones: situacionesPayload,
-      } as AffiliateType;
-    });
-  };
-
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!validate()) return;
@@ -257,66 +209,132 @@ export function AgregarAfiliado() {
     setLoading(true);
     setSuccess(null);
 
-    const titular: AffiliateRequest = { //request para enviar
-      tipoDocumento: formData.tipoDocumento,
-      apellido: formData.apellido,
-      credencial: formData.credencial,
-      fecha_nacimiento: formData.fechaNacimiento,
-      direccion: formData.direccion,
-      dni: formData.nroDocumento,
-      nombre: formData.nombre,
-      email: [],
-      parentesco: '',
-      plan: 1,
-      telefonos: [],
-      familiares: []
-    };
-
-    console.log(titular);
-
     try {
-      const familiaresMapped = mapFamiliaresToAffiliates(familiares, formData);
-      const grupo: AffiliateRequest[] = [titular, ...familiaresMapped];
+      // Construir emails del titular
+      const emails = [];
+      if (formData.email?.trim()) emails.push({ email: formData.email.trim() });
+      if (formData.email2?.trim()) emails.push({ email: formData.email2.trim() });
 
-      await new Promise((res) => setTimeout(res, 700));
-      console.log("Grupo familiar a guardar:", grupo);
+      // Construir teléfonos del titular
+      const telefonos = [];
+      if (formData.telefono?.trim()) telefonos.push({ telefono: formData.telefono.trim() });
+      if (formData.telefono2?.trim()) telefonos.push({ telefono: formData.telefono2.trim() });
+
+      // Construir situaciones del titular con IDs
+      const situacionesPayload = situaciones
+        .filter(s => s.situacion)
+        .map(s => ({
+          id: SITUACIONES_MAP[s.situacion] || 9,
+          fecha_inicio: new Date().toISOString().split('T')[0],
+          fecha_fin: s.fechaFinalizacion || null,
+        }));
+
+      // Construir familiares
+      const familiaresPayload = familiares.map(f => {
+        const emailsFam = [];
+        if (f.usaContactoTitular && formData.email) {
+          emailsFam.push({ email: formData.email });
+        } else if (f.email?.trim()) {
+          emailsFam.push({ email: f.email.trim() });
+        }
+
+        const telefonosFam = [];
+        if (f.usaContactoTitular && formData.telefono) {
+          telefonosFam.push({ telefono: formData.telefono });
+        } else if (f.telefono?.trim()) {
+          telefonosFam.push({ telefono: f.telefono.trim() });
+        }
+
+        const situacionesFam = (f.situaciones || [])
+          .filter(s => s.situacion)
+          .map(s => ({
+            id: SITUACIONES_MAP[s.situacion] || 9,
+            fecha_inicio: new Date().toISOString().split('T')[0],
+            fecha_fin: s.fechaFinalizacion || null,
+          }));
+
+        return {
+          dni: f.nroDocumento,
+          nombre: f.nombre,
+          apellido: f.apellido,
+          parentesco: f.parentesco,
+          direccion: f.usaDireccionTitular ? formData.direccion : (f.direccion || ""),
+          tipoDocumento: f.tipoDocumento,
+          emails: emailsFam,
+          telefonos: telefonosFam,
+          situaciones: situacionesFam,
+        };
+      });
+
+      // Construir payload completo
+      const payload = {
+        dni: formData.nroDocumento,
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        direccion: formData.direccion,
+        tipoDocumento: formData.tipoDocumento,
+        fecha_nacimiento:formData.fechaNacimiento,
+        plan: parseInt(formData.planMedico),
+        emails: emails,
+        telefonos: telefonos,
+        situaciones: situacionesPayload,
+        familiares: familiaresPayload,
+      };
+
+      console.log("Payload a enviar:", JSON.stringify(payload, null, 2));
+
+      // Hacer la petición al API
+      const response = await fetch("http://localhost:3000/api/affiliates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log("Respuesta del servidor:", result);
 
       setLoading(false);
       setSuccess("Afiliado y familiares creados con éxito");
-      setTimeout(() => navigate("/home"), 700);
-    } catch (err) {
+      setTimeout(() => navigate("/home"), 1500);
+    } catch (err: any) {
+      console.error("Error al guardar:", err);
       setLoading(false);
-      setErrors((prev) => ({ ...prev, submit: "Error al guardar" }));
+      setErrors((prev) => ({ 
+        ...prev, 
+        submit: err.message || "Error al guardar. Verifica la conexión con el servidor." 
+      }));
     }
   };
 
   return (
     <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 mx-auto mt-6 shadow">
-      {/* Header*/}
       <div className="flex flex-col items-center sm:items-start mb-6 gap-4">
         <h1 className="text-2xl font-semibold text-gray-800 text-center sm:text-left">
           Crear nuevo afiliado
         </h1>
 
         <div className="flex flex-wrap justify-center sm:justify-start gap-3">
-          <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
-          <ButtonProgramateAffiliate
-            text="Programar Alta"
+          <button
+            onClick={() => navigate("/home")}
+            className="px-4 py-2 border rounded hover:bg-gray-50"
+          >
+            Volver
+          </button>
+          <button
             onClick={() => setShowAltaPopup(true)}
-          />
+            className="px-4 py-2 bg-[#5FA92C] text-white rounded hover:bg-green-700"
+          >
+            Programar Alta
+          </button>
         </div>
       </div>
-
-      {showAltaPopup && (
-        <AltaProgramadaPopup
-          onClose={() => setShowAltaPopup(false)}
-          onConfirm={(fechaISO) => {
-            console.log("Alta programada para:", fechaISO);
-            alert(`Alta programada para ${new Date(fechaISO).toLocaleString()}`);
-            setShowAltaPopup(false);
-          }}
-        />
-      )}
 
       <div className="mx-auto w-full max-w-4xl space-y-8">
         {/* DATOS DE AFILIADO (Titular) */}
@@ -333,12 +351,12 @@ export function AgregarAfiliado() {
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
               >
-                <option value="1">DNI</option>
-                <option value="2">CUIL</option>
-                <option value="3">CUIT</option>
-                <option value="4">DOCUMENTO EXTRANJERO</option>
-                <option value="5">CDI</option>
-                <option value="6">Pasaporte</option>
+                <option value="DNI">DNI</option>
+                <option value="CUIL">CUIL</option>
+                <option value="CUIT">CUIT</option>
+                <option value="DOCUMENTO EXTRANJERO">DOCUMENTO EXTRANJERO</option>
+                <option value="CDI">CDI</option>
+                <option value="Pasaporte">Pasaporte</option>
               </select>
             </div>
 
@@ -416,28 +434,14 @@ export function AgregarAfiliado() {
               )}
             </div>
 
-            <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Credencial</label>
+            <div className="flex flex-col col-span-2">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Dirección</label>
               <input
                 type="text"
-                name="credencial"
-                value={formData.credencial}
+                name="direccion"
+                value={formData.direccion}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
-                placeholder="Ej: ABC123-00 (el prefijo agrupa familiares)"
-                disabled
-                readOnly
-              />
-            </div>
-
-            <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Parentesco</label>
-              <input
-                type="text"
-                value="Titular"
-                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
-                disabled
-                readOnly
+                className="p-2 border border-gray-300 rounded"
               />
             </div>
           </div>
@@ -449,7 +453,6 @@ export function AgregarAfiliado() {
             Datos de Contacto
           </h2>
           <div className="grid grid-cols-2 gap-4">
-            {/* Teléfono */}
             <div className="flex flex-col col-span-2">
               <label className="font-semibold mb-1">Teléfono</label>
               <input
@@ -495,7 +498,6 @@ export function AgregarAfiliado() {
               )}
             </div>
 
-            {/* Email */}
             <div className="flex flex-col col-span-2">
               <label className="font-semibold mb-1">Email</label>
               <input
@@ -543,52 +545,6 @@ export function AgregarAfiliado() {
                 </button>
               )}
             </div>
-
-            {/* Dirección */}
-            <div className="flex flex-col col-span-2">
-              <label className="font-semibold mb-1">Dirección</label>
-              <input
-                type="text"
-                name="direccion"
-                value={formData.direccion}
-                onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-                placeholder="Dirección"
-              />
-
-              {showAddress2 && (
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="text"
-                    name="direccion2"
-                    value={formData.direccion2}
-                    onChange={handleInputChange}
-                    className="flex-1 p-2 border border-gray-300 rounded"
-                    placeholder="Dirección adicional"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({ ...prev, direccion2: "" }));
-                      setShowAddress2(false);
-                    }}
-                    className="px-3 py-2 border rounded hover:bg-gray-50"
-                  >
-                    Quitar
-                  </button>
-                </div>
-              )}
-
-              {!showAddress2 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAddress2(true)}
-                  className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
-                >
-                  + Agregar otro
-                </button>
-              )}
-            </div>
           </div>
         </div>
 
@@ -606,11 +562,7 @@ export function AgregarAfiliado() {
             {situaciones.map((s, idx) => {
               const tieneFecha = ["embarazo", "rehab_motriz", "kinesiologia", "psicoterapia", "fonoaudiologia"].includes(s.situacion);
               return (
-                <div
-                  key={idx}
-                  className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
-                >
-                  {/* Select */}
+                <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full">
                   <div className="flex flex-col">
                     <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
                     <select
@@ -619,19 +571,12 @@ export function AgregarAfiliado() {
                       className="p-2 border border-gray-300 rounded"
                     >
                       <option value="">-- Seleccionar --</option>
-                      <option value="embarazo">Embarazo</option>
-                      <option value="diabetes">Diabetes</option>
-                      <option value="miopia">Miopía</option>
-                      <option value="hipertension">Hipertensión</option>
-                      <option value="rehab_motriz">Rehabilitación motriz</option>
-                      <option value="kinesiologia">Kinesiología</option>
-                      <option value="psicoterapia">Psicoterapia</option>
-                      <option value="fonoaudiologia">Fonoaudiología</option>
-                      <option value="otra">Otra</option>
+                      {SITUACIONES_TERAPEUTICAS.map(sit => (
+                        <option key={sit.id} value={sit.id}>{sit.nombre}</option>
+                      ))}
                     </select>
                   </div>
 
-                  {/* Fecha*/}
                   {tieneFecha ? (
                     <div className="flex flex-col">
                       <label className="text-sm font-semibold mb-1">Fecha de finalización</label>
@@ -646,7 +591,6 @@ export function AgregarAfiliado() {
                     <div />
                   )}
 
-                  {/* Botón eliminar */}
                   <div className="justify-self-end">
                     <button
                       type="button"
@@ -660,7 +604,6 @@ export function AgregarAfiliado() {
               );
             })}
 
-            {/* Botón agregar */}
             <button
               type="button"
               onClick={addSituacion}
@@ -702,12 +645,12 @@ export function AgregarAfiliado() {
                     onChange={(e) => cambiarDatoFamiliar(i, "tipoDocumento", e.target.value)}
                     className="p-2 border border-gray-300 rounded"
                   >
-                    <option value="1">DNI</option>
-                    <option value="2">CUIL</option>
-                    <option value="3">CUIT</option>
-                    <option value="4">DOCUMENTO EXTRANJERO</option>
-                    <option value="5">CDI</option>
-                    <option value="6">Pasaporte</option>
+                    <option value="DNI">DNI</option>
+                    <option value="CUIL">CUIL</option>
+                    <option value="CUIT">CUIT</option>
+                    <option value="DOCUMENTO EXTRANJERO">DOCUMENTO EXTRANJERO</option>
+                    <option value="CDI">CDI</option>
+                    <option value="Pasaporte">Pasaporte</option>
                   </select>
                 </div>
 
@@ -772,30 +715,66 @@ export function AgregarAfiliado() {
                   >
                     <option value="Cónyuge">Cónyuge</option>
                     <option value="Hijo">Hijo</option>
+                    <option value="Hija">Hija</option>
                     <option value="Familiar a cargo">Familiar a cargo</option>
                   </select>
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="font-semibold mb-1 text-sm">Teléfono</label>
-                  <input
-                    type="text"
-                    value={familiar.telefono || ""}
-                    onChange={(e) => cambiarDatoFamiliar(i, "telefono", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
-                  />
+                <div className="flex flex-col col-span-2">
+                  <label className="font-semibold mb-1 text-sm flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={familiar.usaDireccionTitular}
+                      onChange={(e) => cambiarDatoFamiliar(i, "usaDireccionTitular", e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    Usar dirección del titular
+                  </label>
+                  {!familiar.usaDireccionTitular && (
+                    <input
+                      type="text"
+                      value={familiar.direccion || ""}
+                      onChange={(e) => cambiarDatoFamiliar(i, "direccion", e.target.value)}
+                      className="p-2 border border-gray-300 rounded mt-2"
+                      placeholder="Dirección del familiar"
+                    />
+                  )}
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="font-semibold mb-1 text-sm">Email</label>
-                  <input
-                    type="email"
-                    value={familiar.email || ""}
-                    onChange={(e) => cambiarDatoFamiliar(i, "email", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
-                  />
-                  {errors[`familiares[${i}].email`] && (
-                    <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].email`]}</p>
+                <div className="flex flex-col col-span-2">
+                  <label className="font-semibold mb-1 text-sm flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={familiar.usaContactoTitular}
+                      onChange={(e) => cambiarDatoFamiliar(i, "usaContactoTitular", e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    Usar contacto del titular
+                  </label>
+                  {!familiar.usaContactoTitular && (
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <div className="flex flex-col">
+                        <label className="text-sm mb-1">Teléfono</label>
+                        <input
+                          type="text"
+                          value={familiar.telefono || ""}
+                          onChange={(e) => cambiarDatoFamiliar(i, "telefono", e.target.value)}
+                          className="p-2 border border-gray-300 rounded"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-sm mb-1">Email</label>
+                        <input
+                          type="email"
+                          value={familiar.email || ""}
+                          onChange={(e) => cambiarDatoFamiliar(i, "email", e.target.value)}
+                          className="p-2 border border-gray-300 rounded"
+                        />
+                        {errors[`familiares[${i}].email`] && (
+                          <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].email`]}</p>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -814,11 +793,7 @@ export function AgregarAfiliado() {
                   {familiar.situaciones?.map((s, idx) => {
                     const tieneFecha = ["embarazo", "rehab_motriz", "kinesiologia", "psicoterapia", "fonoaudiologia"].includes(s.situacion);
                     return (
-                      <div
-                        key={idx}
-                        className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
-                      >
-                        {/* Select */}
+                      <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full">
                         <div className="flex flex-col">
                           <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
                           <select
@@ -827,19 +802,12 @@ export function AgregarAfiliado() {
                             className="p-2 border border-gray-300 rounded"
                           >
                             <option value="">-- Seleccionar --</option>
-                            <option value="embarazo">Embarazo</option>
-                            <option value="diabetes">Diabetes</option>
-                            <option value="miopia">Miopía</option>
-                            <option value="hipertension">Hipertensión</option>
-                            <option value="rehab_motriz">Rehabilitación motriz</option>
-                            <option value="kinesiologia">Kinesiología</option>
-                            <option value="psicoterapia">Psicoterapia</option>
-                            <option value="fonoaudiologia">Fonoaudiología</option>
-                            <option value="otra">Otra</option>
+                            {SITUACIONES_TERAPEUTICAS.map(sit => (
+                              <option key={sit.id} value={sit.id}>{sit.nombre}</option>
+                            ))}
                           </select>
                         </div>
 
-                        {/* Fecha */}
                         {tieneFecha ? (
                           <div className="flex flex-col">
                             <label className="text-sm font-semibold mb-1">Fecha de finalización</label>
@@ -854,7 +822,6 @@ export function AgregarAfiliado() {
                           <div />
                         )}
 
-                        {/* Botón eliminar */}
                         <div className="justify-self-end">
                           <button
                             type="button"
@@ -868,7 +835,6 @@ export function AgregarAfiliado() {
                     );
                   })}
 
-                  {/* Botón agregar */}
                   <button
                     type="button"
                     onClick={() => addSituacionFamiliar(i)}
@@ -889,8 +855,6 @@ export function AgregarAfiliado() {
             + Agregar Familiar
           </button>
         </div>
-
-
       </div>
 
       {/* BOTONES */}
@@ -912,8 +876,16 @@ export function AgregarAfiliado() {
         </button>
       </div>
 
-      {errors.submit && <p className="text-red-500 text-center mt-2">{errors.submit}</p>}
-      {success && <p className="text-green-600 text-center mt-2">{success}</p>}
+      {errors.submit && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded text-center">
+          <p className="text-red-600 font-semibold">{errors.submit}</p>
+        </div>
+      )}
+      {success && (
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded text-center">
+          <p className="text-green-600 font-semibold">{success}</p>
+        </div>
+      )}
     </div>
   );
 }

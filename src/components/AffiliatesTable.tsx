@@ -50,7 +50,6 @@ export type AffiliateRequest = {
   parentesco: string;
 
   email: Array<{
-    idEmail: number;
     email: string;
   }>;
 
@@ -221,7 +220,7 @@ export function AffiliatesTable({ affiliates, onOptionClick }: AffiliatesTablePr
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
-                    <div className="text-sm">{a.fecha_nacimiento}</div>
+                    <div className="text-sm">{a.fechaNacimiento}</div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 uppercase">Plan</div>

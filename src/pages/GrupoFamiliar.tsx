@@ -1,19 +1,31 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { affiliates } from "../data/affiliates";
 import type { Affiliate } from "../components/AffiliatesTable";
 import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup";
 import { EditAffiliatePopup } from "../components/EditAffiliatePopup";
 import { OptionsMenu } from "../components/OptionsMenu";
 import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
-import ScheduledSuccessPopup from "../components/BajaExitosaPopup"; // asegúrate que exporte default
+import ScheduledSuccessPopup from "../components/BajaExitosaPopup";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import { ButtonVolver } from "../util/ButtonVolver";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 
+// Tipo para la respuesta del endpoint
+interface FamilyGroupResponse {
+  dni: string;
+  titular: Affiliate;
+  miembros: Affiliate[];
+  plan: {
+    id: string;
+    nombre: string;
+    descripcion: string;
+  };
+  totalMiembros: number;
+}
+
 export function GrupoFamiliar() {
-  const { grupoId } = useParams<{ grupoId: string }>();
+  const { dni } = useParams<{ dni: string }>();
   const navigate = useNavigate();
 
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
@@ -22,19 +34,58 @@ export function GrupoFamiliar() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAddFamiliarPopup, setShowAddFamiliarPopup] = useState(false);
 
+  // Estados para datos del API
+  const [familyData, setFamilyData] = useState<FamilyGroupResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
   // popup de éxito
   const [showSuccess, setShowSuccess] = useState(false);
   const [successISO, setSuccessISO] = useState<string>("");
   const [successName, setSuccessName] = useState<string>("");
 
-  const members = useMemo(
-    () => affiliates.filter((a) => a.credencial.startsWith(`${grupoId}-`)),
-    [grupoId]
-  );
+  // ✅ FETCH del endpoint con el DNI
+  useEffect(() => {
+    const fetchFamilyGroup = async () => {
+      if (!dni) {
+        setError("DNI no proporcionado");
+        setLoading(false);
+        return;
+      }
 
-  const titular =
-    members.find((m) => m.parentesco?.toLowerCase() === "titular") || members[0];
-  const planFijo = "210";
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(`http://localhost:3000/api/affiliates/family/${dni}`);
+
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+
+        const data: FamilyGroupResponse = await response.json();
+        console.log("Grupo familiar cargado:", data);
+        setFamilyData(data);
+      } catch (err) {
+        console.error("Error al cargar grupo familiar:", err);
+        setError(err instanceof Error ? err.message : "Error desconocido");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFamilyGroup();
+  }, [dni]);
+
+  // Datos derivados del estado
+  const members = useMemo(() => {
+    if (!familyData) return [];
+    return [familyData.titular, ...familyData.miembros];
+  }, [familyData]);
+
+  const titular = familyData?.titular || null;
+  const planFijo = familyData?.plan.nombre || "";
+  const dniTitular = familyData?.dni || "";
 
   const determinarParentesco = (affiliate: Affiliate) => {
     if (affiliate.parentesco) return affiliate.parentesco;
@@ -57,9 +108,34 @@ export function GrupoFamiliar() {
 
   const handleAgregarFamiliar = () => setShowAddFamiliarPopup(true);
 
-  const handleSaveFamiliar = (nuevoFamiliar: any) => {
-    console.log("Nuevo familiar guardado:", nuevoFamiliar, "para el grupo:", grupoId);
-    setShowAddFamiliarPopup(false);
+  const handleSaveFamiliar = async (nuevoFamiliar: any) => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/affiliates`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...nuevoFamiliar,
+          dni: dniTitular,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Error al agregar familiar");
+
+      const result = await response.json();
+      console.log("Nuevo familiar guardado:", result);
+
+      // Recargar datos del grupo familiar
+      const refreshResponse = await fetch(`http://localhost:3000/api/affiliates/family/${dni}`);
+      const refreshedData = await refreshResponse.json();
+      setFamilyData(refreshedData);
+
+      setShowAddFamiliarPopup(false);
+    } catch (error) {
+      console.error("Error al guardar familiar:", error);
+      alert("Error al agregar el familiar. Por favor, intenta nuevamente.");
+    }
   };
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
@@ -80,19 +156,66 @@ export function GrupoFamiliar() {
     }
   };
 
-  const handleSaveAffiliate = (updated: Affiliate) => {
-    console.log("Afiliado actualizado:", updated);
-    setShowEditPopup(false);
-    setSelectedAffiliate(null);
+  const handleSaveAffiliate = async (updated: Affiliate) => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/affiliates/${updated.dni}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updated),
+      });
+
+      if (!response.ok) throw new Error("Error al actualizar afiliado");
+
+      console.log("Afiliado actualizado:", updated);
+
+      // Actualizar datos localmente
+      if (familyData) {
+        setFamilyData({
+          ...familyData,
+          titular: familyData.titular.dni === updated.dni ? updated : familyData.titular,
+          miembros: familyData.miembros.map(m => m.dni === updated.dni ? updated : m),
+        });
+      }
+
+      setShowEditPopup(false);
+      setSelectedAffiliate(null);
+    } catch (error) {
+      console.error("Error al actualizar afiliado:", error);
+      alert("Error al actualizar el afiliado. Por favor, intenta nuevamente.");
+    }
   };
 
-  const handleConfirmDelete = () => {
-    if (selectedAffiliate) console.log("Afiliado dado de baja:", selectedAffiliate);
-    setShowDeleteDialog(false);
-    setSelectedAffiliate(null);
+  const handleConfirmDelete = async () => {
+    if (!selectedAffiliate) return;
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/affiliates/${selectedAffiliate.dni}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Error al eliminar afiliado");
+
+      console.log("Afiliado dado de baja:", selectedAffiliate);
+
+      // Actualizar datos localmente
+      if (familyData) {
+        setFamilyData({
+          ...familyData,
+          miembros: familyData.miembros.filter(m => m.dni !== selectedAffiliate.dni),
+          totalMiembros: familyData.totalMiembros - 1,
+        });
+      }
+
+      setShowDeleteDialog(false);
+      setSelectedAffiliate(null);
+    } catch (error) {
+      console.error("Error al eliminar afiliado:", error);
+      alert("Error al eliminar el afiliado. Por favor, intenta nuevamente.");
+    }
   };
 
-  // Baja programada -> abre popup de éxito
   const handleScheduleDelete = (isoDateTime: string) => {
     if (selectedAffiliate) {
       setShowDeleteDialog(false);
@@ -116,7 +239,39 @@ export function GrupoFamiliar() {
   const endIndex = startIndex + itemsPerPage;
   const currentMembers = nonTitularMembers.slice(startIndex, endIndex);
 
-  // UI
+  // ⚙️ Estado de carga
+  if (loading) {
+    return (
+      <div className="w-full p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="flex flex-col items-center">
+            <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p className="text-gray-600 text-sm font-medium">Cargando grupo familiar...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ❌ Estado de error
+  if (error) {
+    return (
+      <div className="w-full p-6">
+        <div className="flex flex-col items-center justify-center h-64">
+          <div className="text-red-600 text-lg font-semibold mb-2">Error al cargar grupo familiar</div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => navigate("/home")}
+            className="px-4 py-2 bg-[#5FA92C] text-white rounded hover:bg-green-700"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ❌ Sin datos
   if (!titular || members.length === 0) {
     return (
       <div className="w-full p-6">
@@ -134,18 +289,11 @@ export function GrupoFamiliar() {
           <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
         </div>
 
-        <div className="mb-6 p-4 border rounded-md bg-gray-50">
-          <div className="inline-block text-xs font-semibold bg-[#5FA92C] text-white px-2 py-1 rounded mb-2">TITULAR</div>
-          <p><strong>Nombre:</strong> {titular?.nombre} {titular?.apellido}</p>
-          <p><strong>DNI:</strong> {titular?.dni}</p>
-          <p><strong>Plan:</strong> {planFijo}</p>
-        </div>
-
-        <p className="text-gray-600">No se encontraron miembros para el grupo {grupoId}.</p>
+        {/* <p className="text-gray-600">No se encontraron miembros para el grupo {grupoId}.</p> */}
 
         {showAddFamiliarPopup && (
           <AddFamiliarPopup
-            grupoId={grupoId}
+            grupoId={dniTitular}
             planFijo={planFijo}
             onClose={() => setShowAddFamiliarPopup(false)}
             onSave={handleSaveFamiliar}
@@ -275,7 +423,6 @@ export function GrupoFamiliar() {
               </div>
             </div>
 
-            {/* Botones responsive como en Prestadores */}
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 onClick={() => handleOptionClick("Ver detalles", m)}
@@ -299,7 +446,6 @@ export function GrupoFamiliar() {
           </div>
         ))}
       </div>
-
 
       {/* Paginación mobile */}
       <div className="md:hidden bg-white px-3 py-2 mt-2 flex items-center justify-between border border-gray-200 rounded">
@@ -334,7 +480,7 @@ export function GrupoFamiliar() {
       {/* popups */}
       {showAddFamiliarPopup && (
         <AddFamiliarPopup
-          grupoId={grupoId}
+          grupoId={dniTitular}
           planFijo={planFijo}
           onClose={() => setShowAddFamiliarPopup(false)}
           onSave={handleSaveFamiliar}
@@ -358,7 +504,7 @@ export function GrupoFamiliar() {
           open={showDeleteDialog}
           onClose={() => setShowDeleteDialog(false)}
           onConfirm={handleConfirmDelete}
-          onSchedule={handleScheduleDelete}  // popup de éxito
+          onSchedule={handleScheduleDelete}
           affiliateName={selectedAffiliate.nombre}
           affiliateSurname={selectedAffiliate.apellido}
           affiliateDni={selectedAffiliate.dni}
@@ -376,7 +522,7 @@ export function GrupoFamiliar() {
   );
 }
 
-/* ====== AddFamiliarPopup (el tuyo, con fixes de backticks) ====== */
+/* ====== AddFamiliarPopup ====== */
 interface AddFamiliarPopupProps {
   grupoId: string | undefined;
   planFijo: string;
@@ -425,11 +571,16 @@ function AddFamiliarPopup({ grupoId, planFijo, onClose, onSave }: AddFamiliarPop
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const nuevoFamiliar = {
-      ...formData,
-      credencial: `${grupoId}-${String(Math.floor(Math.random() * 90) + 10).padStart(2, "0")}`,
-      plan: planFijo,
-      planMedico: planFijo,
+      dni: formData.nroDocumento,
+      tipoDocumento: formData.tipoDocumento,
+      nombre: formData.nombre,
+      apellido: formData.apellido,
       fechaNacimiento: formData.fechaNacimiento.split("-").reverse().join("/"),
+      parentesco: formData.parentesco,
+      telefono: formData.telefono,
+      email: formData.email,
+      direccion: formData.direccion,
+      planId: planFijo,
       situaciones,
     };
     onSave(nuevoFamiliar);
