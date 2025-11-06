@@ -24,12 +24,13 @@ export function Home() {
   const [field, setField] = useState<string>(OPTIONS[0].value);
   const [query, setQuery] = useState<string>("");
 
+  // ✅ CORRECCIÓN: Cambiar AffiliateT por Affiliate
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewPopup, setShowViewPopup] = useState(false);
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
-  const [loading, setLoading] = useState<boolean>(true); // 👈 NUEVO estado
+  const [loading, setLoading] = useState<boolean>(true);
 
   const navigate = useNavigate();
 
@@ -37,7 +38,7 @@ export function Home() {
   useEffect(() => {
     const fetchAffiliates = async () => {
       try {
-        setLoading(true); // 👈 activa el efecto de carga
+        setLoading(true);
         const response = await fetch("http://localhost:3000/api/affiliates");
         if (!response.ok) throw new Error("Error en la respuesta del servidor");
 
@@ -51,7 +52,7 @@ export function Home() {
       } catch (error) {
         console.error("Error al obtener afiliados:", error);
       } finally {
-        setLoading(false); // 👈 desactiva el efecto de carga
+        setLoading(false);
       }
     };
 
@@ -72,32 +73,77 @@ export function Home() {
     return affiliates.filter((a) => norm(fieldMap[field](a)).includes(q));
   }, [field, query, affiliates]);
 
-  const handleOptionClick = (option: string, affiliate: Affiliate) => {
-    setSelectedAffiliate(affiliate);
+ const handleOptionClick = (option: string, affiliate: Affiliate) => {
+  setSelectedAffiliate(affiliate);
 
-    switch (option) {
-      case "Editar":
-        setShowEditPopup(true);
-        break;
-      case "Ver grupo familiar":
-        const grupoFamiliarId = affiliate.credencial.split("-")[0];
-        navigate(`/home/grupoFamiliar/${grupoFamiliarId}`);
-        break;
-      case "Ver detalles":
-        setShowViewPopup(true);
-        break;
-      case "Dar de baja":
-        setShowDeleteDialog(true);
-        break;
+  switch (option) {
+    case "Editar":
+      setShowEditPopup(true);
+      break;
+    case "Ver grupo familiar":
+      console.log("🔍 DNI del afiliado:", affiliate.dni); 
+      navigate(`/home/grupoFamiliar/${affiliate.dni}`); 
+      break;
+    case "Ver detalles":
+      setShowViewPopup(true);
+      break;
+    case "Dar de baja":
+      setShowDeleteDialog(true);
+      break;
+  }
+};
+
+  const handleConfirmDelete = async () => {
+    if (!selectedAffiliate) return;
+
+    try {
+      // Llamada a la API para eliminar
+      const response = await fetch(`http://localhost:3000/api/affiliates/${selectedAffiliate.dni}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Error al eliminar afiliado");
+
+      console.log("Afiliado dado de baja:", selectedAffiliate);
+
+      // Actualizar la lista local removiendo el afiliado eliminado
+      setAffiliates((prev) => prev.filter((a) => a.dni !== selectedAffiliate.dni));
+    } catch (error) {
+      console.error("Error al eliminar afiliado:", error);
+      alert("Error al eliminar el afiliado. Por favor, intenta nuevamente.");
+    } finally {
+      setShowDeleteDialog(false);
+      setSelectedAffiliate(null);
     }
   };
 
-  const handleConfirmDelete = () => {
-    if (selectedAffiliate) {
-      console.log("Afiliado dado de baja:", selectedAffiliate);
+  const handleSaveEdit = async (updatedAffiliate: Affiliate) => {
+    try {
+      // Llamada a la API para actualizar
+      const response = await fetch(`http://localhost:3000/api/affiliates/${updatedAffiliate.dni}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedAffiliate),
+      });
+
+      if (!response.ok) throw new Error("Error al actualizar afiliado");
+
+      const result = await response.json();
+      console.log("Afiliado editado:", result);
+
+      // Actualizar la lista local
+      setAffiliates((prev) =>
+        prev.map((a) => (a.dni === updatedAffiliate.dni ? updatedAffiliate : a))
+      );
+
+      setShowEditPopup(false);
+      setSelectedAffiliate(null);
+    } catch (error) {
+      console.error("Error al actualizar afiliado:", error);
+      alert("Error al actualizar el afiliado. Por favor, intenta nuevamente.");
     }
-    setShowDeleteDialog(false);
-    setSelectedAffiliate(null);
   };
 
   return (
@@ -126,7 +172,7 @@ export function Home() {
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <div className="flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
             <p className="text-gray-600 text-sm font-medium">Cargando afiliados...</p>
           </div>
         </div>
@@ -149,10 +195,7 @@ export function Home() {
             <EditAffiliatePopup
               affiliate={selectedAffiliate}
               onClose={() => setShowEditPopup(false)}
-              onSave={(updatedAffiliate) => {
-                console.log("Afiliado editado:", updatedAffiliate);
-                setShowEditPopup(false);
-              }}
+              onSave={handleSaveEdit}
             />
           )}
 
@@ -161,7 +204,10 @@ export function Home() {
               open={showDeleteDialog}
               onClose={() => setShowDeleteDialog(false)}
               onConfirm={handleConfirmDelete}
-              onSchedule={() => { }}
+              onSchedule={() => {
+                console.log("Baja programada para:", selectedAffiliate);
+                // Aquí puedes implementar la lógica de baja programada
+              }}
               affiliateName={selectedAffiliate.nombre}
               affiliateSurname={selectedAffiliate.apellido}
               affiliateDni={selectedAffiliate.dni}

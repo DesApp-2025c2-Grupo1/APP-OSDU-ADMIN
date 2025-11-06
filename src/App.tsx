@@ -6,10 +6,11 @@ import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { Prestadores } from "./pages/Providers";
 import { Otros } from "./pages/Others";
-import { AgregarAfiliado } from "./pages/AddAffiliate";
+
 import { GrupoFamiliar } from "./pages/GrupoFamiliar";
 import { AddProvider } from "./pages/AddProvider";
 import { AddAgendaPage } from "./pages/AddAgenda"; // Importar el nuevo componente
+import { AddAffiliate } from "./pages/AddAffiliate";
 
 function App() {
   return (
@@ -29,8 +30,8 @@ function App() {
             <Route path="/otros" element={<Otros />} />
 
             {/* afiliados */}
-            <Route path="/home/agregarAfiliado" element={<AgregarAfiliado />} />
-            <Route path="/home/grupoFamiliar/:grupoId" element={<GrupoFamiliar />} />
+            <Route path="/home/agregarAfiliado" element={<AddAffiliate />} />
+            <Route path="/home/grupoFamiliar/:dni" element={<GrupoFamiliar />} />
 
             {/* Prestadores */}
             <Route path="/prestadores/agregarPrestador" element={<AddProvider />} />
