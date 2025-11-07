@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Prestador, LugarAtencion, Especialidad } from "../model/Provider.model";
 import { SPECIALTIES } from "../data/specialties";
 import { updateProvider } from "../api/providerService";
+
+const API_URL = "http://localhost:3000";
 
 interface EditProviderPopupProps {
   provider: Prestador;
@@ -17,12 +19,37 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
     especialidades: provider.especialidades || [],
     telefonos: provider.telefonos || [""],
     mails: provider.mails || [""],
-    lugaresAtencion: provider.lugaresAtencion || []
+    lugaresAtencion: provider.lugaresAtencion || [],
+    centroMedicoId: (provider as any).centroMedicoId || null
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedLugarIndex, setSelectedLugarIndex] = useState<number>(0);
+  const [centrosMedicos, setCentrosMedicos] = useState<any[]>([]);
+
+  // Cargar centros médicos al montar
+  useEffect(() => {
+    const cargarCentros = async () => {
+      try {
+        const res = await fetch(`${API_URL}/providers/`);
+        const data = await res.json();
+        const centros = data.filter((p: any) => p.tipoPrestador === "centro_medico");
+        setCentrosMedicos(centros);
+      } catch (err) {
+        console.error("Error cargando centros:", err);
+      }
+    };
+    cargarCentros();
+
+    // Debug: imprimir datos del provider
+    console.log('📋 Provider en EditProviderPopup:', {
+      cuitCuil: provider.cuitCuil,
+      tipoPrestador: provider.tipoPrestador,
+      centroMedicoId: (provider as any).centroMedicoId,
+      formDataCentroMedicoId: (formData as any).centroMedicoId
+    });
+  }, []);
 
   // ---------- helpers campos simples ----------
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -110,8 +137,14 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
         mails: formData.mails.filter(m => m.trim()),
         lugaresAtencion: formData.lugaresAtencion
       };
+
+      // Agregar centroMedicoId si es profesional
+      if (formData.tipoPrestador === "profesional") {
+        (updated as any).centroMedicoId = (formData as any).centroMedicoId || null;
+      }
       
       console.log('📤 Enviando actualización:', JSON.stringify(updated, null, 2));
+      console.log('🏥 Centro Médico ID:', (formData as any).centroMedicoId);
       
       // Llamar al API para guardar cambios
       const result = await updateProvider(formData.cuitCuil, updated);
@@ -176,6 +209,31 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                 </span>
               </div>
             </div>
+
+            {/* Centro Médico (solo si es profesional) */}
+            {formData.tipoPrestador === "profesional" && (
+              <div className="flex flex-col sm:col-span-2">
+                <label className="font-semibold mb-1 bg-gray-100 px-2">¿Pertenece a un Centro Médico?</label>
+                <select
+                  name="centroMedico"
+                  onChange={(e) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      centroMedicoId: e.target.value || null
+                    }));
+                  }}
+                  value={(formData as any).centroMedicoId || ""}
+                  className="p-2 border border-gray-300 rounded"
+                >
+                  <option value="">No pertenece a ninguno</option>
+                  {centrosMedicos.map((centro) => (
+                    <option key={centro.cuitCuil} value={centro.cuitCuil}>
+                      {centro.nombreCompleto}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 

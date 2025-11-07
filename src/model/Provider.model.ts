@@ -29,6 +29,7 @@ export type Prestador = {
   telefonos: string[];
   mails: string[];
   especialidades: Especialidad[];
-  lugaresAtencion: LugarAtencion[];  // Cambio: array de lugares
+  lugaresAtencion: LugarAtencion[];
+  centroMedicoId?: string | null;  // Opcional: CUIT del centro médico si es profesional
 };
 

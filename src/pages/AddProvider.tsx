@@ -166,7 +166,8 @@ export function AddProvider() {
               desde: h.desde,
               hasta: h.hasta
             }))
-        }))
+        })),
+        ...(tipo === "profesional" && integraCentro && { centroMedicoId: integraCentro })
       };
 
       console.log("Payload enviado:", JSON.stringify(payload, null, 2));

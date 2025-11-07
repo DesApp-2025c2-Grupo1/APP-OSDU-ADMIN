@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Prestador } from "../model/Provider.model";
 
 interface ViewProviderPopupProps {
@@ -8,6 +8,31 @@ interface ViewProviderPopupProps {
 
 export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps) {
   const [selectedLugarIndex, setSelectedLugarIndex] = useState(0);
+  const [centroNombre, setCentroNombre] = useState<string | null>(null);
+
+  useEffect(() => {
+    const cargarCentros = async () => {
+      try {
+        if (provider.tipoPrestador === "profesional" && provider.centroMedicoId) {
+          const response = await fetch("http://localhost:3000/providers");
+          const data = await response.json();
+          const centros = Array.isArray(data) ? data : (data.data || []);
+          
+          // Filtrar solo centros médicos
+          const centrosMedicos = centros.filter((c: any) => c.tipoPrestador === "centro_medico");
+          
+          const centro = centrosMedicos.find(
+            (c: any) => c.cuitCuil === provider.centroMedicoId
+          );
+          setCentroNombre(centro?.nombreCompleto || null);
+        }
+      } catch (error) {
+        console.error("Error al cargar centros médicos:", error);
+      }
+    };
+
+    cargarCentros();
+  }, [provider]);
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 relative">
@@ -32,6 +57,12 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
                 {provider.tipoPrestador === "centro_medico" ? "Centro Médico" : "Profesional"}
               </p>
             </div>
+            {provider.tipoPrestador === "profesional" && centroNombre && (
+              <div>
+                <label className="font-semibold mb-1 bg-gray-100 px-2 block">Centro Médico</label>
+                <p className="p-2 border border-gray-200 rounded break-words bg-blue-50">{centroNombre}</p>
+              </div>
+            )}
           </div>
         </div>
 
