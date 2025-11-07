@@ -1,9 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import { useEffect, useMemo, useState } from "react";
 import { OptionsMenu } from "./OptionsMenu";
-import type { Prestador } from "../model/Provider.model";
-import { SPECIALTIES } from "../data/specialties"; 
+import type { Prestador } from "../model/Provider.model"; 
 
 type Props = {
   prestadores: Prestador[];
@@ -12,18 +9,14 @@ type Props = {
 };
 
 
-function splitFullName(full: string) {
-  const parts = full.trim().split(/\s+/);
-  if (parts.length <= 1) return { nombre: full, apellido: "" };
-  const apellido = parts.pop() as string;
-  return { nombre: parts.join(" "), apellido };
-}
 
 
-const specMap = new Map(SPECIALTIES.map(s => [s.id, s.nombre]));
-function firstSpecialtyLabel(ids: string[]) {
-  if (!ids || ids.length === 0) return "-";
-  return specMap.get(ids[0]) ?? ids[0];
+
+function firstSpecialtyLabel(especialidades: any[]) {
+  if (!especialidades || especialidades.length === 0) return "-";
+  // Ahora especialidades es array de objetos { id, nombre }
+  const first = especialidades[0];
+  return typeof first === "object" ? first.nombre : "-";
 }
 
 export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Props) {
@@ -48,7 +41,7 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Pr
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-[#5FA92C] text-white">
           <tr>
-            {["CUIL/CUIT", "NOMBRE", "APELLIDO", "ESPECIALIDAD", "TELÉFONO", "CENTRO MÉDICO", ""].map((h) => (
+            {["CUIL/CUIT", "NOMBRE COMPLETO", "ESPECIALIDAD", "TELÉFONO", "TIPO", ""].map((h) => (
               <th key={h} scope="col" className="px-4 py-3 text-left text-sm font-medium uppercase tracking-wider">
                 {h}
               </th>
@@ -58,29 +51,24 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Pr
 
         <tbody className="bg-white divide-y divide-gray-200">
           {pageItems.map((p, idx) => {
-            const { nombre, apellido } = splitFullName(p.nombreCompleto);
             const especialidad = firstSpecialtyLabel(p.especialidades);
             const telefono = p.telefonos?.[0] ?? "-";
-            const centroMedico =
-              p.tipo === "profesional"
-                ? (p.integraCentroMedico?.nombre ?? "-")
-                : "-";
+            const tipoPrestador = p.tipoPrestador === "profesional" ? "Profesional" : "Centro Médico";
 
             return (
-              <tr key={p.id} className={idx % 2 === 0 ? "bg-gray-50" : ""}>
-                <td className="px-4 py-3 text-sm">{p.cuilCuit}</td>
-                <td className="px-4 py-3 text-sm">{nombre}</td>
-                <td className="px-4 py-3 text-sm">{apellido}</td>
+              <tr key={p.cuitCuil} className={idx % 2 === 0 ? "bg-gray-50" : ""}>
+                <td className="px-4 py-3 text-sm">{p.cuitCuil}</td>
+                <td className="px-4 py-3 text-sm">{p.nombreCompleto}</td>
                 <td className="px-4 py-3 text-sm">{especialidad}</td>
                 <td className="px-4 py-3 text-sm">{telefono}</td>
-                <td className="px-4 py-3 text-sm">{centroMedico}</td>
+                <td className="px-4 py-3 text-sm">{tipoPrestador}</td>
                 <td className="px-2 py-3 text-right w-10">
                   <OptionsMenu
                     affiliate={{
-                      credencial: p.cuilCuit,
-                      dni: p.cuilCuit,
-                      nombre, 
-                      apellido,
+                      credencial: p.cuitCuil,
+                      dni: p.cuitCuil,
+                      nombre: p.nombreCompleto,
+                      apellido: "",
                     }}
                     options={["Editar", "Ver Detalles", "Dar de Baja"]}
                     onOptionClick={(opt) => onOptionClick(opt, p)}
@@ -92,7 +80,7 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Pr
 
           {pageItems.length === 0 && (
             <tr>
-              <td colSpan={7} className="px-4 py-6 text-center text-gray-500">
+              <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
                 Sin resultados
               </td>
             </tr>

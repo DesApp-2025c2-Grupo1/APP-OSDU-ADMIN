@@ -1,14 +1,13 @@
-import React from "react";
-import type { Prestador, DireccionAtencion, HorarioAtencion } from "../model/Provider.model";
+import { useState } from "react";
+import type { Prestador } from "../model/Provider.model";
 
 interface ViewProviderPopupProps {
   provider: Prestador;
   onClose: () => void;
 }
 
-const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-
 export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps) {
+  const [selectedLugarIndex, setSelectedLugarIndex] = useState(0);
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 relative">
@@ -21,7 +20,7 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">CUIL / CUIT</label>
-              <p className="p-2 border border-gray-200 rounded break-words">{provider.cuilCuit}</p>
+              <p className="p-2 border border-gray-200 rounded break-words">{provider.cuitCuil}</p>
             </div>
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Nombre Completo</label>
@@ -29,16 +28,10 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
             </div>
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Tipo</label>
-              <p className="p-2 border border-gray-200 rounded capitalize">{provider.tipo}</p>
+              <p className="p-2 border border-gray-200 rounded capitalize">
+                {provider.tipoPrestador === "centro_medico" ? "Centro Médico" : "Profesional"}
+              </p>
             </div>
-            {provider.integraCentroMedico && (
-              <div>
-                <label className="font-semibold mb-1 bg-gray-100 px-2 block">Centro Médico</label>
-                <p className="p-2 border border-gray-200 rounded break-words">
-                  {provider.integraCentroMedico.nombre}
-                </p>
-              </div>
-            )}
           </div>
         </div>
 
@@ -52,7 +45,7 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
             <ul className="space-y-2">
               {provider.especialidades.map((esp, i) => (
                 <li key={i} className="p-2 border border-gray-200 rounded break-words">
-                  {esp}
+                  {esp.nombre}
                 </li>
               ))}
             </ul>
@@ -72,29 +65,74 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
               </p>
             </div>
             <div>
-              <label className="font-semibold mb-1 bg-gray-100 px-2 block">Emails</label>
+              <label className="font-semibold mb-1 bg-gray-100 px-2 block">Mails</label>
               <p className="p-2 border border-gray-200 rounded break-words">
-                {provider.emails.join(" / ")}
+                {provider.mails.join(" / ")}
               </p>
             </div>
           </div>
         </div>
 
-        {/* DIRECCIONES (formato de detalles) */}
-        {provider.direcciones.length > 0 && (
+        {/* LUGARES DE ATENCIÓN */}
+        {provider.lugaresAtencion && provider.lugaresAtencion.length > 0 && (
           <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-            <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Direcciones de Atención</h2>
-            {provider.direcciones.map((dir: DireccionAtencion, idx: number) => (
-              <div key={idx} className="mb-6 p-3 border border-gray-300 rounded bg-gray-50">
-                <h3 className="font-semibold text-gray-700 mb-2">
-                  {dir.etiqueta || "Sede"} — {dir.localidad || "Localidad desconocida"}
-                </h3>
-                <p className="text-gray-700">
-                  {dir.calle} {dir.numero || ""}, {dir.provincia || ""} ({dir.cp})
-                </p>
-
+            <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+              Lugares de Atención ({provider.lugaresAtencion.length})
+            </h2>
+            
+            {/* TABS PARA MÚLTIPLES LUGARES */}
+            {provider.lugaresAtencion.length > 1 && (
+              <div className="flex flex-wrap gap-2 mb-4 border-b border-gray-300">
+                {provider.lugaresAtencion.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedLugarIndex(idx)}
+                    className={`px-4 py-2 font-semibold transition ${
+                      selectedLugarIndex === idx
+                        ? "text-[#5FA92C] border-b-2 border-[#5FA92C]"
+                        : "text-gray-600 hover:text-gray-800"
+                    }`}
+                  >
+                    Lugar {idx + 1}
+                  </button>
+                ))}
               </div>
-            ))}
+            )}
+
+            {/* DETALLES DEL LUGAR SELECCIONADO */}
+            <div className="p-3 border border-gray-300 rounded bg-gray-50">
+              <p className="text-gray-700 font-semibold mb-2">
+                {provider.lugaresAtencion[selectedLugarIndex].calle}
+              </p>
+              {(provider.lugaresAtencion[selectedLugarIndex].localidad || 
+                provider.lugaresAtencion[selectedLugarIndex].provincia) && (
+                <p className="text-gray-700 text-sm">
+                  {provider.lugaresAtencion[selectedLugarIndex].localidad && 
+                    provider.lugaresAtencion[selectedLugarIndex].localidad}
+                  {provider.lugaresAtencion[selectedLugarIndex].localidad && 
+                    provider.lugaresAtencion[selectedLugarIndex].provincia && " - "}
+                  {provider.lugaresAtencion[selectedLugarIndex].provincia && 
+                    provider.lugaresAtencion[selectedLugarIndex].provincia}
+                </p>
+              )}
+              <p className="text-gray-700 text-sm">
+                CP: {provider.lugaresAtencion[selectedLugarIndex].cp}
+              </p>
+              
+              {provider.lugaresAtencion[selectedLugarIndex].horarios && 
+               provider.lugaresAtencion[selectedLugarIndex].horarios!.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-300">
+                  <p className="font-semibold text-gray-700 mb-2">Horarios de Atención:</p>
+                  <ul className="space-y-1 text-sm">
+                    {provider.lugaresAtencion[selectedLugarIndex].horarios!.map((h, idx) => (
+                      <li key={idx} className="text-gray-600">
+                        {h.dias.join(", ")}: {h.desde} - {h.hasta}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

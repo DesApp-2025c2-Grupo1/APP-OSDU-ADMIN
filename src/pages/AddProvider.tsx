@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Prestador, PrestadorTipo, DireccionAtencion, DiaSemana } from "../model/Provider.model";
+import type { Prestador, PrestadorTipo, LugarAtencion, DiaSemana } from "../model/Provider.model";
 import { SPECIALTIES } from "../data/specialties";
-import { providersMock } from "../data/providers";
 import { ButtonVolver } from "../util/ButtonVolver";
+
+const API_URL = "http://localhost:3000";
 
 type BloqueHorario = { dias: DiaSemana[]; desde: string; hasta: string };
 
@@ -14,18 +15,16 @@ export function AddProvider() {
   const [tipo, setTipo] = useState<PrestadorTipo | "">("");
   const [cuilCuit, setCuilCuit] = useState("");
   const [nombreCompleto, setNombreCompleto] = useState("");
-  const [especialidades, setEspecialidades] = useState<string[]>([""]);
+  const [especialidades, setEspecialidades] = useState<number[]>([]);
   const [telefonos, setTelefonos] = useState<string[]>([""]);
-  const [emails, setEmails] = useState<string[]>([""]);
-  const [direcciones, setDirecciones] = useState<DireccionAtencion[]>([
-    { calle: "", numero: "", localidad: "", provincia: "", cp: "", horarios: [{ dias: [], desde: "", hasta: "" }] as unknown as BloqueHorario[] },
+  const [mails, setMails] = useState<string[]>([""]);
+  const [lugaresAtencion, setLugaresAtencion] = useState<LugarAtencion[]>([
+    { calle: "", localidad: "", provincia: "", cp: "", horarios: [{ dias: [], desde: "", hasta: "" }] as unknown as BloqueHorario[] },
   ]);
 
-
-  const [centros] = useState(providersMock.filter((p) => p.tipo === "centro"));
+  const [centros, setCentros] = useState<any[]>([]);
   const [integraCentro, setIntegraCentro] = useState<string>("");
-
-  
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
 
@@ -33,14 +32,12 @@ export function AddProvider() {
   const handleEliminarTelefono = (index: number) =>
     setTelefonos(telefonos.filter((_, i) => i !== index));
 
-
-  const handleAgregarEmail = () => setEmails([...emails, ""]);
+  const handleAgregarEmail = () => setMails([...mails, ""]);
   const handleEliminarEmail = (index: number) =>
-    setEmails(emails.filter((_, i) => i !== index));
+    setMails(mails.filter((_, i) => i !== index));
 
-
-  const handleAgregarEspecialidad = () => setEspecialidades([...especialidades, ""]);
-  const handleEspecialidadChange = (index: number, valor: string) => {
+  const handleAgregarEspecialidad = () => setEspecialidades([...especialidades, 0]);
+  const handleEspecialidadChange = (index: number, valor: number) => {
     const nuevas = [...especialidades];
     nuevas[index] = valor;
     setEspecialidades(nuevas);
@@ -49,100 +46,152 @@ export function AddProvider() {
     setEspecialidades(especialidades.filter((_, i) => i !== index));
   };
 
-
-  const handleDireccionChange = (index: number, campo: string, valor: string) => {
-    const nuevas = [...direcciones];
+  const handleLugarChange = (index: number, campo: string, valor: string) => {
+    const nuevas = [...lugaresAtencion];
     (nuevas[index] as any)[campo] = valor;
-    setDirecciones(nuevas);
+    setLugaresAtencion(nuevas);
   };
-  const handleAgregarDireccion = () =>
-    setDirecciones([
-      ...direcciones,
-      { calle: "", numero: "", localidad: "", provincia: "", cp: "", horarios: [{ dias: [], desde: "", hasta: "" }] as unknown as BloqueHorario[] },
+  const handleAgregarLugar = () =>
+    setLugaresAtencion([
+      ...lugaresAtencion,
+      { calle: "", localidad: "", provincia: "", cp: "", horarios: [{ dias: [], desde: "", hasta: "" }] as unknown as BloqueHorario[] },
     ]);
-  const handleEliminarDireccion = (index: number) =>
-    setDirecciones(direcciones.filter((_, i) => i !== index));
+  const handleEliminarLugar = (index: number) =>
+    setLugaresAtencion(lugaresAtencion.filter((_, i) => i !== index));
 
 
-  const diasSemana: { id: DiaSemana; label: string }[] = [
-    { id: 1, label: "Lun" },
-    { id: 2, label: "Mar" },
-    { id: 3, label: "Mié" },
-    { id: 4, label: "Jue" },
-    { id: 5, label: "Vie" },
-    { id: 6, label: "Sáb" },
+  
+  // Cargar centros médicos al montar
+  useEffect(() => {
+    const cargarCentros = async () => {
+      try {
+        const res = await fetch(`${API_URL}/providers/`);
+        const data = await res.json();
+        const centrosMedicos = data.filter((p: any) => p.tipoPrestador === "centro_medico");
+        setCentros(centrosMedicos);
+      } catch (err) {
+        console.error("Error cargando centros:", err);
+      }
+    };
+    cargarCentros();
+  }, []);
+
+  const diasSemana: { label: string; id: DiaSemana }[] = [
+    { id: "Lunes", label: "Lun" },
+    { id: "Martes", label: "Mar" },
+    { id: "Miércoles", label: "Mié" },
+    { id: "Jueves", label: "Jue" },
+    { id: "Viernes", label: "Vie" },
+    { id: "Sábado", label: "Sáb" },
+    { id: "Domingo", label: "Dom" },
   ];
 
-  const addBloque = (dirIdx: number) => {
-    const nuevas = [...direcciones];
-    (nuevas[dirIdx].horarios as unknown as BloqueHorario[]).push({ dias: [], desde: "", hasta: "" });
-    setDirecciones(nuevas);
+  const addBloque = (lugarIdx: number) => {
+    const nuevas = [...lugaresAtencion];
+    (nuevas[lugarIdx].horarios as unknown as BloqueHorario[]).push({ dias: [], desde: "", hasta: "" });
+    setLugaresAtencion(nuevas);
   };
 
-  const removeBloque = (dirIdx: number, bloqueIdx: number) => {
-    const nuevas = [...direcciones];
-    const hs = nuevas[dirIdx].horarios as unknown as BloqueHorario[];
+  const removeBloque = (lugarIdx: number, bloqueIdx: number) => {
+    const nuevas = [...lugaresAtencion];
+    const hs = nuevas[lugarIdx].horarios as unknown as BloqueHorario[];
     hs.splice(bloqueIdx, 1);
     if (hs.length === 0) hs.push({ dias: [], desde: "", hasta: "" });
-    setDirecciones(nuevas);
+    setLugaresAtencion(nuevas);
   };
 
-  const toggleDia = (dirIdx: number, bloqueIdx: number, dia: DiaSemana) => {
-    const nuevas = [...direcciones];
-    const hs = nuevas[dirIdx].horarios as unknown as BloqueHorario[];
+  const toggleDia = (lugarIdx: number, bloqueIdx: number, dia: DiaSemana) => {
+    const nuevas = [...lugaresAtencion];
+    const hs = nuevas[lugarIdx].horarios as unknown as BloqueHorario[];
     const bloque = hs[bloqueIdx] || { dias: [], desde: "", hasta: "" };
     const esta = bloque.dias.includes(dia);
     bloque.dias = esta ? bloque.dias.filter((d) => d !== dia) : [...bloque.dias, dia];
     hs[bloqueIdx] = bloque;
-    setDirecciones(nuevas);
+    setLugaresAtencion(nuevas);
   };
 
-  const setDesde = (dirIdx: number, bloqueIdx: number, value: string) => {
-    const nuevas = [...direcciones];
-    const hs = nuevas[dirIdx].horarios as unknown as BloqueHorario[];
+  const setDesde = (lugarIdx: number, bloqueIdx: number, value: string) => {
+    const nuevas = [...lugaresAtencion];
+    const hs = nuevas[lugarIdx].horarios as unknown as BloqueHorario[];
     hs[bloqueIdx] = hs[bloqueIdx] || { dias: [], desde: "", hasta: "" };
     hs[bloqueIdx].desde = value;
-    setDirecciones(nuevas);
+    setLugaresAtencion(nuevas);
   };
 
-  const setHasta = (dirIdx: number, bloqueIdx: number, value: string) => {
-    const nuevas = [...direcciones];
-    const hs = nuevas[dirIdx].horarios as unknown as BloqueHorario[];
+  const setHasta = (lugarIdx: number, bloqueIdx: number, value: string) => {
+    const nuevas = [...lugaresAtencion];
+    const hs = nuevas[lugarIdx].horarios as unknown as BloqueHorario[];
     hs[bloqueIdx] = hs[bloqueIdx] || { dias: [], desde: "", hasta: "" };
     hs[bloqueIdx].hasta = value;
-    setDirecciones(nuevas);
+    setLugaresAtencion(nuevas);
   };
 
-
-  const handleGuardar = () => {
+  const handleGuardar = async () => {
     if (!tipo) return setError("Debe seleccionar si es profesional o centro médico.");
     if (!cuilCuit.trim() || !nombreCompleto.trim())
       return setError("Complete el CUIL/CUIT y el nombre completo.");
 
-    if (especialidades.filter((e) => e.trim() !== "").length === 0)
+    // Validar formato CUIT/CUIL (XX-XXXXXXXX-X o similar)
+    const cuitRegex = /^[0-9]{1,2}-?[0-9]{6,8}-?[0-9]{1}$/;
+    if (!cuitRegex.test(cuilCuit)) {
+      return setError("Formato de CUIT/CUIL inválido. Ej: 20-31216123-0");
+    }
+
+    if (especialidades.length === 0 || especialidades.every(e => e === 0))
       return setError("Debe seleccionar al menos una especialidad.");
 
-    const nuevoPrestador: Prestador = {
-      id: crypto.randomUUID(),
-      cuilCuit,
-      nombreCompleto,
-      tipo,
-      especialidades: especialidades.filter((e) => e.trim() !== ""),
-      telefonos: telefonos.filter((t) => t.trim() !== ""),
-      emails: emails.filter((e) => e.trim() !== ""),
-      direcciones,
-      integraCentroMedico:
-        tipo === "profesional" && integraCentro
-          ? { id: integraCentro, nombre: centros.find((c) => c.id === integraCentro)?.nombreCompleto || "" }
-          : null,
-    };
+    if (lugaresAtencion.length === 0 || lugaresAtencion.some(l => !l.calle.trim() || !l.localidad?.trim() || !l.provincia?.trim() || !l.cp.trim()))
+      return setError("Complete todos los datos de los lugares de atención.");
 
-    console.log("Nuevo prestador creado:", nuevoPrestador);
-    alert("Prestador agregado correctamente.");
-    navigate("/prestadores");
-  };
+    setLoading(true);
+    setError("");
 
-  return (
+    try {
+      const payload = {
+        cuitCuil: cuilCuit,
+        nombreCompleto,
+        tipoPrestador: tipo,
+        especialidades: especialidades.filter(id => id !== 0),
+        telefonos: telefonos.filter(t => t.trim() !== ""),
+        mails: mails.filter(m => m.trim() !== ""),
+        lugaresAtencion: lugaresAtencion.map(lugar => ({
+          calle: lugar.calle,
+          localidad: lugar.localidad,
+          provincia: lugar.provincia,
+          cp: lugar.cp,
+          horarios: (lugar.horarios as unknown as BloqueHorario[])
+            .filter(h => h.dias && h.dias.length > 0 && h.desde && h.hasta)
+            .map(h => ({
+              dias: h.dias,
+              desde: h.desde,
+              hasta: h.hasta
+            }))
+        }))
+      };
+
+      console.log("Payload enviado:", JSON.stringify(payload, null, 2));
+
+      const res = await fetch(`${API_URL}/providers/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Error del servidor:", errorData);
+        throw new Error(errorData.error || errorData.message || "Error al crear prestador");
+      }
+
+      alert("Prestador creado correctamente");
+      navigate("/prestadores");
+    } catch (err: any) {
+      setError(err.message || "Error al guardar");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };  return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
       <h1 className="text-2xl font-bold text-[#5FA92C] mb-4">Agregar Prestador</h1>
       <div className="flex items-center gap-2 ">
@@ -166,9 +215,9 @@ export function AddProvider() {
             <input
               type="radio"
               name="tipo"
-              value="centro"
-              checked={tipo === "centro"}
-              onChange={() => setTipo("centro")}
+              value="centro_medico"
+              checked={tipo === "centro_medico"}
+              onChange={() => setTipo("centro_medico")}
             />
             Centro Médico
           </label>
@@ -207,10 +256,10 @@ export function AddProvider() {
               <div key={i} className="flex gap-2 mb-2">
                 <select
                   value={esp}
-                  onChange={(e) => handleEspecialidadChange(i, e.target.value)}
+                  onChange={(e) => handleEspecialidadChange(i, parseInt(e.target.value))}
                   className="border border-gray-300 rounded-lg px-3 py-2 w-full"
                 >
-                  <option value="">-- Seleccionar --</option>
+                  <option value={0}>-- Seleccionar --</option>
                   {SPECIALTIES.map((s) => (
                     <option key={s.id} value={s.id}>{s.nombre}</option>
                   ))}
@@ -248,7 +297,7 @@ export function AddProvider() {
               >
                 <option value="">No pertenece</option>
                 {centros.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nombreCompleto}</option>
+                  <option key={c.cuitCuil} value={c.cuitCuil}>{c.nombreCompleto}</option>
                 ))}
               </select>
             </div>
@@ -293,20 +342,20 @@ export function AddProvider() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Emails</label>
-              {emails.map((em, i) => (
+              {mails.map((em, i) => (
                 <div key={i} className="flex gap-2 mb-2">
                   <input
                     type="email"
                     value={em}
                     onChange={(e) => {
-                      const arr = [...emails];
+                      const arr = [...mails];
                       arr[i] = e.target.value;
-                      setEmails(arr);
+                      setMails(arr);
                     }}
                     placeholder="ejemplo@correo.com"
                     className="border border-gray-300 rounded-lg px-3 py-2 w-full"
                   />
-                  {emails.length > 1 && (
+                  {mails.length > 1 && (
                     <button
                       type="button"
                       onClick={() => handleEliminarEmail(i)}
@@ -327,63 +376,55 @@ export function AddProvider() {
             </div>
           </div>
 
-          {/* Direcciones */}
+          {/* Lugares de Atención */}
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3 text-gray-700">Direcciones</h2>
-            {direcciones.map((dir, idx) => (
+            <h2 className="text-lg font-semibold mb-3 text-gray-700">Lugares de Atención</h2>
+            {lugaresAtencion.map((lugar, idx) => (
               <div key={idx} className="border rounded-lg p-4 mb-4 bg-gray-50">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     placeholder="Calle"
-                    value={dir.calle}
-                    onChange={(e) => handleDireccionChange(idx, "calle", e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 w-full"
-                  />
-                  <input
-                    placeholder="Número"
-                    value={dir.numero}
-                    onChange={(e) => handleDireccionChange(idx, "numero", e.target.value)}
+                    value={lugar.calle}
+                    onChange={(e) => handleLugarChange(idx, "calle", e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 w-full"
                   />
                   <input
                     placeholder="Localidad"
-                    value={dir.localidad}
-                    onChange={(e) => handleDireccionChange(idx, "localidad", e.target.value)}
+                    value={lugar.localidad || ""}
+                    onChange={(e) => handleLugarChange(idx, "localidad", e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 w-full"
                   />
                   <input
                     placeholder="Provincia"
-                    value={dir.provincia}
-                    onChange={(e) => handleDireccionChange(idx, "provincia", e.target.value)}
+                    value={lugar.provincia || ""}
+                    onChange={(e) => handleLugarChange(idx, "provincia", e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 w-full"
                   />
                   <input
                     placeholder="Código Postal"
-                    value={dir.cp}
-                    onChange={(e) => handleDireccionChange(idx, "cp", e.target.value)}
+                    value={lugar.cp}
+                    onChange={(e) => handleLugarChange(idx, "cp", e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 w-full"
                   />
                 </div>
 
-
-
-                {direcciones.length > 1 && (
+                {lugaresAtencion.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => handleEliminarDireccion(idx)}
+                    onClick={() => handleEliminarLugar(idx)}
                     className="mt-2 text-red-500 font-semibold text-sm"
                   >
-                    Eliminar dirección
+                    Eliminar lugar
                   </button>
                 )}
               </div>
             ))}
             <button
               type="button"
-              onClick={handleAgregarDireccion}
+              onClick={handleAgregarLugar}
               className="text-[#5FA92C] text-sm font-semibold"
             >
-              + Agregar otra dirección
+              + Agregar otro lugar
             </button>
           </div>
 
@@ -394,15 +435,17 @@ export function AddProvider() {
           <div className="flex justify-end gap-4">
             <button
               onClick={() => navigate("/prestadores")}
-              className="bg-gray-300 text-black px-4 py-2 rounded-md font-medium hover:bg-gray-400 transition"
+              disabled={loading}
+              className="bg-gray-300 text-black px-4 py-2 rounded-md font-medium hover:bg-gray-400 transition disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               onClick={handleGuardar}
-              className="bg-[#5FA92C] text-white px-4 py-2 rounded-md font-medium hover:bg-[#4a8926] transition"
+              disabled={loading}
+              className="bg-[#5FA92C] text-white px-4 py-2 rounded-md font-medium hover:bg-[#4a8926] transition disabled:opacity-50"
             >
-              Guardar
+              {loading ? "Guardando..." : "Guardar"}
             </button>
           </div>
         </>

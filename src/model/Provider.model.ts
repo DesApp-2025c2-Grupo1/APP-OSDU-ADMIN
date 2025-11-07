@@ -1,43 +1,34 @@
-export type DiaSemana = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type DiaSemana = "Lunes" | "Martes" | "Miércoles" | "Jueves" | "Viernes" | "Sábado" | "Domingo";
 
-export type HorarioAtencion = {
-  dias: DiaSemana[];       
+export type HorarioAgrupado = {
   desde: string;            
   hasta: string;            
-  especialidadId?: string;
+  dias: DiaSemana[];       
 };
 
-export type DireccionAtencion = {
-  etiqueta?: string;        
+export type LugarAtencion = {
+  idLugar?: number;
   calle: string;
-  numero?: string;
   localidad?: string;
   provincia?: string;
   cp: string;             
-  horarios: HorarioAtencion[];
+  horarios: HorarioAgrupado[];
 };
 
-export type PrestadorTipo = "profesional" | "centro";
+export type PrestadorTipo = "profesional" | "centro_medico";
+
+export type Especialidad = {
+  id: number;
+  nombre: string;
+};
 
 export type Prestador = {
-  id: string;                         
-  cuilCuit: string;
+  cuitCuil: string;
   nombreCompleto: string;             
-  tipo: PrestadorTipo;
-
-  
-  especialidades: string[];
-
-
-  integraCentroMedico?: { id: string; nombre: string } | null; 
-
-
+  tipoPrestador: PrestadorTipo;
   telefonos: string[];
-  emails: string[];
-
-
-  direcciones: DireccionAtencion[];
+  mails: string[];
+  especialidades: Especialidad[];
+  lugaresAtencion: LugarAtencion[];  // Cambio: array de lugares
 };
 
-
-export type Especialidad = { id: string; nombre: string };
