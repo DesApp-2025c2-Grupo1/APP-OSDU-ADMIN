@@ -1,25 +1,38 @@
-import React, { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import SearchDropdown from "../components/SearchDropdown";
 import { ProvidersTable } from "../components/ProvidersTable";
 import type { Prestador } from "../model/Provider.model";
-import { providersMock } from "../data/providers";
 import { EditProviderPopup } from "../components/EditProviderPopup";
 import { ViewProviderPopup } from "../components/ViewProviderPopup";
 import { ConfirmDeleteProviderDialog } from "../components/ConfirmDeleteProviderDialog";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import { fetchProviders, deleteProvider } from "../api/providerService";
 
-type ProviderField = keyof Pick<Prestador, "cuilCuit" | "nombreCompleto">;
+type ProviderField = keyof Pick<Prestador, "cuitCuil" | "nombreCompleto">;
+
+// 🔹 Toast component (notificación visual)
+const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => (
+  <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
+    {message}
+    <button className="ml-3 font-bold text-white" onClick={onClose}>
+      ×
+    </button>
+  </div>
+);
 
 export function Prestadores() {
   const navigate = useNavigate();
 
-  const [prestadores, setPrestadores] = useState<Prestador[]>(providersMock);
-  const [field, setField] = useState<ProviderField>("cuilCuit");
+  const [prestadores, setPrestadores] = useState<Prestador[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [field, setField] = useState<ProviderField>("cuitCuil");
   const [query, setQuery] = useState("");
-  const [tipoFiltro, setTipoFiltro] = useState<"todos" | "profesional" | "centro">("todos");
+  const [tipoFiltro, setTipoFiltro] = useState<"todos" | "profesional" | "centro_medico">("todos");
 
   // Popups
   const [editingProvider, setEditingProvider] = useState<Prestador | null>(null);
@@ -29,6 +42,32 @@ export function Prestadores() {
   const [deletingProvider, setDeletingProvider] = useState<Prestador | null>(null);
   const [openDeletePopup, setOpenDeletePopup] = useState(false);
 
+  // 🟩 Función para mostrar mensaje visual (toast)
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // 🔹 Carga de proveedores desde API
+  const loadProviders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchProviders();
+      setPrestadores(data);
+    } catch (err) {
+      console.error("Error al obtener proveedores:", err);
+      setError("No se pudieron cargar los proveedores");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔹 Cargar proveedores al montar el componente
+  useEffect(() => {
+    loadProviders();
+  }, []);
+
   // Buscador
   const handleSearch = (f: string, q: string) => {
     setField(f as ProviderField);
@@ -36,7 +75,7 @@ export function Prestadores() {
   };
 
   // Filtros toggle
-  const handleToggleFiltro = (valor: "profesional" | "centro") => {
+  const handleToggleFiltro = (valor: "profesional" | "centro_medico") => {
     setTipoFiltro((prev) => (prev === valor ? "todos" : valor));
   };
 
@@ -46,7 +85,7 @@ export function Prestadores() {
     let result = prestadores;
 
     if (tipoFiltro !== "todos") {
-      result = result.filter((p) => p.tipo === tipoFiltro);
+      result = result.filter((p) => p.tipoPrestador === tipoFiltro);
     }
 
     if (q) {
@@ -84,15 +123,33 @@ export function Prestadores() {
     }
   };
 
-  const handleSaveProvider = (updated: Prestador) => {
-    setPrestadores((prev) => prev.map((p) => (p.cuilCuit === updated.cuilCuit ? updated : p)));
+  const handleSaveProvider = async (updated: Prestador) => {
+    try {
+      // El popup ya hizo el updateProvider, solo necesitamos recargar
+      setOpenEditPopup(false);
+      setEditingProvider(null);
+      
+      // Recargar la lista de proveedores desde el API
+      await loadProviders();
+      showToast(`Proveedor ${updated.nombreCompleto} actualizado correctamente`);
+    } catch (err) {
+      console.error("Error al actualizar proveedor:", err);
+      showToast("Error al actualizar el proveedor");
+    }
   };
 
-  const handleDeleteProvider = () => {
-    if (deletingProvider) {
-      setPrestadores((prev) => prev.filter((p) => p.cuilCuit !== deletingProvider.cuilCuit));
+  const handleDeleteProvider = async () => {
+    if (!deletingProvider) return;
+
+    try {
+      await deleteProvider(deletingProvider.cuitCuil);
+      setPrestadores((prev) => prev.filter((p) => p.cuitCuil !== deletingProvider.cuitCuil));
       setOpenDeletePopup(false);
       setDeletingProvider(null);
+      showToast(`Proveedor ${deletingProvider.nombreCompleto} eliminado correctamente`);
+    } catch (err) {
+      console.error("Error al eliminar proveedor:", err);
+      showToast("Error al eliminar el proveedor");
     }
   };
 
@@ -130,11 +187,11 @@ export function Prestadores() {
 
             <button
               onClick={(e) => {
-                handleToggleFiltro("centro");
+                handleToggleFiltro("centro_medico");
                 (e.currentTarget as HTMLButtonElement).blur();
               }}
-              aria-pressed={tipoFiltro === "centro"}
-              className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors ${tipoFiltro === "centro"
+              aria-pressed={tipoFiltro === "centro_medico"}
+              className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors ${tipoFiltro === "centro_medico"
                   ? "bg-[#5FA92C] text-white border-[#5FA92C]"
                   : "border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white"
                 } btn-filter`}
@@ -149,16 +206,29 @@ export function Prestadores() {
       </div>
 
       {/* DESKTOP: tabla (igual que antes) */}
-      <div className="hidden md:block rounded-md shadow-sm border border-gray-200">
-        <ProvidersTable
-          prestadores={filtered}
-          onOptionClick={handleOptionClick}
-          pageSize={5}
-        />
-      </div>
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="flex flex-col items-center">
+            <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p className="text-gray-600 text-sm font-medium">Cargando proveedores...</p>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="text-center text-red-600 py-6 border border-red-300 rounded-md bg-red-50">
+          {error}
+        </div>
+      ) : (
+        <>
+          <div className="hidden md:block rounded-md shadow-sm border border-gray-200">
+            <ProvidersTable
+              prestadores={filtered}
+              onOptionClick={handleOptionClick}
+              pageSize={5}
+            />
+          </div>
 
-      {/* MOBILE: cards + paginación */}
-      <div className="md:hidden">
+          {/* MOBILE: cards + paginación */}
+          <div className="md:hidden">
         {/* Cards */}
         <div className="grid grid-cols-1 gap-4">
           {current.length === 0 && (
@@ -169,12 +239,12 @@ export function Prestadores() {
 
           {current.map((p) => (
             <div
-              key={p.cuilCuit}
+              key={p.cuitCuil}
               className="bg-white border border-gray-200 rounded-lg shadow-sm p-4"
             >
               <div className="mb-3">
                 <div className="text-xs text-gray-500 uppercase">CUIL/CUIT</div>
-                <div className="font-semibold break-all">{p.cuilCuit}</div>
+                <div className="font-semibold break-all">{p.cuitCuil}</div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -184,7 +254,7 @@ export function Prestadores() {
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 uppercase">Tipo</div>
-                  <div className="text-sm capitalize">{p.tipo}</div>
+                  <div className="text-sm capitalize">{p.tipoPrestador}</div>
                 </div>
               </div>
 
@@ -265,6 +335,11 @@ export function Prestadores() {
           onClose={() => setOpenDeletePopup(false)}
           onConfirm={handleDeleteProvider}
         />
+      )}
+
+      {/* ✅ Toast visual */}
+      {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
+        </>
       )}
     </div>
   );
