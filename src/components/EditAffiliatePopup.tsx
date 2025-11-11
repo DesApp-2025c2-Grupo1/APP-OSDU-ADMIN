@@ -22,14 +22,26 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
     planMedico: affiliate.planMedico || affiliate.plan || "",
     plan: affiliate.plan || "",
     credencial: affiliate.credencial || "",
+
     telefono: affiliate.telefono || "",
     telefono2: affiliate.telefono2 || "",
     email: affiliate.email || "",
     email2: affiliate.email2 || "",
     direccion: affiliate.direccion || "",
     direccion2: affiliate.direccion2 || "",
+
     parentesco: affiliate.parentesco || "",
     dni: affiliate.dni || affiliate.nroDocumento || "",
+
+    telefonos: [affiliate.telefono, affiliate.telefono2].filter(Boolean).length
+      ? [affiliate.telefono || "", affiliate.telefono2 || ""].filter(Boolean)
+      : [""],
+    mails: [affiliate.email, affiliate.email2].filter(Boolean).length
+      ? [affiliate.email || "", affiliate.email2 || ""].filter(Boolean)
+      : [""],
+    direcciones: [affiliate.direccion, affiliate.direccion2].filter(Boolean).length
+      ? [affiliate.direccion || "", affiliate.direccion2 || ""].filter(Boolean)
+      : [""],
   });
 
   const [situaciones, setSituaciones] = useState<Situacion[]>(
@@ -39,8 +51,10 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
     ]
   );
 
+  // Handler blindado: ignora cambios en tipoDocumento y nroDocumento
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    if (name === "tipoDocumento" || name === "nroDocumento") return; // bloquea modificaciones
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -69,6 +83,21 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
     onClose();
   };
 
+  const setArr = (field: "telefonos" | "mails" | "direcciones", i: number, val: string) => {
+    const arr = [...(formData as any)[field]];
+    arr[i] = val;
+    setFormData(prev => ({ ...prev, [field]: arr }));
+  };
+
+  const addArr = (field: "telefonos" | "mails" | "direcciones") =>
+    setFormData(prev => ({ ...prev, [field]: [...(prev as any)[field], ""] }));
+
+  const delArr = (field: "telefonos" | "mails" | "direcciones", i: number) =>
+    setFormData(prev => ({
+      ...prev,
+      [field]: (prev as any)[field].filter((_: any, idx: number) => idx !== i),
+    }));
+
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 relative">
@@ -87,13 +116,16 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Tipo de documento - DESHABILITADO */}
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo Documento (*)</label>
               <select
                 name="tipoDocumento"
                 value={formData.tipoDocumento}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
+                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600 cursor-not-allowed"
+                disabled
+                title="Campo no editable"
               >
                 <option value="DNI">DNI</option>
                 <option value="LE">CUIL</option>
@@ -104,6 +136,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
               </select>
             </div>
 
+            {/* Nro de documento - SOLO LECTURA */}
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Nro Documento (*)</label>
               <input
@@ -111,7 +144,8 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                 name="nroDocumento"
                 value={formData.nroDocumento}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
+                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
+                readOnly
               />
             </div>
 
@@ -172,7 +206,106 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
           </div>
         </div>
 
+        {/* DATOS DE CONTACTO */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+            Datos de Contacto
+          </h2>
+          <div className="space-y-6">
+            {/* Teléfonos */}
+            <div>
+              <label className="font-semibold mb-2 block">Teléfonos</label>
+              {formData.telefonos.map((tel: string, i: number) => (
+                <div key={i} className="flex gap-2 mb-2">
+                  <input
+                    type="tel"
+                    value={tel}
+                    onChange={(e) => setArr("telefonos", i, e.target.value)}
+                    className="p-2 border border-gray-300 rounded w-full"
+                    autoComplete="tel"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => delArr("telefonos", i)}
+                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
+                  >
+                    X
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addArr("telefonos")}
+                className="text-sm text-[#5FA92C] font-semibold hover:underline"
+              >
+                + Agregar teléfono
+              </button>
+            </div>
 
+            {/* Emails */}
+            <div>
+              <label className="font-semibold mb-2 block">Emails</label>
+              {formData.mails.map((mail: string, i: number) => (
+                <div key={i} className="flex gap-2 mb-2">
+                  <input
+                    type="email"
+                    value={mail}
+                    onChange={(e) => setArr("mails", i, e.target.value)}
+                    className="p-2 border border-gray-300 rounded w-full"
+                    autoComplete="email"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => delArr("mails", i)}
+                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
+                  >
+                    X
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addArr("mails")}
+                className="text-sm text-[#5FA92C] font-semibold hover:underline"
+              >
+                + Agregar email
+              </button>
+            </div>
+
+            {/* Direcciones */}
+            <div>
+              <label className="font-semibold mb-2 block">Direcciones</label>
+              {formData.direcciones.map((dir: string, i: number) => (
+                <div key={i} className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={dir}
+                    onChange={(e) => setArr("direcciones", i, e.target.value)}
+                    className="p-2 border border-gray-300 rounded w-full"
+                    placeholder={i === 0 ? "Calle 123, Piso/Depto, Localidad" : "Opcional"}
+                    autoComplete="street-address"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => delArr("direcciones", i)}
+                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
+                  >
+                    X
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addArr("direcciones")}
+                className="text-sm text-[#5FA92C] font-semibold hover:underline"
+              >
+                + Agregar dirección
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* SITUACIONES TERAPÉUTICAS (solo lectura) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Situaciones Terapéuticas
