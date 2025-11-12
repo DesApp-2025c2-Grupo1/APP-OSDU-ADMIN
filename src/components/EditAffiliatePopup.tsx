@@ -1,106 +1,244 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { Affiliate as AffiliateType } from "./AffiliatesTable";
 
 interface Situacion {
-  situacion: string;
-  fechaFinalizacion: string;
+  idSituacionAfiliado?: number;
+  idSituacion?: number;
+  fechaInicio: string;
+  fechaFin: string | null;
+  situacionTerapeutica?: {
+    idSituacion: number;
+    nombre: string;
+  };
+}
+
+interface SituacionDisponible {
+  idSituacion: number;
+  nombre: string;
+}
+
+interface Plan {
+  idPlan: number;
+  nombre: string;
 }
 
 interface EditAffiliatePopupProps {
   affiliate: AffiliateType;
   onClose: () => void;
-  onSave: (data: AffiliateType) => void;
+  onSave: (data: any) => void;
 }
 
 export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliatePopupProps) {
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
-    tipoDocumento: affiliate.tipoDocumento || "DNI",
-    nroDocumento: affiliate.nroDocumento || affiliate.dni || "",
-    nombre: affiliate.nombre || "",
-    apellido: affiliate.apellido || "",
-    fechaNacimiento: affiliate.fechaNacimiento || "",
-    planMedico: affiliate.planMedico || affiliate.plan || "",
-    plan: affiliate.plan || "",
-    credencial: affiliate.credencial || "",
-
-    telefono: affiliate.telefono || "",
-    telefono2: affiliate.telefono2 || "",
-    email: affiliate.email || "",
-    email2: affiliate.email2 || "",
-    direccion: affiliate.direccion || "",
-    direccion2: affiliate.direccion2 || "",
-
-    parentesco: affiliate.parentesco || "",
-    dni: affiliate.dni || affiliate.nroDocumento || "",
-
-    telefonos: [affiliate.telefono, affiliate.telefono2].filter(Boolean).length
-      ? [affiliate.telefono || "", affiliate.telefono2 || ""].filter(Boolean)
-      : [""],
-    mails: [affiliate.email, affiliate.email2].filter(Boolean).length
-      ? [affiliate.email || "", affiliate.email2 || ""].filter(Boolean)
-      : [""],
-    direcciones: [affiliate.direccion, affiliate.direccion2].filter(Boolean).length
-      ? [affiliate.direccion || "", affiliate.direccion2 || ""].filter(Boolean)
-      : [""],
+    nombre: "",
+    apellido: "",
+    fechaNacimiento: "",
+    direccion: "",
+    idPlan: 0,
   });
 
-  const [situaciones, setSituaciones] = useState<Situacion[]>(
-    affiliate.situaciones || [
-      { situacion: "Operación Meniscal", fechaFinalizacion: "13/06/2024" },
-      { situacion: "acompañamiento terapéutico", fechaFinalizacion: "-" }
-    ]
-  );
+  const [telefonos, setTelefonos] = useState<Array<{ idTelefono?: number; telefono: string }>>([]);
+  const [emails, setEmails] = useState<Array<{ idEmail?: number; email: string }>>([]);
+  const [situaciones, setSituaciones] = useState<Situacion[]>([]);
+  
+  const [telefonosEliminados, setTelefonosEliminados] = useState<number[]>([]);
+  const [emailsEliminados, setEmailsEliminados] = useState<number[]>([]);
+  const [situacionesEliminadas, setSituacionesEliminadas] = useState<number[]>([]);
 
-  // Handler blindado: ignora cambios en tipoDocumento y nroDocumento
+  const [situacionesDisponibles, setSituacionesDisponibles] = useState<SituacionDisponible[]>([]);
+  const [planesDisponibles, setPlanesDisponibles] = useState<Plan[]>([]);
+
+  //Cargar datos del afiliado, situaciones y planes disponibles
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Cargar datos del afiliado
+        const [affiliateRes, situacionesRes, planesRes] = await Promise.all([
+          fetch(`http://localhost:3000/api/affiliates/affiliate/${affiliate.dni}`),
+          fetch(`http://localhost:3000/api/therapeutic`),
+          fetch(`http://localhost:3000/api/plans`)
+        ]);
+
+        if (!affiliateRes.ok) throw new Error("Error al cargar datos del afiliado");
+        if (!situacionesRes.ok) throw new Error("Error al cargar situaciones");
+        if (!planesRes.ok) throw new Error("Error al cargar planes");
+
+        const affiliateData = await affiliateRes.json();
+        const situacionesData = await situacionesRes.json();
+        const planesData = await planesRes.json();
+
+        const aff = affiliateData.affiliates;
+
+        setFormData({
+          nombre: aff.nombre || "",
+          apellido: aff.apellido || "",
+          fechaNacimiento: aff.fecha_nacimiento || "",
+          direccion: aff.direccion || "",
+          idPlan: aff.plan?.idPlan || 0,
+        });
+
+        setTelefonos(
+          aff.telefonos && aff.telefonos.length > 0
+            ? aff.telefonos.map((t: any) => ({ idTelefono: t.idTelefono, telefono: t.telefono }))
+            : [{ telefono: "" }]
+        );
+
+        setEmails(
+          aff.email && aff.email.length > 0
+            ? aff.email.map((e: any) => ({ idEmail: e.idEmail, email: e.email }))
+            : [{ email: "" }]
+        );
+
+        setSituaciones(aff.situaciones || []);
+        setSituacionesDisponibles(situacionesData.situaciones || []);
+        setPlanesDisponibles(planesData.plans || []);
+
+      } catch (error) {
+        console.error("Error al cargar datos:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [affiliate.dni]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    if (name === "tipoDocumento" || name === "nroDocumento") return; // bloquea modificaciones
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: name === "idPlan" ? parseInt(value) : value }));
   };
 
   const handleSave = () => {
-    const updatedAffiliate: AffiliateType = {
-      credencial: formData.credencial,
-      dni: formData.nroDocumento || formData.dni || "",
+    const payload = {
       nombre: formData.nombre,
       apellido: formData.apellido,
-      fechaNacimiento: formData.fechaNacimiento,
-      plan: formData.plan || formData.planMedico,
+      fecha_nacimiento: formData.fechaNacimiento,
       direccion: formData.direccion,
-      parentesco: formData.parentesco,
-      tipoDocumento: formData.tipoDocumento,
-      nroDocumento: formData.nroDocumento,
-      planMedico: formData.planMedico,
-      telefono: formData.telefono,
-      telefono2: formData.telefono2,
-      email: formData.email,
-      email2: formData.email2,
-      direccion2: formData.direccion2,
-      situaciones: situaciones,
+      idPlan: formData.idPlan,
+      telefonos: telefonos.filter(t => t.telefono.trim() !== ""),
+      emails: emails.filter(e => e.email.trim() !== ""),
+      situaciones: situaciones.map(s => ({
+        idSituacionAfiliado: s.idSituacionAfiliado,
+        idSituacion: s.idSituacion || s.situacionTerapeutica?.idSituacion,
+        fechaInicio: s.fechaInicio,
+        fechaFin: s.fechaFin
+      })),
+      telefonosEliminados,
+      emailsEliminados,
+      situacionesEliminadas
     };
 
-    onSave(updatedAffiliate);
-    onClose();
+    console.log("Payload completo que se envía:", payload);
+    console.log("Situaciones a eliminar:", situacionesEliminadas);
+    console.log("Situaciones actuales:", situaciones);
+
+    onSave(payload);
   };
 
-  const setArr = (field: "telefonos" | "mails" | "direcciones", i: number, val: string) => {
-    const arr = [...(formData as any)[field]];
-    arr[i] = val;
-    setFormData(prev => ({ ...prev, [field]: arr }));
+  //TELÉFONOS
+  const addTelefono = () => setTelefonos(prev => [...prev, { telefono: "" }]);
+  const removeTelefono = (idx: number) => {
+    const tel = telefonos[idx];
+    if (tel.idTelefono) {
+      setTelefonosEliminados(prev => [...prev, tel.idTelefono!]);
+    }
+    setTelefonos(prev => prev.filter((_, i) => i !== idx));
+  };
+  const updateTelefono = (idx: number, value: string) => {
+    setTelefonos(prev => prev.map((t, i) => (i === idx ? { ...t, telefono: value } : t)));
   };
 
-  const addArr = (field: "telefonos" | "mails" | "direcciones") =>
-    setFormData(prev => ({ ...prev, [field]: [...(prev as any)[field], ""] }));
+  //EMAILS
+  const addEmail = () => setEmails(prev => [...prev, { email: "" }]);
+  const removeEmail = (idx: number) => {
+    const mail = emails[idx];
+    if (mail.idEmail) {
+      setEmailsEliminados(prev => [...prev, mail.idEmail!]);
+    }
+    setEmails(prev => prev.filter((_, i) => i !== idx));
+  };
+  const updateEmail = (idx: number, value: string) => {
+    setEmails(prev => prev.map((e, i) => (i === idx ? { ...e, email: value } : e)));
+  };
 
-  const delArr = (field: "telefonos" | "mails" | "direcciones", i: number) =>
-    setFormData(prev => ({
-      ...prev,
-      [field]: (prev as any)[field].filter((_: any, idx: number) => idx !== i),
+  //SITUACIONES
+  const addSituacion = () => {
+    if (situacionesDisponibles.length === 0) return;
+    
+    const primeraSituacion = situacionesDisponibles[0];
+    const hoy = new Date().toISOString().split('T')[0].split('-').reverse().join('/');
+    
+    setSituaciones(prev => [...prev, {
+      idSituacion: primeraSituacion.idSituacion,
+      fechaInicio: hoy,
+      fechaFin: null,
+      situacionTerapeutica: {
+        idSituacion: primeraSituacion.idSituacion,
+        nombre: primeraSituacion.nombre
+      }
+    }]);
+  };
+
+  const removeSituacion = (idx: number) => {
+    const sit = situaciones[idx];
+    console.log("Eliminando situación:", sit);
+    
+    if (sit.idSituacionAfiliado) {
+      // Si tiene ID, es una situación existente - marcarla para eliminar
+      setSituacionesEliminadas(prev => {
+        const newList = [...prev, sit.idSituacionAfiliado!];
+        console.log("Situaciones marcadas para eliminar:", newList);
+        return newList;
+      });
+    }
+    
+    // Remover del array visual
+    setSituaciones(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateSituacion = (idx: number, field: string, value: any) => {
+    console.log(`Actualizando situación ${idx}, campo: ${field}, valor:`, value);
+    
+    setSituaciones(prev => prev.map((s, i) => {
+      if (i !== idx) return s;
+      
+      if (field === "idSituacion") {
+        const sitSelected = situacionesDisponibles.find(sd => sd.idSituacion === parseInt(value));
+        console.log("Cambiando tipo de situación a:", sitSelected);
+        
+        return {
+          ...s,
+          idSituacion: parseInt(value),
+          situacionTerapeutica: sitSelected ? {
+            idSituacion: sitSelected.idSituacion,
+            nombre: sitSelected.nombre
+          } : s.situacionTerapeutica
+        };
+      }
+      
+      return { ...s, [field]: value };
     }));
+  };
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+        <div className="bg-white rounded-lg p-8">
+          <div className="flex flex-col items-center">
+            <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p className="text-gray-600">Cargando datos del afiliado...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 relative">
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 overflow-y-auto">
+      <div className="bg-white rounded-lg w-[90%] max-w-5xl my-8 p-6 relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800"
@@ -110,40 +248,29 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
 
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">Editar Afiliado</h1>
 
+        {/* DATOS BÁSICOS */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-            Datos de Afiliado
+            Datos Básicos
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Tipo de documento - DESHABILITADO */}
             <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo Documento (*)</label>
-              <select
-                name="tipoDocumento"
-                value={formData.tipoDocumento}
-                onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600 cursor-not-allowed"
-                disabled
-                title="Campo no editable"
-              >
-                <option value="DNI">DNI</option>
-                <option value="LE">CUIL</option>
-                <option value="CUIT">CUIT</option>
-                <option value="LC">DOCUMENTO EXTRANJERO</option>
-                <option value="CDI">CDI</option>
-                <option value="PASAPORTE">Pasaporte</option>
-              </select>
-            </div>
-
-            {/* Nro de documento - SOLO LECTURA */}
-            <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Nro Documento (*)</label>
+              <label className="font-semibold mb-1 bg-gray-100 px-2">DNI (*)</label>
               <input
                 type="text"
-                name="nroDocumento"
-                value={formData.nroDocumento}
-                onChange={handleInputChange}
+                value={affiliate.dni}
+                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
+                readOnly
+                title="Campo no editable"
+              />
+            </div>
+
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Credencial (*)</label>
+              <input
+                type="text"
+                value={affiliate.credencial}
                 className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
                 readOnly
               />
@@ -157,6 +284,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                 value={formData.nombre}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
+                required
               />
             </div>
 
@@ -168,6 +296,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                 value={formData.apellido}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
+                required
               />
             </div>
 
@@ -175,7 +304,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
               <label className="font-semibold mb-1 bg-gray-100 px-2">Fecha nacimiento (*)</label>
               <input
                 type="date"
-                name="fechaNacimiento"
                 value={formData.fechaNacimiento.split('/').reverse().join('-')}
                 onChange={(e) => {
                   const date = e.target.value.split('-').reverse().join('/');
@@ -188,20 +316,29 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Plan Médico (*)</label>
               <select
-                name="planMedico"
-                value={formData.planMedico}
+                name="idPlan"
+                value={formData.idPlan}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
               >
-                <option value="210">210</option>
-                <option value="310">310</option>
-                <option value="410">410</option>
-                <option value="510">510</option>
-                <option value="Bronce">Bronce</option>
-                <option value="Plata">Plata</option>
-                <option value="Oro">Oro</option>
-                <option value="Platino">Platino</option>
+                <option value={0}>Seleccionar plan</option>
+                {planesDisponibles.map(plan => (
+                  <option key={plan.idPlan} value={plan.idPlan}>
+                    {plan.nombre}
+                  </option>
+                ))}
               </select>
+            </div>
+
+            <div className="flex flex-col sm:col-span-2">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Dirección</label>
+              <input
+                type="text"
+                name="direccion"
+                value={formData.direccion}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
             </div>
           </div>
         </div>
@@ -211,139 +348,144 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Datos de Contacto
           </h2>
-          <div className="space-y-6">
-            {/* Teléfonos */}
-            <div>
-              <label className="font-semibold mb-2 block">Teléfonos</label>
-              {formData.telefonos.map((tel: string, i: number) => (
-                <div key={i} className="flex gap-2 mb-2">
-                  <input
-                    type="tel"
-                    value={tel}
-                    onChange={(e) => setArr("telefonos", i, e.target.value)}
-                    className="p-2 border border-gray-300 rounded w-full"
-                    autoComplete="tel"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => delArr("telefonos", i)}
-                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
-                  >
-                    X
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addArr("telefonos")}
-                className="text-sm text-[#5FA92C] font-semibold hover:underline"
-              >
-                + Agregar teléfono
-              </button>
-            </div>
 
-            {/* Emails */}
-            <div>
-              <label className="font-semibold mb-2 block">Emails</label>
-              {formData.mails.map((mail: string, i: number) => (
-                <div key={i} className="flex gap-2 mb-2">
-                  <input
-                    type="email"
-                    value={mail}
-                    onChange={(e) => setArr("mails", i, e.target.value)}
-                    className="p-2 border border-gray-300 rounded w-full"
-                    autoComplete="email"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => delArr("mails", i)}
-                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
-                  >
-                    X
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addArr("mails")}
-                className="text-sm text-[#5FA92C] font-semibold hover:underline"
-              >
-                + Agregar email
-              </button>
-            </div>
+          {/* Teléfonos */}
+          <div className="mb-6">
+            <label className="font-semibold mb-2 block">Teléfonos</label>
+            {telefonos.map((tel, i) => (
+              <div key={i} className="flex gap-2 mb-2">
+                <input
+                  type="tel"
+                  value={tel.telefono}
+                  onChange={(e) => updateTelefono(i, e.target.value)}
+                  className="p-2 border border-gray-300 rounded w-full"
+                  placeholder="Ej: 1145678901"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeTelefono(i)}
+                  className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
+                >
+                  X
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addTelefono}
+              className="text-sm text-[#5FA92C] font-semibold hover:underline"
+            >
+              + Agregar teléfono
+            </button>
+          </div>
 
-            {/* Direcciones */}
-            <div>
-              <label className="font-semibold mb-2 block">Direcciones</label>
-              {formData.direcciones.map((dir: string, i: number) => (
-                <div key={i} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={dir}
-                    onChange={(e) => setArr("direcciones", i, e.target.value)}
-                    className="p-2 border border-gray-300 rounded w-full"
-                    placeholder={i === 0 ? "Calle 123, Piso/Depto, Localidad" : "Opcional"}
-                    autoComplete="street-address"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => delArr("direcciones", i)}
-                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
-                  >
-                    X
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addArr("direcciones")}
-                className="text-sm text-[#5FA92C] font-semibold hover:underline"
-              >
-                + Agregar dirección
-              </button>
-            </div>
+          {/* Emails */}
+          <div>
+            <label className="font-semibold mb-2 block">Emails</label>
+            {emails.map((mail, i) => (
+              <div key={i} className="flex gap-2 mb-2">
+                <input
+                  type="email"
+                  value={mail.email}
+                  onChange={(e) => updateEmail(i, e.target.value)}
+                  className="p-2 border border-gray-300 rounded w-full"
+                  placeholder="ejemplo@email.com"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeEmail(i)}
+                  className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
+                >
+                  X
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addEmail}
+              className="text-sm text-[#5FA92C] font-semibold hover:underline"
+            >
+              + Agregar email
+            </button>
           </div>
         </div>
 
-        {/* SITUACIONES TERAPÉUTICAS (solo lectura) */}
+        {/* SITUACIONES TERAPÉUTICAS */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Situaciones Terapéuticas
           </h2>
-
-          <div className="space-y-2">
+          
+          <div className="space-y-3">
             {situaciones.map((sit, idx) => (
-              <div key={idx} className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  value={sit.situacion}
-                  onChange={(e) => {
-                    const newSituaciones = [...situaciones];
-                    newSituaciones[idx].situacion = e.target.value;
-                    setSituaciones(newSituaciones);
-                  }}
-                  className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
-                  placeholder="Situación"
-                  disabled
-                />
-                <input
-                  type="text"
-                  value={sit.fechaFinalizacion}
-                  onChange={(e) => {
-                    const newSituaciones = [...situaciones];
-                    newSituaciones[idx].fechaFinalizacion = e.target.value;
-                    setSituaciones(newSituaciones);
-                  }}
-                  className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
-                  placeholder="Fecha estimada de finalización"
-                  disabled
-                />
+              <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center bg-gray-50 p-3 rounded">
+                <div className="flex flex-col">
+                  <label className="text-xs font-semibold mb-1">Situación</label>
+                  <select
+                    value={sit.idSituacion || sit.situacionTerapeutica?.idSituacion || ""}
+                    onChange={(e) => updateSituacion(idx, "idSituacion", e.target.value)}
+                    className="p-2 border border-gray-300 rounded text-sm"
+                  >
+                    {situacionesDisponibles.map(sd => (
+                      <option key={sd.idSituacion} value={sd.idSituacion}>
+                        {sd.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="text-xs font-semibold mb-1">Fecha Inicio</label>
+                  <input
+                    type="date"
+                    value={sit.fechaInicio ? (sit.fechaInicio.includes('/') ? sit.fechaInicio.split('/').reverse().join('-') : sit.fechaInicio) : ''}
+                    onChange={(e) => {
+                      const date = e.target.value.split('-').reverse().join('/');
+                      console.log(`Actualizando fecha inicio a: ${date}`);
+                      updateSituacion(idx, "fechaInicio", date);
+                    }}
+                    className="p-2 border border-gray-300 rounded text-sm"
+                  />
+                </div>
+
+                <div className="flex gap-2 items-end">
+                  <div className="flex flex-col flex-1">
+                    <label className="text-xs font-semibold mb-1">Fecha Fin (opcional)</label>
+                    <input
+                      type="date"
+                      value={sit.fechaFin ? (sit.fechaFin.includes('/') ? sit.fechaFin.split('/').reverse().join('-') : sit.fechaFin) : ''}
+                      onChange={(e) => {
+                        const date = e.target.value ? e.target.value.split('-').reverse().join('/') : null;
+                        console.log(`Actualizando fecha fin a: ${date}`);
+                        updateSituacion(idx, "fechaFin", date);
+                      }}
+                      className="p-2 border border-gray-300 rounded text-sm"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeSituacion(idx)}
+                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
+                  >
+                    X
+                  </button>
+                </div>
               </div>
             ))}
           </div>
+
+          <button
+            type="button"
+            onClick={addSituacion}
+            className="mt-3 text-sm text-[#5FA92C] font-semibold hover:underline"
+            disabled={situacionesDisponibles.length === 0}
+          >
+            + Agregar situación terapéutica
+          </button>
         </div>
 
-        <div className="flex justify-center gap-4 mt-4">
+        {/* BOTONES */}
+        <div className="flex justify-center gap-4 mt-6">
           <button
             onClick={handleSave}
             className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"

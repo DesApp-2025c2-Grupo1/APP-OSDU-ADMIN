@@ -24,6 +24,7 @@ export type Affiliate = {
   }>;
 
   telefonos: Array<{
+    idTelefono: number;
     telefono: string;
   }>;
 
@@ -34,8 +35,18 @@ export type Affiliate = {
 
   fechaNacimiento?: string;
   direccion2?: string;
-  situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>;
+
+  situaciones?: Array<{
+    idSituacionAfiliado: number;
+    fechaInicio: string;
+    fechaFin: string | null;
+    situacionTerapeutica: {
+      idSituacion: number;
+      nombre: string;
+    };
+  }>;
 };
+
 
 interface AffiliatesTableProps {
   affiliates: Affiliate[];
@@ -89,8 +100,10 @@ export function AffiliatesTable({
 
   const handleSaveAffiliate = async (data: any) => {
     try {
+      console.log("Datos que se envían al backend:", JSON.stringify(data, null, 2));
+
       const response = await fetch(
-        `http://localhost:3000/api/affiliates/${data.dni}`,
+        `http://localhost:3000/api/affiliates/${selectedAffiliate?.dni}`,
         {
           method: "PUT",
           headers: {
@@ -102,18 +115,34 @@ export function AffiliatesTable({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error("❌ Error del servidor:", errorData);
         throw new Error(errorData.message || "Error al actualizar afiliado");
       }
 
-      const result = await response.json();
-      onAffiliateUpdated?.(data);
+      console.log("✅ Respuesta exitosa del servidor");
+
+      // Recargar el afiliado actualizado
+      const updatedResponse = await fetch(
+        `http://localhost:3000/api/affiliates/affiliate/${selectedAffiliate?.dni}`
+      );
+
+      if (updatedResponse.ok) {
+        const updatedData = await updatedResponse.json();
+        console.log("📦 Afiliado actualizado:", updatedData);
+        onAffiliateUpdated?.(updatedData.affiliates);
+      }
+
       setShowEditPopup(false);
       setSelectedAffiliate(null);
 
     } catch (error) {
       console.error("❌ Error al actualizar afiliado:", error);
+      alert("Error al actualizar el afiliado. Por favor, intente nuevamente.");
     }
   };
+
+
+
 
   // ✅ Eliminación inmediata sin alertas
   const handleConfirmDelete = async () => {
