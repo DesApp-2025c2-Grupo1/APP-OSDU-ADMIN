@@ -179,9 +179,15 @@ export function Home() {
 
       if (!response.ok) throw new Error("Error al actualizar afiliado");
 
-      setAffiliates((prev) =>
-        prev.map((a) => (a.dni === updatedAffiliate.dni ? updatedAffiliate : a))
-      );
+      // Recargar datos completos del afiliado
+      const updatedResponse = await fetch(`http://localhost:3000/api/affiliates/affiliate/${updatedAffiliate.dni}`);
+      if (updatedResponse.ok) {
+        const updatedData = await updatedResponse.json();
+
+        setAffiliates((prev) =>
+          prev.map((a) => (a.dni === updatedAffiliate.dni ? updatedData.affiliates : a))
+        );
+      }
 
       setShowEditPopup(false);
       setSelectedAffiliate(null);
@@ -191,6 +197,7 @@ export function Home() {
       showToast("Error al actualizar el afiliado");
     }
   };
+
 
   return (
     <div className="w-full p-6 space-y-4">
