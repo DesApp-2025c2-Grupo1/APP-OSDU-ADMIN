@@ -49,11 +49,13 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   const [situacionesDisponibles, setSituacionesDisponibles] = useState<SituacionDisponible[]>([]);
   const [planesDisponibles, setPlanesDisponibles] = useState<Plan[]>([]);
 
-  //Cargar datos del afiliado, situaciones y planes disponibles
+  // Cargar datos del afiliado, situaciones y planes disponibles
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        
+        console.log("🔍 Cargando datos para DNI:", affiliate.dni);
         
         // Cargar datos del afiliado
         const [affiliateRes, situacionesRes, planesRes] = await Promise.all([
@@ -70,34 +72,58 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         const situacionesData = await situacionesRes.json();
         const planesData = await planesRes.json();
 
+        console.log("📦 Datos recibidos del afiliado:", affiliateData);
+        console.log("📋 Situaciones disponibles:", situacionesData);
+        console.log("📋 Planes disponibles:", planesData);
+
         const aff = affiliateData.affiliates;
+
+        if (!aff) {
+          throw new Error("No se encontraron datos del afiliado");
+        }
+
+        // ✅ Manejar el plan correctamente (puede ser null, objeto, o número)
+        let planId = 0;
+        if (aff.plan) {
+          if (typeof aff.plan === 'object' && aff.plan.idPlan) {
+            planId = aff.plan.idPlan;
+          } else if (typeof aff.plan === 'number') {
+            planId = aff.plan;
+          }
+        }
 
         setFormData({
           nombre: aff.nombre || "",
           apellido: aff.apellido || "",
           fechaNacimiento: aff.fecha_nacimiento || "",
           direccion: aff.direccion || "",
-          idPlan: aff.plan?.idPlan || 0,
+          idPlan: planId,
         });
 
+        // ✅ Teléfonos
         setTelefonos(
           aff.telefonos && aff.telefonos.length > 0
             ? aff.telefonos.map((t: any) => ({ idTelefono: t.idTelefono, telefono: t.telefono }))
             : [{ telefono: "" }]
         );
 
+        // ✅ Emails
         setEmails(
           aff.email && aff.email.length > 0
             ? aff.email.map((e: any) => ({ idEmail: e.idEmail, email: e.email }))
             : [{ email: "" }]
         );
 
+        // ✅ Situaciones terapéuticas
+        console.log("🏥 Situaciones del afiliado:", aff.situaciones);
         setSituaciones(aff.situaciones || []);
+        
         setSituacionesDisponibles(situacionesData.situaciones || []);
         setPlanesDisponibles(planesData.plans || []);
 
       } catch (error) {
-        console.error("Error al cargar datos:", error);
+        console.error("❌ Error al cargar datos:", error);
+        alert(`Error al cargar datos: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       } finally {
         setLoading(false);
       }
@@ -114,88 +140,88 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   const handleSave = () => {
     const newErrors: Record<string, string> = {};
 
-  // Validar nombre
-  if (!formData.nombre.trim()) {
-    newErrors.nombre = "El nombre es obligatorio";
-  } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
-    newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
-  }
+    // Validar nombre
+    if (!formData.nombre.trim()) {
+      newErrors.nombre = "El nombre es obligatorio";
+    } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
+      newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
+    }
 
-  // Validar apellido
-  if (!formData.apellido.trim()) {
-    newErrors.apellido = "El apellido es obligatorio";
-  } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
-    newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
-  }
+    // Validar apellido
+    if (!formData.apellido.trim()) {
+      newErrors.apellido = "El apellido es obligatorio";
+    } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
+      newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
+    }
 
-  // Validar fecha de nacimiento
-  if (!formData.fechaNacimiento) {
-    newErrors.fechaNacimiento = "La fecha de nacimiento es obligatoria";
-  } else {
-    const partes = formData.fechaNacimiento.split('/');
-    if (partes.length === 3) {
-      const fecha = new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
-      const hoy = new Date();
-      if (fecha > hoy) {
-        newErrors.fechaNacimiento = "La fecha no puede ser futura";
+    // Validar fecha de nacimiento
+    if (!formData.fechaNacimiento) {
+      newErrors.fechaNacimiento = "La fecha de nacimiento es obligatoria";
+    } else {
+      const partes = formData.fechaNacimiento.split('/');
+      if (partes.length === 3) {
+        const fecha = new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
+        const hoy = new Date();
+        if (fecha > hoy) {
+          newErrors.fechaNacimiento = "La fecha no puede ser futura";
+        }
       }
     }
-  }
 
-  // Validar plan
-  if (!formData.idPlan || formData.idPlan === 0) {
-    newErrors.idPlan = "Debe seleccionar un plan";
-  }
-
-  // Validar emails
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  emails.forEach((mail, idx) => {
-    if (mail.email && !emailRegex.test(mail.email)) {
-      newErrors[`email${idx}`] = "Formato de email inválido";
+    // Validar plan
+    if (!formData.idPlan || formData.idPlan === 0) {
+      newErrors.idPlan = "Debe seleccionar un plan";
     }
-  });
 
-  // Validar teléfonos
-  telefonos.forEach((tel, idx) => {
-    if (tel.telefono && !/^[0-9]{7,15}$/.test(tel.telefono.replace(/\s/g, ''))) {
-      newErrors[`telefono${idx}`] = "El teléfono debe tener entre 7 y 15 dígitos";
+    // Validar emails
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    emails.forEach((mail, idx) => {
+      if (mail.email && !emailRegex.test(mail.email)) {
+        newErrors[`email${idx}`] = "Formato de email inválido";
+      }
+    });
+
+    // Validar teléfonos
+    telefonos.forEach((tel, idx) => {
+      if (tel.telefono && !/^[0-9]{7,15}$/.test(tel.telefono.replace(/\s/g, ''))) {
+        newErrors[`telefono${idx}`] = "El teléfono debe tener entre 7 y 15 dígitos";
+      }
+    });
+
+    // Si hay errores, mostrarlos y no continuar
+    if (Object.keys(newErrors).length > 0) {
+      alert("Por favor corrija los errores antes de guardar:\n" + Object.values(newErrors).join('\n'));
+      return;
     }
-  });
 
-  // Si hay errores, mostrarlos y no continuar
-  if (Object.keys(newErrors).length > 0) {
-    alert("Por favor corrija los errores antes de guardar:\n" + Object.values(newErrors).join('\n'));
-    return;
-  }
+    // Si no hay errores, proceder con el guardado
+    const payload = {
+      nombre: formData.nombre,
+      apellido: formData.apellido,
+      fecha_nacimiento: formData.fechaNacimiento,
+      direccion: formData.direccion,
+      idPlan: formData.idPlan,
+      telefonos: telefonos.filter(t => t.telefono.trim() !== ""),
+      emails: emails.filter(e => e.email.trim() !== ""),
+      situaciones: situaciones.map(s => ({
+        idSituacionAfiliado: s.idSituacionAfiliado,
+        idSituacion: s.idSituacion || s.situacionTerapeutica?.idSituacion,
+        fechaInicio: s.fechaInicio,
+        fechaFin: s.fechaFin
+      })),
+      telefonosEliminados,
+      emailsEliminados,
+      situacionesEliminadas
+    };
 
-  // Si no hay errores, proceder con el guardado
-  const payload = {
-    nombre: formData.nombre,
-    apellido: formData.apellido,
-    fecha_nacimiento: formData.fechaNacimiento,
-    direccion: formData.direccion,
-    idPlan: formData.idPlan,
-    telefonos: telefonos.filter(t => t.telefono.trim() !== ""),
-    emails: emails.filter(e => e.email.trim() !== ""),
-    situaciones: situaciones.map(s => ({
-      idSituacionAfiliado: s.idSituacionAfiliado,
-      idSituacion: s.idSituacion || s.situacionTerapeutica?.idSituacion,
-      fechaInicio: s.fechaInicio,
-      fechaFin: s.fechaFin
-    })),
-    telefonosEliminados,
-    emailsEliminados,
-    situacionesEliminadas
+    console.log("📤 Payload completo que se envía:", payload);
+    console.log("🗑️ Situaciones a eliminar:", situacionesEliminadas);
+    console.log("📋 Situaciones actuales:", situaciones);
+
+    onSave(payload);
   };
 
-  console.log("Payload completo que se envía:", payload);
-  console.log("Situaciones a eliminar:", situacionesEliminadas);
-  console.log("Situaciones actuales:", situaciones);
-
-  onSave(payload);
-};
-
-  //TELÉFONOS
+  // TELÉFONOS
   const addTelefono = () => setTelefonos(prev => [...prev, { telefono: "" }]);
   const removeTelefono = (idx: number) => {
     const tel = telefonos[idx];
@@ -208,7 +234,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
     setTelefonos(prev => prev.map((t, i) => (i === idx ? { ...t, telefono: value } : t)));
   };
 
-  //EMAILS
+  // EMAILS
   const addEmail = () => setEmails(prev => [...prev, { email: "" }]);
   const removeEmail = (idx: number) => {
     const mail = emails[idx];
@@ -221,7 +247,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
     setEmails(prev => prev.map((e, i) => (i === idx ? { ...e, email: value } : e)));
   };
 
-  //SITUACIONES
+  // SITUACIONES
   const addSituacion = () => {
     if (situacionesDisponibles.length === 0) return;
     
@@ -241,30 +267,28 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
 
   const removeSituacion = (idx: number) => {
     const sit = situaciones[idx];
-    console.log("Eliminando situación:", sit);
+    console.log("🗑️ Eliminando situación:", sit);
     
     if (sit.idSituacionAfiliado) {
-      // Si tiene ID, es una situación existente - marcarla para eliminar
       setSituacionesEliminadas(prev => {
         const newList = [...prev, sit.idSituacionAfiliado!];
-        console.log("Situaciones marcadas para eliminar:", newList);
+        console.log("📝 Situaciones marcadas para eliminar:", newList);
         return newList;
       });
     }
     
-    // Remover del array visual
     setSituaciones(prev => prev.filter((_, i) => i !== idx));
   };
 
   const updateSituacion = (idx: number, field: string, value: any) => {
-    console.log(`Actualizando situación ${idx}, campo: ${field}, valor:`, value);
+    console.log(`✏️ Actualizando situación ${idx}, campo: ${field}, valor:`, value);
     
     setSituaciones(prev => prev.map((s, i) => {
       if (i !== idx) return s;
       
       if (field === "idSituacion") {
         const sitSelected = situacionesDisponibles.find(sd => sd.idSituacion === parseInt(value));
-        console.log("Cambiando tipo de situación a:", sitSelected);
+        console.log("🔄 Cambiando tipo de situación a:", sitSelected);
         
         return {
           ...s,
@@ -361,7 +385,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
               <label className="font-semibold mb-1 bg-gray-100 px-2">Fecha nacimiento (*)</label>
               <input
                 type="date"
-                value={formData.fechaNacimiento.split('/').reverse().join('-')}
+                value={formData.fechaNacimiento ? (formData.fechaNacimiento.includes('/') ? formData.fechaNacimiento.split('/').reverse().join('-') : formData.fechaNacimiento) : ''}
                 onChange={(e) => {
                   const date = e.target.value.split('-').reverse().join('/');
                   setFormData(prev => ({ ...prev, fechaNacimiento: date }));
@@ -474,6 +498,12 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
           </h2>
           
           <div className="space-y-3">
+            {situaciones.length === 0 && (
+              <p className="text-sm text-gray-500 text-center py-4">
+                No hay situaciones terapéuticas registradas
+              </p>
+            )}
+
             {situaciones.map((sit, idx) => (
               <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center bg-gray-50 p-3 rounded">
                 <div className="flex flex-col">
@@ -498,7 +528,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                     value={sit.fechaInicio ? (sit.fechaInicio.includes('/') ? sit.fechaInicio.split('/').reverse().join('-') : sit.fechaInicio) : ''}
                     onChange={(e) => {
                       const date = e.target.value.split('-').reverse().join('/');
-                      console.log(`Actualizando fecha inicio a: ${date}`);
                       updateSituacion(idx, "fechaInicio", date);
                     }}
                     className="p-2 border border-gray-300 rounded text-sm"
@@ -513,7 +542,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
                       value={sit.fechaFin ? (sit.fechaFin.includes('/') ? sit.fechaFin.split('/').reverse().join('-') : sit.fechaFin) : ''}
                       onChange={(e) => {
                         const date = e.target.value ? e.target.value.split('-').reverse().join('/') : null;
-                        console.log(`Actualizando fecha fin a: ${date}`);
                         updateSituacion(idx, "fechaFin", date);
                       }}
                       className="p-2 border border-gray-300 rounded text-sm"

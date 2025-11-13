@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import type { Affiliate } from "../components/AffiliatesTable";
 import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup";
 import { EditAffiliatePopup } from "../components/EditAffiliatePopup";
-import { AddFamiliarMember } from "../components/AddAffiliateMember";
 import { OptionsMenu } from "../components/OptionsMenu";
 import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
 import ScheduledSuccessPopup from "../components/BajaExitosaPopup";
@@ -37,9 +36,28 @@ interface AffiliateFromAPI {
   }>;
 }
 
-// Tipo para la respuesta del endpoint
 interface FamilyGroupAPIResponse {
   affiliates: AffiliateFromAPI[];
+}
+
+// ✅ Función para transformar correctamente
+function transformAffiliate(apiAffiliate: AffiliateFromAPI): Affiliate {
+  return {
+    grupoFamiliar: apiAffiliate.grupoFamiliar,
+    tipoDocumento: apiAffiliate.tipoDocumento,
+    apellido: apiAffiliate.apellido,
+    credencial: apiAffiliate.credencial,
+    fecha_nacimiento: apiAffiliate.fecha_nacimiento || "",
+    fechaNacimiento: apiAffiliate.fecha_nacimiento || "",
+    direccion: apiAffiliate.direccion,
+    dni: apiAffiliate.dni,
+    nombre: apiAffiliate.nombre,
+    parentesco: apiAffiliate.parentesco,
+    email: apiAffiliate.email || [],
+    telefonos: apiAffiliate.telefonos || [],
+    plan: apiAffiliate.plan,
+    situaciones: apiAffiliate.situaciones || [],
+  };
 }
 
 export function GrupoFamiliar() {
@@ -53,19 +71,17 @@ export function GrupoFamiliar() {
   const [showAddFamiliarPopup, setShowAddFamiliarPopup] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Estados para datos del API
   const [members, setMembers] = useState<Affiliate[]>([]);
   const [planNombre, setPlanNombre] = useState<string>("");
+  const [planId, setPlanId] = useState<number | null>(null);
   const [grupoFamiliarId, setGrupoFamiliarId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // popup de éxito
   const [showSuccess, setShowSuccess] = useState(false);
   const [successISO, setSuccessISO] = useState<string>("");
   const [successName, setSuccessName] = useState<string>("");
 
-  // Fetch del grupo familiar
   const fetchFamilyGroup = async () => {
     if (!dni) {
       setError("DNI no proporcionado");
@@ -84,7 +100,7 @@ export function GrupoFamiliar() {
       }
 
       const data: FamilyGroupAPIResponse = await response.json();
-      console.log("Grupo familiar cargado:", data);
+      console.log("✅ Grupo familiar cargado:", data);
 
       if (!data.affiliates || data.affiliates.length === 0) {
         setError("No se encontraron afiliados en el grupo familiar");
@@ -92,29 +108,15 @@ export function GrupoFamiliar() {
         return;
       }
 
-      // Transformar y establecer miembros
-      const transformedMembers: Affiliate[] = data.affiliates.map(apiAffiliate => ({
-        grupoFamiliar: apiAffiliate.grupoFamiliar,
-        tipoDocumento: apiAffiliate.tipoDocumento,
-        apellido: apiAffiliate.apellido,
-        credencial: apiAffiliate.credencial,
-        fecha_nacimiento: apiAffiliate.fecha_nacimiento || "",
-        fechaNacimiento: apiAffiliate.fecha_nacimiento || "",
-        direccion: apiAffiliate.direccion,
-        dni: apiAffiliate.dni,
-        nombre: apiAffiliate.nombre,
-        parentesco: apiAffiliate.parentesco,
-        email: apiAffiliate.email || [],
-        telefonos: apiAffiliate.telefonos || [],
-        plan: apiAffiliate.plan,
-        situaciones: apiAffiliate.situaciones || []
-      }));
-
+      const transformedMembers = data.affiliates.map(transformAffiliate);
+      console.log("✅ Miembros transformados:", transformedMembers);
+      
       setMembers(transformedMembers);
       setPlanNombre(data.affiliates[0].plan.nombre);
+      setPlanId(data.affiliates[0].plan.idPlan);
       setGrupoFamiliarId(data.affiliates[0].grupoFamiliar);
     } catch (err) {
-      console.error("Error al cargar grupo familiar:", err);
+      console.error("❌ Error al cargar grupo familiar:", err);
       setError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
       setLoading(false);
@@ -125,7 +127,6 @@ export function GrupoFamiliar() {
     fetchFamilyGroup();
   }, [dni]);
 
-  // Obtener el titular
   const titular = useMemo(() => {
     return members.find(m => m.parentesco === "Titular") || members[0] || null;
   }, [members]);
@@ -151,36 +152,63 @@ export function GrupoFamiliar() {
 
   const handleSaveFamiliar = async (nuevoFamiliar: any) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/affiliates`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...nuevoFamiliar,
-          dni: dniTitular,
-        }),
-      });
+      console.log("📤 Guardando nuevo familiar con planId:", planId);
+      
+      const payload = {
+        dni: nuevoFamiliar.dni || nuevoFamiliar.nroDocumento,
+        tipoDocumento: nuevoFamiliar.tipoDocumento,
+        nombre: nuevoFamiliar.nombre,
+        apellido: nuevoFamiliar.apellido,
+        fecha_nacimiento: nuevoFamiliar.fecha_nacimiento || nuevoFamiliar.fechaNacimiento,
+        parentesco: nuevoFamiliar.parentesco,
+        direccion: nuevoFamiliar.direccion || "",
+        plan: planId,
+        emails: nuevoFamiliar.emails || (nuevoFamiliar.email ? [{ email: nuevoFamiliar.email }] : []),
+        telefonos: nuevoFamiliar.telefonos || (nuevoFamiliar.telefono ? [{ telefono: nuevoFamiliar.telefono }] : []),
+        situaciones: nuevoFamiliar.situaciones || [],
+        grupoFamiliar: grupoFamiliarId,
+      };
 
-      if (!response.ok) throw new Error("Error al agregar familiar");
+      console.log("📤 Payload para agregar familiar:", JSON.stringify(payload, null, 2));
+
+      const response = await fetch(
+        `http://localhost:3000/api/affiliates/family/${dniTitular}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("❌ Error al agregar familiar:", errorData);
+        throw new Error(errorData.message || "Error al agregar familiar");
+      }
 
       const result = await response.json();
-      console.log("Nuevo familiar guardado:", result);
+      console.log("✅ Nuevo familiar guardado:", result);
 
-      // Recargar datos del grupo familiar
       await fetchFamilyGroup();
-
       setShowAddFamiliarPopup(false);
     } catch (error) {
-      console.error("Error al guardar familiar:", error);
-      alert("Error al agregar el familiar. Por favor, intenta nuevamente.");
+      console.error("❌ Error al guardar familiar:", error);
+      alert(`Error al agregar el familiar: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
-    if (option === "Editar") {
-      if (!affiliate) {
-        console.error("❌ Afiliado nulo al intentar editar");
+    const opt = option.trim().toLowerCase();
+    
+    console.log("🔍 Opción seleccionada:", opt);
+    console.log("👤 Afiliado seleccionado:", affiliate);
+
+    if (opt === "editar") {
+      if (!affiliate || !affiliate.dni) {
+        console.error("❌ Afiliado nulo o sin DNI al intentar editar");
+        alert("Error: No se pueden cargar los datos del afiliado");
         return;
       }
       setSelectedAffiliate(affiliate);
@@ -188,9 +216,10 @@ export function GrupoFamiliar() {
       return;
     }
 
-    if (option === "Ver detalles") {
-      if (!affiliate) {
-        console.error("❌ Afiliado nulo al intentar ver detalles");
+    if (opt === "ver detalles") {
+      if (!affiliate || !affiliate.dni) {
+        console.error("❌ Afiliado nulo o sin DNI al intentar ver detalles");
+        alert("Error: No se pueden cargar los datos del afiliado");
         return;
       }
       setSelectedAffiliate(affiliate);
@@ -198,9 +227,10 @@ export function GrupoFamiliar() {
       return;
     }
 
-    if (option === "Dar de baja") {
-      if (!affiliate) {
-        console.error("❌ Afiliado nulo al intentar eliminar");
+    if (opt === "dar de baja") {
+      if (!affiliate || !affiliate.dni) {
+        console.error("❌ Afiliado nulo o sin DNI al intentar eliminar");
+        alert("Error: No se puede eliminar el afiliado");
         return;
       }
       setSelectedAffiliate(affiliate);
@@ -209,12 +239,14 @@ export function GrupoFamiliar() {
     }
   };
 
-
   const handleSaveAffiliate = async (data: any) => {
-    if (!selectedAffiliate) return;
+    if (!selectedAffiliate) {
+      console.error("❌ No hay afiliado seleccionado");
+      return;
+    }
 
     try {
-      console.log("Datos que se envían al backend:", JSON.stringify(data, null, 2));
+      console.log("📤 Datos que se envían al backend:", JSON.stringify(data, null, 2));
 
       const response = await fetch(
         `http://localhost:3000/api/affiliates/${selectedAffiliate.dni}`,
@@ -234,16 +266,13 @@ export function GrupoFamiliar() {
       }
 
       console.log("✅ Respuesta exitosa del servidor");
-
-      // Recargar el grupo familiar completo
       await fetchFamilyGroup();
-
       setShowEditPopup(false);
       setSelectedAffiliate(null);
 
     } catch (error) {
       console.error("❌ Error al actualizar afiliado:", error);
-      alert("Error al actualizar el afiliado. Por favor, intente nuevamente.");
+      alert(`Error al actualizar el afiliado: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
@@ -252,29 +281,39 @@ export function GrupoFamiliar() {
     setIsDeleting(true);
 
     try {
-      const response = await fetch(`http://localhost:3000/api/affiliates/${selectedAffiliate.dni}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      console.log("🗑️ Intentando eliminar afiliado:", selectedAffiliate);
+      
+      const response = await fetch(
+        `http://localhost:3000/api/affiliates/${selectedAffiliate.dni}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("📡 Respuesta del servidor:", response.status, response.statusText);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error("❌ Error del servidor:", errorData);
         throw new Error(errorData.message || "No se pudo eliminar el afiliado");
       }
 
-      console.log("Afiliado dado de baja:", selectedAffiliate);
+      console.log("✅ Afiliado eliminado exitosamente");
 
       // Recargar el grupo familiar
       await fetchFamilyGroup();
 
       setShowDeleteDialog(false);
       setSelectedAffiliate(null);
+      
+      alert(`Afiliado ${selectedAffiliate.nombre} ${selectedAffiliate.apellido} eliminado correctamente`);
 
     } catch (error) {
       console.error("❌ Error al eliminar afiliado:", error);
-      alert("Error al eliminar el afiliado.");
+      alert(`Error al eliminar el afiliado: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setIsDeleting(false);
     }
@@ -298,7 +337,6 @@ export function GrupoFamiliar() {
       setSuccessISO(isoDateTime);
       setSuccessName(`${selectedAffiliate.nombre} ${selectedAffiliate.apellido}`);
       setShowSuccess(true);
-
       setShowDeleteDialog(false);
       setSelectedAffiliate(null);
     } catch (error) {
@@ -306,7 +344,6 @@ export function GrupoFamiliar() {
     }
   };
 
-  // Paginación mobile
   const nonTitularMembers = useMemo(
     () => (titular ? members.filter((m) => m.credencial !== titular.credencial) : members),
     [members, titular]
@@ -319,7 +356,6 @@ export function GrupoFamiliar() {
   const endIndex = startIndex + itemsPerPage;
   const currentMembers = nonTitularMembers.slice(startIndex, endIndex);
 
-  // Estado de carga
   if (loading) {
     return (
       <div className="w-full p-6">
@@ -333,7 +369,6 @@ export function GrupoFamiliar() {
     );
   }
 
-  // Estado de error
   if (error) {
     return (
       <div className="w-full p-6">
@@ -351,36 +386,23 @@ export function GrupoFamiliar() {
     );
   }
 
-  // Sin datos
   if (!titular || members.length === 0) {
     return (
       <div className="w-full p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Ver Grupo Familiar</h1>
-
           <div className="hidden md:flex items-center gap-4 [&>*]:w-36 [&>*]:h-12">
             <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
             <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
           </div>
         </div>
-
         <div className="md:hidden grid grid-cols-2 gap-3 mb-4 [&>*]:w-full [&>*]:h-12">
           <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
           <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
         </div>
-
         <div className="text-center py-8">
           <p className="text-gray-500">No hay datos del grupo familiar</p>
         </div>
-
-        {showAddFamiliarPopup && (
-          <AddFamiliarMember
-            grupoId={dniTitular}
-            planFijo={planNombre}
-            onClose={() => setShowAddFamiliarPopup(false)}
-            onSave={handleSaveFamiliar}
-          />
-        )}
       </div>
     );
   }
@@ -389,7 +411,6 @@ export function GrupoFamiliar() {
     <div className="w-full p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Ver Grupo Familiar</h1>
-
         <div className="hidden md:flex items-center gap-4 [&>*]:w-36 [&>*]:h-12">
           <ButtonVolver text="Volver" onClick={() => navigate("/home")} />
           <ButtonAddAffiliate text="Agregar Familiar" onClick={handleAgregarFamiliar} />
@@ -419,7 +440,7 @@ export function GrupoFamiliar() {
           </div>
           <div>
             <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
-            <div className="text-sm">{titular.fecha_nacimiento || titular.fechaNacimiento || "-"}</div>
+            <div className="text-sm">{titular.fecha_nacimiento || titular.fechaNacimiento || "N/A"}</div>
           </div>
           <div>
             <div className="text-xs text-gray-500 uppercase">Plan</div>
@@ -451,7 +472,7 @@ export function GrupoFamiliar() {
                 <td className="px-4 py-2 text-sm">{m.dni}</td>
                 <td className="px-4 py-2 text-sm">{m.nombre}</td>
                 <td className="px-4 py-2 text-sm">{m.apellido}</td>
-                <td className="px-4 py-2 text-sm">{m.fecha_nacimiento || m.fechaNacimiento || "-"}</td>
+                <td className="px-4 py-2 text-sm">{m.fecha_nacimiento || m.fechaNacimiento || "N/A"}</td>
                 <td className="px-4 py-2 text-sm">{m.direccion}</td>
                 <td className="px-4 py-2 text-sm">{determinarParentesco(m)}</td>
                 <td className="px-4 py-2 text-center">
@@ -489,7 +510,7 @@ export function GrupoFamiliar() {
               </div>
               <div>
                 <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
-                <div className="text-sm">{m.fecha_nacimiento || m.fechaNacimiento || "-"}</div>
+                <div className="text-sm">{m.fecha_nacimiento || m.fechaNacimiento || "N/A"}</div>
               </div>
               <div>
                 <div className="text-xs text-gray-500 uppercase">Nombre</div>
@@ -546,8 +567,6 @@ export function GrupoFamiliar() {
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={safePage === 1}
             className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Anterior"
-            title="Anterior"
           >
             <NavigateBeforeIcon fontSize="small" />
           </button>
@@ -555,8 +574,6 @@ export function GrupoFamiliar() {
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={safePage === totalPages}
             className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Siguiente"
-            title="Siguiente"
           >
             <NavigateNextIcon fontSize="small" />
           </button>
@@ -565,9 +582,11 @@ export function GrupoFamiliar() {
 
       {/* Popups */}
       {showAddFamiliarPopup && (
-        <AddFamiliarMember
-          grupoId={dniTitular}
+        <AddFamiliarPopup
+          grupoId={grupoFamiliarId}
+          dniTitular={dniTitular}
           planFijo={planNombre}
+          planId={planId}
           onClose={() => setShowAddFamiliarPopup(false)}
           onSave={handleSaveFamiliar}
         />
@@ -576,7 +595,10 @@ export function GrupoFamiliar() {
       {showEditPopup && selectedAffiliate && (
         <EditAffiliatePopup
           affiliate={selectedAffiliate}
-          onClose={() => setShowEditPopup(false)}
+          onClose={() => {
+            setShowEditPopup(false);
+            setSelectedAffiliate(null);
+          }}
           onSave={handleSaveAffiliate}
         />
       )}
@@ -584,16 +606,28 @@ export function GrupoFamiliar() {
       {showViewPopup && selectedAffiliate && (
         <ViewAffiliatePopup
           affiliate={selectedAffiliate}
-          onClose={() => setShowViewPopup(false)}
+          onClose={() => {
+            setShowViewPopup(false);
+            setSelectedAffiliate(null);
+          }}
         />
       )}
 
       {showDeleteDialog && selectedAffiliate && (
         <ConfirmDeleteDialog
-          affiliate={selectedAffiliate}
-          onClose={() => setShowDeleteDialog(false)}
+          open={showDeleteDialog}
+          onClose={() => {
+            if (!isDeleting) {
+              setShowDeleteDialog(false);
+              setSelectedAffiliate(null);
+            }
+          }}
           onConfirm={handleConfirmDelete}
-          onScheduleDelete={handleScheduleDelete}
+          onSchedule={handleScheduleDelete}
+          affiliateName={selectedAffiliate.nombre}
+          affiliateSurname={selectedAffiliate.apellido}
+          affiliateDni={selectedAffiliate.dni}
+          affiliateCredencial={selectedAffiliate.credencial}
           isDeleting={isDeleting}
         />
       )}
@@ -604,6 +638,281 @@ export function GrupoFamiliar() {
         fechaISO={successISO}
         nombre={successName}
       />
+    </div>
+  );
+}
+
+/* ====== AddFamiliarPopup Component ====== */
+interface AddFamiliarPopupProps {
+  grupoId: number | null;
+  dniTitular: string;
+  planFijo: string;
+  planId: number | null;
+  onClose: () => void;
+  onSave: (familiar: any) => void;
+}
+
+function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, onClose, onSave }: AddFamiliarPopupProps) {
+  const [formData, setFormData] = useState({
+    tipoDocumento: "DNI",
+    nroDocumento: "",
+    nombre: "",
+    apellido: "",
+    fechaNacimiento: "",
+    parentesco: "Hijo",
+    telefono: "",
+    email: "",
+    direccion: "",
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.nroDocumento?.trim()) {
+      newErrors.nroDocumento = "Requerido";
+    } else if (!/^[0-9]{7,8}$/.test(formData.nroDocumento)) {
+      newErrors.nroDocumento = "El DNI debe tener 7 u 8 dígitos numéricos";
+    }
+
+    if (!formData.nombre?.trim()) {
+      newErrors.nombre = "Requerido";
+    } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
+      newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
+    }
+
+    if (!formData.apellido?.trim()) {
+      newErrors.apellido = "Requerido";
+    } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
+      newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
+    }
+
+    if (!formData.fechaNacimiento) {
+      newErrors.fechaNacimiento = "Requerido";
+    } else {
+      const fechaNac = new Date(formData.fechaNacimiento);
+      const hoy = new Date();
+      if (fechaNac > hoy) {
+        newErrors.fechaNacimiento = "La fecha no puede ser futura";
+      }
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email)) {
+      newErrors.email = "Formato de email inválido";
+    }
+
+    if (formData.telefono && !/^[0-9]{7,15}$/.test(formData.telefono.replace(/\s/g, ''))) {
+      newErrors.telefono = "El teléfono debe tener entre 7 y 15 dígitos";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validate()) return;
+
+    const payload = {
+      dni: formData.nroDocumento,
+      tipoDocumento: formData.tipoDocumento,
+      nombre: formData.nombre,
+      apellido: formData.apellido,
+      fecha_nacimiento: formData.fechaNacimiento,
+      parentesco: formData.parentesco,
+      direccion: formData.direccion || "",
+      emails: formData.email ? [{ email: formData.email }] : [],
+      telefonos: formData.telefono ? [{ telefono: formData.telefono }] : [],
+      situaciones: [],
+    };
+
+    console.log("📤 Payload para agregar familiar:", payload);
+    onSave(payload);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+      <div className="bg-white rounded-lg w-[90%] max-w-2xl max-h-[90vh] overflow-y-auto p-6 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800">
+          ✕
+        </button>
+
+        <h1 className="text-2xl font-semibold text-gray-800 mb-6">
+          Agregar Familiar al Grupo
+        </h1>
+
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-blue-800 font-semibold">
+            Plan del grupo familiar: <span className="text-green-600">{planFijo}</span>
+          </p>
+          <p className="text-blue-600 text-sm">
+            Todos los miembros del grupo familiar comparten el mismo plan médico.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1">Tipo Documento *</label>
+              <select
+                name="tipoDocumento"
+                value={formData.tipoDocumento}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              >
+                <option value="DNI">DNI</option>
+                <option value="CUIL">CUIL</option>
+                <option value="CUIT">CUIT</option>
+                <option value="DOCUMENTO EXTRANJERO">DOCUMENTO EXTRANJERO</option>
+                <option value="CDI">CDI</option>
+                <option value="Pasaporte">Pasaporte</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1">Nro Documento *</label>
+              <input
+                type="text"
+                name="nroDocumento"
+                value={formData.nroDocumento}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                required
+              />
+              {errors.nroDocumento && (
+                <p className="text-red-500 text-xs mt-1">{errors.nroDocumento}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1">Nombres *</label>
+              <input
+                type="text"
+                name="nombre"
+                value={formData.nombre}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                required
+              />
+              {errors.nombre && (
+                <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1">Apellidos *</label>
+              <input
+                type="text"
+                name="apellido"
+                value={formData.apellido}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                required
+              />
+              {errors.apellido && (
+                <p className="text-red-500 text-xs mt-1">{errors.apellido}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1">Fecha Nacimiento *</label>
+              <input
+                type="date"
+                name="fechaNacimiento"
+                value={formData.fechaNacimiento}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                required
+              />
+              {errors.fechaNacimiento && (
+                <p className="text-red-500 text-xs mt-1">{errors.fechaNacimiento}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1">Parentesco *</label>
+              <select
+                name="parentesco"
+                value={formData.parentesco}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              >
+                <option value="Cónyuge">Cónyuge</option>
+                <option value="Hijo">Hijo</option>
+                <option value="Hija">Hija</option>
+                <option value="Familiar a cargo">Familiar a cargo</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1">Teléfono</label>
+              <input
+                type="text"
+                name="telefono"
+                value={formData.telefono}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                placeholder="Ej: 1145678901"
+              />
+              {errors.telefono && (
+                <p className="text-red-500 text-xs mt-1">{errors.telefono}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                placeholder="ejemplo@email.com"
+              />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col col-span-2">
+              <label className="font-semibold mb-1">Dirección</label>
+              <input
+                type="text"
+                name="direccion"
+                value={formData.direccion}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+                placeholder="Calle, número, ciudad"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-center gap-4 mt-6">
+            <button
+              type="submit"
+              className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
+            >
+              Guardar Familiar
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
