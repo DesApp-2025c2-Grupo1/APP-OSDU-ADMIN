@@ -1,8 +1,14 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
-interface Situacion {
-  situacion: string;
-  fechaFinalizacion: string;
+interface SituacionTerapeutica {
+  idSituacionAfiliado?: number;
+  idSituacion?: number;
+  fechaInicio: string;
+  fechaFin: string | null;
+  situacionTerapeutica?: {
+    idSituacion: number;
+    nombre: string;
+  };
 }
 
 interface Plan {
@@ -27,12 +33,14 @@ interface AffiliateType {
   nombre: string;
   apellido: string;
   fechaNacimiento?: string;
+  fecha_nacimiento?: string;
   plan?: Plan | string | number;
   planMedico?: string;
   tipoDocumento?: string;
   parentesco?: string;
-  situaciones?: Situacion[];
+  situaciones?: SituacionTerapeutica[];
   telefono?: string | Telefono[];
+  telefonos?: Telefono[];
   email?: string | Email[];
   direccion?: string;
 }
@@ -43,10 +51,37 @@ interface ViewAffiliatePopupProps {
 }
 
 export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupProps) {
-  const determinarParentesco = (affiliate: AffiliateType) => {
-    if (affiliate.parentesco) return affiliate.parentesco;
+  const [loading, setLoading] = useState(true);
+  const [fullAffiliate, setFullAffiliate] = useState<AffiliateType | null>(null);
 
-    const partesCredencial = affiliate.credencial.split("-");
+  // Cargar datos completos del afiliado
+  useEffect(() => {
+    const fetchAffiliateDetails = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `http://localhost:3000/api/affiliates/affiliate/${affiliate.dni || affiliate.nroDocumento}`
+        );
+
+        if (!response.ok) throw new Error("Error al cargar datos del afiliado");
+
+        const data = await response.json();
+        setFullAffiliate(data.affiliates);
+      } catch (error) {
+        console.error("Error al cargar datos:", error);
+        setFullAffiliate(affiliate); // Usar datos básicos si falla
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAffiliateDetails();
+  }, [affiliate.dni, affiliate.nroDocumento]);
+
+  const determinarParentesco = (aff: AffiliateType) => {
+    if (aff.parentesco) return aff.parentesco;
+
+    const partesCredencial = aff.credencial.split("-");
     if (partesCredencial.length !== 2) return "Familiar a cargo";
 
     const numeroCredencial = parseInt(partesCredencial[1]);
@@ -72,28 +107,52 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
   };
 
   // Helper para obtener emails como array de strings
-  const obtenerEmails = (email?: string | Email[]): string[] => {
-    if (!email) return [];
-    if (typeof email === 'string') return [email];
-    return email.map(e => e.email);
+  const obtenerEmails = (aff: AffiliateType): string[] => {
+    if (aff.email) {
+      if (typeof aff.email === 'string') return [aff.email];
+      if (Array.isArray(aff.email)) return aff.email.map(e => typeof e === 'string' ? e : e.email);
+    }
+    return [];
   };
 
   // Helper para obtener teléfonos como array de strings
-  const obtenerTelefonos = (telefono?: string | Telefono[]): string[] => {
-    if (!telefono) return [];
-    if (typeof telefono === 'string') return [telefono];
-    return telefono.map(t => t.telefono);
+  const obtenerTelefonos = (aff: AffiliateType): string[] => {
+    // Primero verificar si hay un array de telefonos
+    if (aff.telefonos && Array.isArray(aff.telefonos)) {
+      return aff.telefonos.map(t => t.telefono);
+    }
+    // Si no, verificar telefono (singular)
+    if (aff.telefono) {
+      if (typeof aff.telefono === 'string') return [aff.telefono];
+      if (Array.isArray(aff.telefono)) return aff.telefono.map(t => typeof t === 'string' ? t : t.telefono);
+    }
+    return [];
   };
 
-  const emails = obtenerEmails(affiliate.email);
-  const telefonos = obtenerTelefonos(affiliate.telefono);
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+        <div className="bg-white rounded-lg p-8">
+          <div className="flex flex-col items-center">
+            <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p className="text-gray-600">Cargando datos del afiliado...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const displayAffiliate = fullAffiliate || affiliate;
+  const emails = obtenerEmails(displayAffiliate);
+  const telefonos = obtenerTelefonos(displayAffiliate);
+  const fechaNac = displayAffiliate.fechaNacimiento || displayAffiliate.fecha_nacimiento;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 relative">
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 overflow-y-auto">
+      <div className="bg-white rounded-lg w-[90%] max-w-5xl my-8 p-6 relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800"
+          className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800 z-10"
         >
           ✕
         </button>
@@ -107,49 +166,51 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {affiliate.tipoDocumento && (
+            {displayAffiliate.tipoDocumento && (
               <div>
                 <label className="font-semibold mb-1 bg-gray-100 px-2 block">Tipo Documento</label>
-                <p className="p-2 border border-gray-200 rounded">{affiliate.tipoDocumento}</p>
+                <p className="p-2 border border-gray-200 rounded">{displayAffiliate.tipoDocumento}</p>
               </div>
             )}
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Nro Documento</label>
-              <p className="p-2 border border-gray-200 rounded">{affiliate.nroDocumento || affiliate.dni || '-'}</p>
+              <p className="p-2 border border-gray-200 rounded">
+                {displayAffiliate.nroDocumento || displayAffiliate.dni || '-'}
+              </p>
             </div>
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Nombres</label>
-              <p className="p-2 border border-gray-200 rounded">{affiliate.nombre}</p>
+              <p className="p-2 border border-gray-200 rounded">{displayAffiliate.nombre}</p>
             </div>
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Apellidos</label>
-              <p className="p-2 border border-gray-200 rounded">{affiliate.apellido}</p>
+              <p className="p-2 border border-gray-200 rounded">{displayAffiliate.apellido}</p>
             </div>
-            {affiliate.fechaNacimiento && (
+            {fechaNac && (
               <div>
                 <label className="font-semibold mb-1 bg-gray-100 px-2 block">Fecha nacimiento</label>
-                <p className="p-2 border border-gray-200 rounded">{affiliate.fechaNacimiento}</p>
+                <p className="p-2 border border-gray-200 rounded">{fechaNac}</p>
               </div>
             )}
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Plan Médico</label>
               <p className="p-2 border border-gray-200 rounded">
-                {obtenerNombrePlan(affiliate.plan, affiliate.planMedico)}
+                {obtenerNombrePlan(displayAffiliate.plan, displayAffiliate.planMedico)}
               </p>
             </div>
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Parentesco</label>
-              <p className="p-2 border border-gray-200 rounded">{determinarParentesco(affiliate)}</p>
+              <p className="p-2 border border-gray-200 rounded">{determinarParentesco(displayAffiliate)}</p>
             </div>
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Credencial</label>
-              <p className="p-2 border border-gray-200 rounded">{affiliate.credencial}</p>
+              <p className="p-2 border border-gray-200 rounded">{displayAffiliate.credencial}</p>
             </div>
           </div>
         </div>
 
         {/* Datos de Contacto */}
-        {(telefonos.length > 0 || emails.length > 0 || affiliate.direccion) && (
+        {(telefonos.length > 0 || emails.length > 0 || displayAffiliate.direccion) && (
           <div className="mb-8 p-4 border border-gray-200 rounded-lg">
             <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
               Datos de Contacto
@@ -180,48 +241,66 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
                   </div>
                 </div>
               )}
-              {affiliate.direccion && (
-                <div className="col-span-1 sm:col-span-2">
+              {displayAffiliate.direccion && (
+                <div className="col-span-1 sm:grid-cols-2">
                   <label className="font-semibold mb-1 bg-gray-100 px-2 block">Dirección</label>
-                  <p className="p-2 border border-gray-200 rounded">{affiliate.direccion}</p>
+                  <p className="p-2 border border-gray-200 rounded">{displayAffiliate.direccion}</p>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Situaciones */}
+        {/* Situaciones Terapéuticas */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Situaciones Terapéuticas
           </h2>
 
-          {affiliate.situaciones && affiliate.situaciones.length > 0 ? (
-            <ul className="space-y-2">
-              {affiliate.situaciones.map((sit, idx) => (
-                <li
+          {displayAffiliate.situaciones && displayAffiliate.situaciones.length > 0 ? (
+            <div className="space-y-3">
+              {displayAffiliate.situaciones.map((sit, idx) => (
+                <div
                   key={idx}
-                  className="p-3 border border-gray-300 rounded bg-gray-50 flex flex-col sm:flex-row sm:justify-between gap-2"
+                  className="p-4 border border-gray-300 rounded bg-gray-50"
                 >
-                  <span className="font-medium">{sit.situacion}</span>
-                  {sit.fechaFinalizacion && (
-                    <span className="text-gray-600 text-sm">
-                      Finaliza: {sit.fechaFinalizacion}
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                    <span className="font-semibold text-lg">
+                      {sit.situacionTerapeutica?.nombre || 'Situación sin nombre'}
                     </span>
-                  )}
-                </li>
+                    <div className="flex flex-col sm:flex-row gap-2 text-sm text-gray-600">
+                      {sit.fechaInicio && (
+                        <span className="bg-blue-100 px-3 py-1 rounded">
+                          Inicio: {sit.fechaInicio}
+                        </span>
+                      )}
+                      {sit.fechaFin && (
+                        <span className="bg-green-100 px-3 py-1 rounded">
+                          Fin: {sit.fechaFin}
+                        </span>
+                      )}
+                      {!sit.fechaFin && (
+                        <span className="bg-yellow-100 px-3 py-1 rounded">
+                          En curso
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
-            <p className="text-gray-500">No hay situaciones registradas</p>
+            <div className="text-center py-8">
+              <p className="text-gray-500 text-lg">No hay situaciones terapéuticas registradas</p>
+            </div>
           )}
         </div>
 
         {/* Botón de cierre */}
-        <div className="flex justify-center mt-4">
+        <div className="flex justify-center mt-6">
           <button
             onClick={onClose}
-            className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition"
+            className="bg-gray-500 text-white px-8 py-3 rounded font-semibold shadow hover:bg-gray-600 transition"
           >
             Cerrar
           </button>

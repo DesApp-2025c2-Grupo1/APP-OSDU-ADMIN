@@ -1,9 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface Situacion {
-  situacion: string;
+  idSituacion: number;
   fechaFinalizacion: string;
+}
+
+interface SituacionDisponible {
+  idSituacion: number;
+  nombre: string;
 }
 
 interface Familiar {
@@ -19,33 +24,8 @@ interface Familiar {
   direccion2?: string;
   usaDireccionTitular?: boolean;
   usaContactoTitular?: boolean;
-  situaciones?: Array<{ situacion: string; fechaFinalizacion: string }>;
+  situaciones?: Array<{ idSituacion: number; fechaFinalizacion: string }>;
 }
-
-// Mapeo de situaciones a IDs del backend
-const SITUACIONES_MAP: Record<string, number> = {
-  embarazo: 1,
-  diabetes: 2,
-  miopia: 3,
-  hipertension: 4,
-  rehab_motriz: 5,
-  kinesiologia: 6,
-  psicoterapia: 7,
-  fonoaudiologia: 8,
-  otra: 9,
-};
-
-const SITUACIONES_TERAPEUTICAS = [
-  { id: "embarazo", nombre: "Embarazo", requiereFin: true },
-  { id: "diabetes", nombre: "Diabetes", requiereFin: false },
-  { id: "miopia", nombre: "Miopía", requiereFin: false },
-  { id: "hipertension", nombre: "Hipertensión", requiereFin: false },
-  { id: "rehab_motriz", nombre: "Rehabilitación motriz", requiereFin: true },
-  { id: "kinesiologia", nombre: "Kinesiología", requiereFin: true },
-  { id: "psicoterapia", nombre: "Psicoterapia", requiereFin: true },
-  { id: "fonoaudiologia", nombre: "Fonoaudiología", requiereFin: true },
-  { id: "otra", nombre: "Otra", requiereFin: false },
-];
 
 export function AddAffiliate() {
   const navigate = useNavigate();
@@ -70,10 +50,35 @@ export function AddAffiliate() {
   const [showEmail2, setShowEmail2] = useState(false);
   const [showAddress2, setShowAddress2] = useState(false);
   const [situaciones, setSituaciones] = useState<Situacion[]>([]);
+  const [situacionesDisponibles, setSituacionesDisponibles] = useState<SituacionDisponible[]>([]);
+  const [loadingSituaciones, setLoadingSituaciones] = useState(true);
   const [familiares, setFamiliares] = useState<Familiar[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Cargar situaciones terapéuticas desde la BD al montar el componente
+  useEffect(() => {
+    const fetchSituaciones = async () => {
+      try {
+        setLoadingSituaciones(true);
+        const response = await fetch("http://localhost:3000/api/therapeutic");
+        
+        if (!response.ok) throw new Error("Error al cargar situaciones terapéuticas");
+        
+        const data = await response.json();
+        console.log("📋 Situaciones cargadas:", data.situaciones);
+        setSituacionesDisponibles(data.situaciones || []);
+      } catch (error) {
+        console.error("Error al cargar situaciones:", error);
+        setErrors(prev => ({ ...prev, situaciones: "No se pudieron cargar las situaciones terapéuticas" }));
+      } finally {
+        setLoadingSituaciones(false);
+      }
+    };
+
+    fetchSituaciones();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -81,13 +86,15 @@ export function AddAffiliate() {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const addSituacion = () =>
-    setSituaciones((prev) => [...prev, { situacion: "", fechaFinalizacion: "" }]);
+  const addSituacion = () => {
+    if (situacionesDisponibles.length === 0) return;
+    setSituaciones((prev) => [...prev, { idSituacion: situacionesDisponibles[0].idSituacion, fechaFinalizacion: "" }]);
+  };
 
   const removeSituacion = (idx: number) =>
     setSituaciones((prev) => prev.filter((_, i) => i !== idx));
 
-  const updateSituacion = (idx: number, field: keyof Situacion, value: string) => {
+  const updateSituacion = (idx: number, field: keyof Situacion, value: string | number) => {
     setSituaciones((prev) => {
       const next = [...prev];
       next[idx] = { ...next[idx], [field]: value };
@@ -125,10 +132,11 @@ export function AddAffiliate() {
   };
 
   const addSituacionFamiliar = (i: number) => {
+    if (situacionesDisponibles.length === 0) return;
     setFamiliares((prev) => {
       const next = [...prev];
       const sit = next[i].situaciones || [];
-      next[i] = { ...next[i], situaciones: [...sit, { situacion: "", fechaFinalizacion: "" }] };
+      next[i] = { ...next[i], situaciones: [...sit, { idSituacion: situacionesDisponibles[0].idSituacion, fechaFinalizacion: "" }] };
       return next;
     });
   };
@@ -136,13 +144,13 @@ export function AddAffiliate() {
   const updateSituacionFamiliar = (
     i: number,
     idx: number,
-    field: "situacion" | "fechaFinalizacion",
-    value: string
+    field: "idSituacion" | "fechaFinalizacion",
+    value: string | number
   ) => {
     setFamiliares((prev) => {
       const next = [...prev];
       const sit = [...(next[i].situaciones || [])];
-      sit[idx] = { ...sit[idx], [field]: value };
+      sit[idx] = { ...sit[idx], [field]: field === "idSituacion" ? parseInt(value as string) : value };
       next[i] = { ...next[i], situaciones: sit };
       return next;
     });
@@ -158,49 +166,147 @@ export function AddAffiliate() {
   };
 
   const validate = () => {
-    const newErrors: Record<string, string> = {};
+  const newErrors: Record<string, string> = {};
 
-    if (!formData.nroDocumento?.trim()) newErrors.nroDocumento = "Requerido";
-    if (!formData.nombre?.trim()) newErrors.nombre = "Requerido";
-    if (!formData.apellido?.trim()) newErrors.apellido = "Requerido";
+  // DNI del titular
+  if (!formData.nroDocumento?.trim()) {
+    newErrors.nroDocumento = "Requerido";
+  } else if (!/^[0-9]{7,8}$/.test(formData.nroDocumento)) {
+    newErrors.nroDocumento = "El DNI debe tener 7 u 8 dígitos numéricos";
+  }
 
-    if (!formData.fechaNacimiento) {
-      newErrors.fechaNacimiento = "Requerido";
-    } else {
-      const fechaNac = new Date(formData.fechaNacimiento);
-      const hoy = new Date();
-      if (fechaNac > hoy) newErrors.fechaNacimiento = "La fecha no puede ser futura";
+  // Nombre del titular
+  if (!formData.nombre?.trim()) {
+    newErrors.nombre = "Requerido";
+  } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
+    newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
+  }
+
+  // Apellido del titular
+  if (!formData.apellido?.trim()) {
+    newErrors.apellido = "Requerido";
+  } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
+    newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
+  }
+
+  // Fecha de nacimiento del titular
+  if (!formData.fechaNacimiento) {
+    newErrors.fechaNacimiento = "Requerido";
+  } else {
+    const fechaNac = new Date(formData.fechaNacimiento);
+    const hoy = new Date();
+    
+    if (fechaNac > hoy) {
+      newErrors.fechaNacimiento = "La fecha no puede ser futura";
+    }
+    
+    const edad = (hoy.getTime() - fechaNac.getTime()) / (1000 * 60 * 60 * 24 * 365);
+    //if (edad < 18) {
+    //  newErrors.fechaNacimiento = "El titular debe ser mayor de 18 años";
+   // }
+    
+    if (edad > 150) {
+      newErrors.fechaNacimiento = "La fecha de nacimiento no es válida";
+    }
+  }
+
+  // Emails del titular
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (formData.email && !emailRegex.test(formData.email)) {
+    newErrors.email = "Formato de email inválido";
+  }
+  if (formData.email2 && !emailRegex.test(formData.email2)) {
+    newErrors.email2 = "Formato de email inválido";
+  }
+
+  // Teléfonos del titular
+  if (formData.telefono && !/^[0-9]{7,15}$/.test(formData.telefono.replace(/\s/g, ''))) {
+    newErrors.telefono = "El teléfono debe tener entre 7 y 15 dígitos";
+  }
+  if (formData.telefono2 && !/^[0-9]{7,15}$/.test(formData.telefono2.replace(/\s/g, ''))) {
+    newErrors.telefono2 = "El teléfono debe tener entre 7 y 15 dígitos";
+  }
+
+  // Plan del titular
+  if (!formData.planMedico) {
+    newErrors.planMedico = "Requerido";
+  }
+
+  // Dirección del titular (opcional pero con límite)
+  if (formData.direccion && formData.direccion.length > 100) {
+    newErrors.direccion = "La dirección no puede superar los 100 caracteres";
+  }
+
+  // Validaciones de familiares
+  familiares.forEach((f, index) => {
+    const prefix = `familiares[${index}]`;
+    
+    // DNI del familiar
+    if (!f.nroDocumento?.trim()) {
+      newErrors[`${prefix}.nroDocumento`] = "Requerido";
+    } else if (!/^[0-9]{7,8}$/.test(f.nroDocumento)) {
+      newErrors[`${prefix}.nroDocumento`] = "El DNI debe tener 7 u 8 dígitos numéricos";
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.email && !emailRegex.test(formData.email))
-      newErrors.email = "Formato de email inválido";
-    if (formData.email2 && !emailRegex.test(formData.email2))
-      newErrors.email2 = "Formato de email inválido";
+    // Nombre del familiar
+    if (!f.nombre?.trim()) {
+      newErrors[`${prefix}.nombre`] = "Requerido";
+    } else if (f.nombre.trim().length < 2 || f.nombre.trim().length > 50) {
+      newErrors[`${prefix}.nombre`] = "El nombre debe tener entre 2 y 50 caracteres";
+    }
 
-    if (!formData.planMedico) newErrors.planMedico = "Requerido";
+    // Apellido del familiar
+    if (!f.apellido?.trim()) {
+      newErrors[`${prefix}.apellido`] = "Requerido";
+    } else if (f.apellido.trim().length < 2 || f.apellido.trim().length > 50) {
+      newErrors[`${prefix}.apellido`] = "El apellido debe tener entre 2 y 50 caracteres";
+    }
 
-    familiares.forEach((f, index) => {
-      const prefix = `familiares[${index}]`;
-      if (!f.nroDocumento?.trim()) newErrors[`${prefix}.nroDocumento`] = "Requerido";
-      if (!f.nombre?.trim()) newErrors[`${prefix}.nombre`] = "Requerido";
-      if (!f.apellido?.trim()) newErrors[`${prefix}.apellido`] = "Requerido";
-
-      if (!f.fechaNacimiento) {
-        newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
-      } else {
-        const fechaNac = new Date(f.fechaNacimiento);
-        const hoy = new Date();
-        if (fechaNac > hoy) newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+    // Fecha de nacimiento del familiar
+    if (!f.fechaNacimiento) {
+      newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
+    } else {
+      const fechaNac = new Date(f.fechaNacimiento);
+      const hoy = new Date();
+      
+      if (fechaNac > hoy) {
+        newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
       }
+      
+      const edad = (hoy.getTime() - fechaNac.getTime()) / (1000 * 60 * 60 * 24 * 365);
+      if (edad > 150) {
+        newErrors[`${prefix}.fechaNacimiento`] = "La fecha de nacimiento no es válida";
+      }
+    }
 
-      if (f.email && !emailRegex.test(f.email))
-        newErrors[`${prefix}.email`] = "Formato de email inválido";
-    });
+    // Email del familiar
+    if (f.email && !emailRegex.test(f.email)) {
+      newErrors[`${prefix}.email`] = "Formato de email inválido";
+    }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    // Teléfono del familiar
+    if (f.telefono && !/^[0-9]{7,15}$/.test(f.telefono.replace(/\s/g, ''))) {
+      newErrors[`${prefix}.telefono`] = "El teléfono debe tener entre 7 y 15 dígitos";
+    }
+
+    // Validar que el DNI del familiar no sea igual al del titular
+    if (f.nroDocumento === formData.nroDocumento) {
+      newErrors[`${prefix}.nroDocumento`] = "El DNI del familiar no puede ser igual al del titular";
+    }
+
+    // Validar que no haya DNIs duplicados entre familiares
+    const duplicados = familiares.filter((fam, idx) => 
+      idx !== index && fam.nroDocumento === f.nroDocumento
+    );
+    if (duplicados.length > 0 && f.nroDocumento) {
+      newErrors[`${prefix}.nroDocumento`] = "Este DNI ya está en uso por otro familiar";
+    }
+  });
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -220,11 +326,11 @@ export function AddAffiliate() {
       if (formData.telefono?.trim()) telefonos.push({ telefono: formData.telefono.trim() });
       if (formData.telefono2?.trim()) telefonos.push({ telefono: formData.telefono2.trim() });
 
-      // Construir situaciones del titular con IDs
+      // Construir situaciones del titular con IDs de la BD
       const situacionesPayload = situaciones
-        .filter(s => s.situacion)
+        .filter(s => s.idSituacion)
         .map(s => ({
-          id: SITUACIONES_MAP[s.situacion] || 9,
+          id: s.idSituacion,
           fecha_inicio: new Date().toISOString().split('T')[0],
           fecha_fin: s.fechaFinalizacion || null,
         }));
@@ -246,9 +352,9 @@ export function AddAffiliate() {
         }
 
         const situacionesFam = (f.situaciones || [])
-          .filter(s => s.situacion)
+          .filter(s => s.idSituacion)
           .map(s => ({
-            id: SITUACIONES_MAP[s.situacion] || 9,
+            id: s.idSituacion,
             fecha_inicio: new Date().toISOString().split('T')[0],
             fecha_fin: s.fechaFinalizacion || null,
           }));
@@ -260,6 +366,7 @@ export function AddAffiliate() {
           parentesco: f.parentesco,
           direccion: f.usaDireccionTitular ? formData.direccion : (f.direccion || ""),
           tipoDocumento: f.tipoDocumento,
+          fecha_nacimiento: f.fechaNacimiento,
           emails: emailsFam,
           telefonos: telefonosFam,
           situaciones: situacionesFam,
@@ -273,7 +380,7 @@ export function AddAffiliate() {
         apellido: formData.apellido,
         direccion: formData.direccion,
         tipoDocumento: formData.tipoDocumento,
-        fecha_nacimiento:formData.fechaNacimiento,
+        fecha_nacimiento: formData.fechaNacimiento,
         plan: parseInt(formData.planMedico),
         emails: emails,
         telefonos: telefonos,
@@ -335,6 +442,18 @@ export function AddAffiliate() {
           </button>
         </div>
       </div>
+
+      {loadingSituaciones && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-center">
+          <p className="text-blue-600">Cargando situaciones terapéuticas...</p>
+        </div>
+      )}
+
+      {errors.situaciones && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-center">
+          <p className="text-yellow-600">{errors.situaciones}</p>
+        </div>
+      )}
 
       <div className="mx-auto w-full max-w-4xl space-y-8">
         {/* DATOS DE AFILIADO (Titular) */}
@@ -559,55 +678,52 @@ export function AddAffiliate() {
               <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
             )}
 
-            {situaciones.map((s, idx) => {
-              const tieneFecha = ["embarazo", "rehab_motriz", "kinesiologia", "psicoterapia", "fonoaudiologia"].includes(s.situacion);
-              return (
-                <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full">
-                  <div className="flex flex-col">
-                    <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
-                    <select
-                      value={s.situacion}
-                      onChange={(e) => updateSituacion(idx, "situacion", e.target.value)}
-                      className="p-2 border border-gray-300 rounded"
-                    >
-                      <option value="">-- Seleccionar --</option>
-                      {SITUACIONES_TERAPEUTICAS.map(sit => (
-                        <option key={sit.id} value={sit.id}>{sit.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {tieneFecha ? (
-                    <div className="flex flex-col">
-                      <label className="text-sm font-semibold mb-1">Fecha de finalización</label>
-                      <input
-                        type="date"
-                        value={s.fechaFinalizacion || ""}
-                        onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
-                        className="p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                  ) : (
-                    <div />
-                  )}
-
-                  <div className="justify-self-end">
-                    <button
-                      type="button"
-                      onClick={() => removeSituacion(idx)}
-                      className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
+            {situaciones.map((s, idx) => (
+              <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full">
+                <div className="flex flex-col">
+                  <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
+                  <select
+                    value={s.idSituacion}
+                    onChange={(e) => updateSituacion(idx, "idSituacion", parseInt(e.target.value))}
+                    className="p-2 border border-gray-300 rounded"
+                    disabled={loadingSituaciones}
+                  >
+                    <option value="">-- Seleccionar --</option>
+                    {situacionesDisponibles.map(sit => (
+                      <option key={sit.idSituacion} value={sit.idSituacion}>
+                        {sit.nombre}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              );
-            })}
+
+                <div className="flex flex-col">
+                  <label className="text-sm font-semibold mb-1">Fecha de finalización (opcional)</label>
+                  <input
+                    type="date"
+                    value={s.fechaFinalizacion || ""}
+                    onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
+                    className="p-2 border border-gray-300 rounded"
+                  />
+                </div>
+
+                <div className="justify-self-end">
+                  <button
+                    type="button"
+                    onClick={() => removeSituacion(idx)}
+                    className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            ))}
 
             <button
               type="button"
               onClick={addSituacion}
               className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+              disabled={loadingSituaciones || situacionesDisponibles.length === 0}
             >
               + Agregar
             </button>
@@ -790,55 +906,52 @@ export function AddAffiliate() {
                     <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
                   )}
 
-                  {familiar.situaciones?.map((s, idx) => {
-                    const tieneFecha = ["embarazo", "rehab_motriz", "kinesiologia", "psicoterapia", "fonoaudiologia"].includes(s.situacion);
-                    return (
-                      <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full">
-                        <div className="flex flex-col">
-                          <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
-                          <select
-                            value={s.situacion}
-                            onChange={(e) => updateSituacionFamiliar(i, idx, "situacion", e.target.value)}
-                            className="p-2 border border-gray-300 rounded"
-                          >
-                            <option value="">-- Seleccionar --</option>
-                            {SITUACIONES_TERAPEUTICAS.map(sit => (
-                              <option key={sit.id} value={sit.id}>{sit.nombre}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {tieneFecha ? (
-                          <div className="flex flex-col">
-                            <label className="text-sm font-semibold mb-1">Fecha de finalización</label>
-                            <input
-                              type="date"
-                              value={s.fechaFinalizacion || ""}
-                              onChange={(e) => updateSituacionFamiliar(i, idx, "fechaFinalizacion", e.target.value)}
-                              className="p-2 border border-gray-300 rounded"
-                            />
-                          </div>
-                        ) : (
-                          <div />
-                        )}
-
-                        <div className="justify-self-end">
-                          <button
-                            type="button"
-                            onClick={() => removeSituacionFamiliar(i, idx)}
-                            className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
-                          >
-                            Eliminar
-                          </button>
-                        </div>
+                  {familiar.situaciones?.map((s, idx) => (
+                    <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full">
+                      <div className="flex flex-col">
+                        <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
+                        <select
+                          value={s.idSituacion}
+                          onChange={(e) => updateSituacionFamiliar(i, idx, "idSituacion", e.target.value)}
+                          className="p-2 border border-gray-300 rounded"
+                          disabled={loadingSituaciones}
+                        >
+                          <option value="">-- Seleccionar --</option>
+                          {situacionesDisponibles.map(sit => (
+                            <option key={sit.idSituacion} value={sit.idSituacion}>
+                              {sit.nombre}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                    );
-                  })}
+
+                      <div className="flex flex-col">
+                        <label className="text-sm font-semibold mb-1">Fecha de finalización (opcional)</label>
+                        <input
+                          type="date"
+                          value={s.fechaFinalizacion || ""}
+                          onChange={(e) => updateSituacionFamiliar(i, idx, "fechaFinalizacion", e.target.value)}
+                          className="p-2 border border-gray-300 rounded"
+                        />
+                      </div>
+
+                      <div className="justify-self-end">
+                        <button
+                          type="button"
+                          onClick={() => removeSituacionFamiliar(i, idx)}
+                          className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
 
                   <button
                     type="button"
                     onClick={() => addSituacionFamiliar(i)}
                     className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                    disabled={loadingSituaciones || situacionesDisponibles.length === 0}
                   >
                     + Agregar
                   </button>

@@ -112,31 +112,88 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   };
 
   const handleSave = () => {
-    const payload = {
-      nombre: formData.nombre,
-      apellido: formData.apellido,
-      fecha_nacimiento: formData.fechaNacimiento,
-      direccion: formData.direccion,
-      idPlan: formData.idPlan,
-      telefonos: telefonos.filter(t => t.telefono.trim() !== ""),
-      emails: emails.filter(e => e.email.trim() !== ""),
-      situaciones: situaciones.map(s => ({
-        idSituacionAfiliado: s.idSituacionAfiliado,
-        idSituacion: s.idSituacion || s.situacionTerapeutica?.idSituacion,
-        fechaInicio: s.fechaInicio,
-        fechaFin: s.fechaFin
-      })),
-      telefonosEliminados,
-      emailsEliminados,
-      situacionesEliminadas
-    };
+    const newErrors: Record<string, string> = {};
 
-    console.log("Payload completo que se envía:", payload);
-    console.log("Situaciones a eliminar:", situacionesEliminadas);
-    console.log("Situaciones actuales:", situaciones);
+  // Validar nombre
+  if (!formData.nombre.trim()) {
+    newErrors.nombre = "El nombre es obligatorio";
+  } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
+    newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
+  }
 
-    onSave(payload);
+  // Validar apellido
+  if (!formData.apellido.trim()) {
+    newErrors.apellido = "El apellido es obligatorio";
+  } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
+    newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
+  }
+
+  // Validar fecha de nacimiento
+  if (!formData.fechaNacimiento) {
+    newErrors.fechaNacimiento = "La fecha de nacimiento es obligatoria";
+  } else {
+    const partes = formData.fechaNacimiento.split('/');
+    if (partes.length === 3) {
+      const fecha = new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
+      const hoy = new Date();
+      if (fecha > hoy) {
+        newErrors.fechaNacimiento = "La fecha no puede ser futura";
+      }
+    }
+  }
+
+  // Validar plan
+  if (!formData.idPlan || formData.idPlan === 0) {
+    newErrors.idPlan = "Debe seleccionar un plan";
+  }
+
+  // Validar emails
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  emails.forEach((mail, idx) => {
+    if (mail.email && !emailRegex.test(mail.email)) {
+      newErrors[`email${idx}`] = "Formato de email inválido";
+    }
+  });
+
+  // Validar teléfonos
+  telefonos.forEach((tel, idx) => {
+    if (tel.telefono && !/^[0-9]{7,15}$/.test(tel.telefono.replace(/\s/g, ''))) {
+      newErrors[`telefono${idx}`] = "El teléfono debe tener entre 7 y 15 dígitos";
+    }
+  });
+
+  // Si hay errores, mostrarlos y no continuar
+  if (Object.keys(newErrors).length > 0) {
+    alert("Por favor corrija los errores antes de guardar:\n" + Object.values(newErrors).join('\n'));
+    return;
+  }
+
+  // Si no hay errores, proceder con el guardado
+  const payload = {
+    nombre: formData.nombre,
+    apellido: formData.apellido,
+    fecha_nacimiento: formData.fechaNacimiento,
+    direccion: formData.direccion,
+    idPlan: formData.idPlan,
+    telefonos: telefonos.filter(t => t.telefono.trim() !== ""),
+    emails: emails.filter(e => e.email.trim() !== ""),
+    situaciones: situaciones.map(s => ({
+      idSituacionAfiliado: s.idSituacionAfiliado,
+      idSituacion: s.idSituacion || s.situacionTerapeutica?.idSituacion,
+      fechaInicio: s.fechaInicio,
+      fechaFin: s.fechaFin
+    })),
+    telefonosEliminados,
+    emailsEliminados,
+    situacionesEliminadas
   };
+
+  console.log("Payload completo que se envía:", payload);
+  console.log("Situaciones a eliminar:", situacionesEliminadas);
+  console.log("Situaciones actuales:", situaciones);
+
+  onSave(payload);
+};
 
   //TELÉFONOS
   const addTelefono = () => setTelefonos(prev => [...prev, { telefono: "" }]);
