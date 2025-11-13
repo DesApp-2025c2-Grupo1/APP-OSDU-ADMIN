@@ -59,16 +59,23 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
     const fetchAffiliateDetails = async () => {
       try {
         setLoading(true);
+        
+        const dniToFetch = affiliate.dni || affiliate.nroDocumento;
+        console.log("🔍 Cargando detalles para DNI:", dniToFetch);
+        
         const response = await fetch(
-          `http://localhost:3000/api/affiliates/affiliate/${affiliate.dni || affiliate.nroDocumento}`
+          `http://localhost:3000/api/affiliates/affiliate/${dniToFetch}`
         );
 
         if (!response.ok) throw new Error("Error al cargar datos del afiliado");
 
         const data = await response.json();
+        console.log("📦 Datos completos recibidos:", data);
+        console.log("🏥 Situaciones en los datos:", data.affiliates?.situaciones);
+        
         setFullAffiliate(data.affiliates);
       } catch (error) {
-        console.error("Error al cargar datos:", error);
+        console.error("❌ Error al cargar datos:", error);
         setFullAffiliate(affiliate); // Usar datos básicos si falla
       } finally {
         setLoading(false);
@@ -146,6 +153,9 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
   const emails = obtenerEmails(displayAffiliate);
   const telefonos = obtenerTelefonos(displayAffiliate);
   const fechaNac = displayAffiliate.fechaNacimiento || displayAffiliate.fecha_nacimiento;
+  
+  console.log("👁️ Mostrando afiliado:", displayAffiliate);
+  console.log("🏥 Situaciones a mostrar:", displayAffiliate.situaciones);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 overflow-y-auto">
@@ -242,7 +252,7 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
                 </div>
               )}
               {displayAffiliate.direccion && (
-                <div className="col-span-1 sm:grid-cols-2">
+                <div className="col-span-1 sm:col-span-2">
                   <label className="font-semibold mb-1 bg-gray-100 px-2 block">Dirección</label>
                   <p className="p-2 border border-gray-200 rounded">{displayAffiliate.direccion}</p>
                 </div>
