@@ -19,8 +19,8 @@ export interface HorarioAgenda {
 }
 
 interface FiltrosAgenda {
-  prestador: string;
-  especialidad: string;
+  prestador: string;      // ID del prestador
+  especialidad: string;   // ID de la especialidad
   duracionTurno: number;
   dias: string[];
 }
@@ -47,36 +47,28 @@ export function Agenda() {
     dias: [],
   });
 
+  // Datos de ejemplo
   const [horarios, setHorarios] = useState<HorarioAgenda[]>([
-    {
-      id: "1",
-      prestador: "Tito Merello",
-      especialidad: "Cardiología",
-      lugar: "Av. Vergara 1805",
-      dias: ["Lunes"],
-      horario: "08:00 - 12:00",
-      duracion: 30,
-    },
-    {
-      id: "2",
-      prestador: "Juan Pérez",
-      especialidad: "Pediatría",
-      lugar: "San Martín 555",
-      dias: ["Martes", "Jueves"],
-      horario: "10:00 - 14:00",
-      duracion: 20,
-    },
+    
   ]);
 
-  // Efecto: si se viene desde AddAgenda
+  // Horarios que se muestran en la tabla (aplicando filtros)
+  const [horariosFiltrados, setHorariosFiltrados] = useState<HorarioAgenda[]>([]);
+
+  // Si viene una nueva agenda desde otra pantalla, la agregamos
   useEffect(() => {
     if (location.state?.nuevaAgenda) {
-      setHorarios((prev) => [...prev, location.state.nuevaAgenda]);
+      setHorarios((prev) => [...prev, location.state!.nuevaAgenda]);
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, navigate, location.pathname]);
 
-  // Filtrado de prestadores
+  // Cada vez que cambian los horarios, reseteamos los filtrados
+  useEffect(() => {
+    setHorariosFiltrados(horarios);
+  }, [horarios]);
+
+  // Filtrado de prestadores (para el dropdown de texto)
   const prestadoresFiltrados = useMemo(() => {
     if (!busquedaPrestador.trim()) return providersMock;
     const busqueda = busquedaPrestador.toLowerCase();
@@ -87,6 +79,7 @@ export function Agenda() {
     );
   }, [busquedaPrestador]);
 
+  // Prestadores normalizados
   const prestadores = useMemo(() => {
     return providersMock.map((provider) => ({
       id: provider.id,
@@ -96,17 +89,31 @@ export function Agenda() {
     }));
   }, []);
 
+  // Especialidades SOLO del prestador seleccionado
   const especialidadesPrestador = useMemo(() => {
     if (!filtros.prestador) return [];
     const prestadorSeleccionado = prestadores.find(
       (p) => p.id === filtros.prestador
     );
     if (!prestadorSeleccionado) return [];
-    return prestadorSeleccionado.especialidades.map((espId) => {
+    return prestadorSeleccionado.especialidades.map((espId: string) => {
       const especialidad = SPECIALTIES.find((s) => s.id === espId);
       return { id: espId, nombre: especialidad?.nombre || espId };
     });
   }, [filtros.prestador, prestadores]);
+
+  // Especialidades disponibles según si hay o no prestador
+  const especialidadesDisponibles = useMemo(() => {
+    if (filtros.prestador) {
+      // Si hay prestador → solo sus especialidades
+      return especialidadesPrestador;
+    }
+    // Si no hay prestador → todas las especialidades del sistema
+    return SPECIALTIES.map((s) => ({
+      id: s.id,
+      nombre: s.nombre,
+    }));
+  }, [filtros.prestador, especialidadesPrestador]);
 
   const diasSemana = [
     { id: "Lunes", label: "Lunes" },
@@ -140,7 +147,7 @@ export function Agenda() {
     setMostrarDropdownPrestador(false);
   };
 
-  // Filtros
+  // Filtros genéricos
   const handleFiltroChange = (campo: keyof FiltrosAgenda, valor: any) => {
     if (campo === "prestador") {
       setFiltros((prev) => ({ ...prev, prestador: valor, especialidad: "" }));
@@ -158,8 +165,46 @@ export function Agenda() {
     }));
   };
 
+  // Aplica los filtros sobre la lista de horarios
   const buscarHorarios = () => {
-    console.log("Buscando con filtros:", filtros);
+    let resultado = [...horarios];
+
+    // 1) Filtrar por PRESTADOR (filtros.prestador = ID)
+    if (filtros.prestador) {
+      const prestadorSeleccionado = providersMock.find(
+        (p) => p.id === filtros.prestador
+      );
+      const nombrePrestador = prestadorSeleccionado?.nombreCompleto;
+
+      if (nombrePrestador) {
+        resultado = resultado.filter(
+          (h) => h.prestador === nombrePrestador
+        );
+      }
+    }
+
+    // 2) Filtrar por ESPECIALIDAD (filtros.especialidad = ID)
+    if (filtros.especialidad) {
+      const especialidadSeleccionada = SPECIALTIES.find(
+        (s) => s.id === filtros.especialidad
+      );
+      const nombreEspecialidad = especialidadSeleccionada?.nombre;
+
+      if (nombreEspecialidad) {
+        resultado = resultado.filter(
+          (h) => h.especialidad === nombreEspecialidad
+        );
+      }
+    }
+
+    // 3) (Opcional) Filtrar por días
+    if (filtros.dias.length > 0) {
+      resultado = resultado.filter((h) =>
+        h.dias.some((d) => filtros.dias.includes(d))
+      );
+    }
+
+    setHorariosFiltrados(resultado);
   };
 
   const limpiarFiltros = () => {
@@ -170,6 +215,7 @@ export function Agenda() {
       dias: [],
     });
     setBusquedaPrestador("");
+    setHorariosFiltrados(horarios); // volvemos a mostrar todo
   };
 
   // Acciones menú
@@ -256,7 +302,7 @@ export function Agenda() {
                   <li
                     key={p.id}
                     onClick={() =>
-                      seleccionarPrestador(p.id, p.nombreCompleto )
+                      seleccionarPrestador(p.id, p.nombreCompleto)
                     }
                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                   >
@@ -274,14 +320,13 @@ export function Agenda() {
               value={filtros.especialidad}
               onChange={(e) => handleFiltroChange("especialidad", e.target.value)}
               className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
-              disabled={!filtros.prestador}
             >
               <option value="">
                 {filtros.prestador
-                  ? "Seleccionar"
-                  : "Seleccione un prestador primero"}
+                  ? "Seleccionar especialidad del prestador"
+                  : "Seleccionar especialidad"}
               </option>
-              {especialidadesPrestador.map((especialidad) => (
+              {especialidadesDisponibles.map((especialidad) => (
                 <option key={especialidad.id} value={especialidad.id}>
                   {especialidad.nombre}
                 </option>
@@ -289,7 +334,7 @@ export function Agenda() {
             </select>
           </div>
 
-          {/* Días */}
+          {/* Días de la semana (si querés reactivarlos después)
           <div className="flex flex-col">
             <label className="font-semibold mb-2 text-gray-700">
               Días de la semana
@@ -308,25 +353,7 @@ export function Agenda() {
               ))}
             </div>
           </div>
-
-          {/* Duración */}
-          <div className="flex flex-col">
-            <label className="font-semibold mb-2 text-gray-700">
-              Duración de turno (min)
-            </label>
-            <select
-              value={filtros.duracionTurno}
-              onChange={(e) =>
-                handleFiltroChange("duracionTurno", parseInt(e.target.value))
-              }
-              className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
-            >
-              <option value={15}>15</option>
-              <option value={30}>30</option>
-              <option value={45}>45</option>
-              <option value={60}>60</option>
-            </select>
-          </div>
+          */}
         </div>
 
         {/* Botones */}
@@ -348,7 +375,7 @@ export function Agenda() {
 
       {/* Tabla */}
       <AgendaTable
-        horarios={horarios}
+        horarios={horariosFiltrados}
         menuAbierto={menuAbierto}
         toggleMenu={toggleMenu}
         handleEditarAgenda={handleEditarAgenda}
