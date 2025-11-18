@@ -105,7 +105,11 @@ export function AddAffiliate() {
   };
 
   const addSituacion = () => {
-    if (situacionesDisponibles.length === 0) return;
+    if (situacionesDisponibles.length === 0) {
+      console.warn("No hay situaciones terapéuticas disponibles");
+      setErrors(prev => ({ ...prev, situaciones: "No hay situaciones terapéuticas disponibles. Verifique la conexión con el servidor." }));
+      return;
+    }
     setSituaciones((prev) => [...prev, { idSituacion: situacionesDisponibles[0].idSituacion, fechaFinalizacion: "" }]);
   };
 
