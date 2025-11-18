@@ -44,7 +44,7 @@ export function PrestadoresPorEspecialidad() {
 
       // CAMBIAR SI O SI POR LA RUTA DEL BACK-END PARA ESTE REPORTE
       const res = await fetch(
-        `http://localhost:3000/api/reports/prestadores-por-especialidad?specialtyId=${selectedSpecialtyId}`
+        `${API_BASE_URL}/reports/prestadores-por-especialidad?specialtyId=${selectedSpecialtyId}`
       );
 
       if (!res.ok) {

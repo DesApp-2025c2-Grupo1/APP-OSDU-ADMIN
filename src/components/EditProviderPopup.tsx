@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import type { Prestador, LugarAtencion, Especialidad } from "../model/Provider.model";
 import { SPECIALTIES } from "../data/specialties";
 import { updateProvider } from "../api/providerService";
-
-const API_URL = "http://localhost:3000";
+import { API_URL } from "../config/api";
 
 interface EditProviderPopupProps {
   provider: Prestador;

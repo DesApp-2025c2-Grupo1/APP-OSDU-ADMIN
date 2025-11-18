@@ -133,7 +133,7 @@ export function AltasPrestadoresPeriodo() {
 
       // CAMBIAR SI O SI POR LA RUTA DEL BACK PARA PRESTADORES
       const res = await fetch(
-        `http://localhost:3000/api/reports/altas-prestadores?from=${from}&to=${to}`
+        `${API_BASE_URL}/reports/altas-prestadores?from=${from}&to=${to}`
       );
 
       if (!res.ok) {

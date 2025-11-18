@@ -64,7 +64,7 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
         console.log("🔍 Cargando detalles para DNI:", dniToFetch);
         
         const response = await fetch(
-          `http://localhost:3000/api/affiliates/affiliate/${dniToFetch}`
+          `${API_BASE_URL}/affiliates/affiliate/${dniToFetch}`
         );
 
         if (!response.ok) throw new Error("Error al cargar datos del afiliado");

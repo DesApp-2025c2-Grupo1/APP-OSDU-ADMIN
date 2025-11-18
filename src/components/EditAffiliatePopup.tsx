@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { Affiliate as AffiliateType } from "./AffiliatesTable";
+import { API_BASE_URL } from "../config/api";
 
 interface Situacion {
   idSituacionAfiliado?: number;
@@ -59,9 +60,9 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         
         // Cargar datos del afiliado
         const [affiliateRes, situacionesRes, planesRes] = await Promise.all([
-          fetch(`http://localhost:3000/api/affiliates/affiliate/${affiliate.dni}`),
-          fetch(`http://localhost:3000/api/therapeutic`),
-          fetch(`http://localhost:3000/api/plans`)
+          fetch(`${API_BASE_URL}/affiliates/affiliate/${affiliate.dni}`),
+          fetch(`${API_BASE_URL}/therapeutic`),
+          fetch(`${API_BASE_URL}/plans`)
         ]);
 
         if (!affiliateRes.ok) throw new Error("Error al cargar datos del afiliado");

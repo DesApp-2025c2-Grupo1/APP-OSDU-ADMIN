@@ -134,7 +134,7 @@ export function AltasAfiliadosPeriodo() {
 
             // CAMBIAR SI O SI POR LA RUTA DEL BACK 
             const res = await fetch(
-                `http://localhost:3000/api/reports/altas-afiliados?from=${from}&to=${to}`
+                `${API_BASE_URL}/reports/altas-afiliados?from=${from}&to=${to}`
             );
 
             if (!res.ok) {

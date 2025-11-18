@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config/api";
 
 interface Situacion {
   idSituacion: number;
@@ -62,7 +63,7 @@ export function AddAffiliate() {
     const fetchSituaciones = async () => {
       try {
         setLoadingSituaciones(true);
-        const response = await fetch("http://localhost:3000/api/therapeutic");
+        const response = await fetch(`${API_BASE_URL}/therapeutic`);
         
         if (!response.ok) throw new Error("Error al cargar situaciones terapéuticas");
         
@@ -391,7 +392,7 @@ export function AddAffiliate() {
       console.log("Payload a enviar:", JSON.stringify(payload, null, 2));
 
       // Hacer la petición al API
-      const response = await fetch("http://localhost:3000/api/affiliates", {
+      const response = await fetch(`${API_BASE_URL}/affiliates`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

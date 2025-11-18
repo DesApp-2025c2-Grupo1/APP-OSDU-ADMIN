@@ -103,7 +103,7 @@ export function AffiliatesTable({
       console.log("Datos que se envían al backend:", JSON.stringify(data, null, 2));
 
       const response = await fetch(
-        `http://localhost:3000/api/affiliates/${selectedAffiliate?.dni}`,
+        `${API_BASE_URL}/affiliates/${selectedAffiliate?.dni}`,
         {
           method: "PUT",
           headers: {
@@ -123,7 +123,7 @@ export function AffiliatesTable({
 
       // Recargar el afiliado actualizado
       const updatedResponse = await fetch(
-        `http://localhost:3000/api/affiliates/affiliate/${selectedAffiliate?.dni}`
+        `${API_BASE_URL}/affiliates/affiliate/${selectedAffiliate?.dni}`
       );
 
       if (updatedResponse.ok) {
@@ -151,7 +151,7 @@ export function AffiliatesTable({
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/affiliates/${selectedAffiliate.dni}`,
+        `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`,
         {
           method: "DELETE",
           headers: {
@@ -184,7 +184,7 @@ export function AffiliatesTable({
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/affiliates/${selectedAffiliate.dni}/schedule-delete`,
+        `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}/schedule-delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

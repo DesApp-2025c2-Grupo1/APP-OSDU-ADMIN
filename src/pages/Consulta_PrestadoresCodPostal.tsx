@@ -47,7 +47,7 @@ export function PrestadoresPorCodigoPostal() {
 
       // CAMBIAR SI O SI POR LA RUTA DEL BACK-END PARA ESTE REPORTE
       const res = await fetch(
-        `http://localhost:3000/api/reports/prestadores-por-codigo-postal?cp=${cp}`
+        `${API_BASE_URL}/reports/prestadores-por-codigo-postal?cp=${cp}`
       );
 
       if (!res.ok) {

@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { Prestador, PrestadorTipo, LugarAtencion, DiaSemana } from "../model/Provider.model";
 import { SPECIALTIES } from "../data/specialties";
 import { ButtonVolver } from "../util/ButtonVolver";
-
-const API_URL = "http://localhost:3000";
+import { API_URL } from "../config/api";
 
 type BloqueHorario = { dias: DiaSemana[]; desde: string; hasta: string };
 
