@@ -10,6 +10,7 @@ import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import { ButtonVolver } from "../util/ButtonVolver";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import { API_BASE_URL } from "../config/api";
 
 // Tipo para el afiliado que viene del endpoint
 interface AffiliateFromAPI {
@@ -93,7 +94,7 @@ export function GrupoFamiliar() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`http://localhost:3000/api/affiliates/family/${dni}`);
+      const response = await fetch(`${API_BASE_URL}/affiliates/family/${dni}`);
 
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -172,7 +173,7 @@ export function GrupoFamiliar() {
       console.log("📤 Payload para agregar familiar:", JSON.stringify(payload, null, 2));
 
       const response = await fetch(
-        `http://localhost:3000/api/affiliates/family/${dniTitular}`,
+        `${API_BASE_URL}/affiliates/family/${dniTitular}`,
         {
           method: "POST",
           headers: {
@@ -249,7 +250,7 @@ export function GrupoFamiliar() {
       console.log("📤 Datos que se envían al backend:", JSON.stringify(data, null, 2));
 
       const response = await fetch(
-        `http://localhost:3000/api/affiliates/${selectedAffiliate.dni}`,
+        `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`,
         {
           method: "PUT",
           headers: {
@@ -284,7 +285,7 @@ export function GrupoFamiliar() {
       console.log("🗑️ Intentando eliminar afiliado:", selectedAffiliate);
       
       const response = await fetch(
-        `http://localhost:3000/api/affiliates/${selectedAffiliate.dni}`,
+        `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`,
         {
           method: "DELETE",
           headers: {
@@ -324,7 +325,7 @@ export function GrupoFamiliar() {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/affiliates/${selectedAffiliate.dni}/schedule-delete`,
+        `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}/schedule-delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

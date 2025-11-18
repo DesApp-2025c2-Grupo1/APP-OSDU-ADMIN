@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Prestador } from "../model/Provider.model";
+import { API_BASE_URL } from "../config/api";
 
 interface ViewProviderPopupProps {
   provider: Prestador;
@@ -14,7 +15,7 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
     const cargarCentros = async () => {
       try {
         if (provider.tipoPrestador === "profesional" && provider.centroMedicoId) {
-          const response = await fetch("http://localhost:3000/providers");
+          const response = await fetch(`${API_BASE_URL}/providers`);
           const data = await response.json();
           const centros = Array.isArray(data) ? data : (data.data || []);
           

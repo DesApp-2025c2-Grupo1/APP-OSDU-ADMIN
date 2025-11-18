@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
+import { API_BASE_URL } from "../config/api";
 
 
 type PrestadorCodigoPostalRow = {
@@ -47,7 +48,7 @@ export function PrestadoresPorCodigoPostal() {
 
       // CAMBIAR SI O SI POR LA RUTA DEL BACK-END PARA ESTE REPORTE
       const res = await fetch(
-        `http://localhost:3000/api/reports/prestadores-por-codigo-postal?cp=${cp}`
+        `${API_BASE_URL}/reports/prestadores-por-codigo-postal?cp=${cp}`
       );
 
       if (!res.ok) {
