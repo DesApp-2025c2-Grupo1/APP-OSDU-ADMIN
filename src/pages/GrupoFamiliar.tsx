@@ -653,6 +653,16 @@ interface AddFamiliarPopupProps {
   onSave: (familiar: any) => void;
 }
 
+interface SituacionDisponible {
+  idSituacion: number;
+  nombre: string;
+}
+
+interface Situacion {
+  idSituacion: number;
+  fechaFinalizacion: string;
+}
+
 function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, onClose, onSave }: AddFamiliarPopupProps) {
   const [formData, setFormData] = useState({
     tipoDocumento: "DNI",
@@ -666,12 +676,53 @@ function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, onClose, onSa
     direccion: "",
   });
 
+  const [situaciones, setSituaciones] = useState<Situacion[]>([]);
+  const [situacionesDisponibles, setSituacionesDisponibles] = useState<SituacionDisponible[]>([]);
+  const [loadingSituaciones, setLoadingSituaciones] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Cargar situaciones terapéuticas al montar
+  useEffect(() => {
+    const loadSituaciones = async () => {
+      try {
+        setLoadingSituaciones(true);
+        const response = await fetch(`${API_BASE_URL}/therapeutic`);
+        if (!response.ok) throw new Error("Error al cargar situaciones terapéuticas");
+        const data = await response.json();
+        setSituacionesDisponibles(data.situaciones || []);
+      } catch (error) {
+        console.error("Error al cargar situaciones:", error);
+        setErrors(prev => ({ ...prev, situaciones: "No se pudieron cargar las situaciones terapéuticas" }));
+      } finally {
+        setLoadingSituaciones(false);
+      }
+    };
+    loadSituaciones();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const addSituacion = () => {
+    if (situacionesDisponibles.length === 0) {
+      setErrors(prev => ({ ...prev, situaciones: "No hay situaciones disponibles" }));
+      return;
+    }
+    setSituaciones((prev) => [...prev, { idSituacion: situacionesDisponibles[0].idSituacion, fechaFinalizacion: "" }]);
+  };
+
+  const removeSituacion = (idx: number) =>
+    setSituaciones((prev) => prev.filter((_, i) => i !== idx));
+
+  const updateSituacion = (idx: number, field: keyof Situacion, value: string | number) => {
+    setSituaciones((prev) => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], [field]: value };
+      return next;
+    });
   };
 
   const validate = () => {
@@ -723,6 +774,12 @@ function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, onClose, onSa
 
     if (!validate()) return;
 
+    const situacionesPayload = situaciones.map(s => ({
+      id: s.idSituacion,
+      fecha_inicio: new Date().toISOString().split('T')[0],
+      fecha_fin: s.fechaFinalizacion || null,
+    }));
+
     const payload = {
       dni: formData.nroDocumento,
       tipoDocumento: formData.tipoDocumento,
@@ -733,7 +790,7 @@ function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, onClose, onSa
       direccion: formData.direccion || "",
       emails: formData.email ? [{ email: formData.email }] : [],
       telefonos: formData.telefono ? [{ telefono: formData.telefono }] : [],
-      situaciones: [],
+      situaciones: situacionesPayload,
     };
 
     console.log("📤 Payload para agregar familiar:", payload);
@@ -895,6 +952,68 @@ function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, onClose, onSa
                 placeholder="Calle, número, ciudad"
               />
             </div>
+          </div>
+
+          {/* Situaciones Terapéuticas */}
+          <div className="mt-6 border-t pt-4">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-semibold text-gray-800">Situaciones Terapéuticas</h3>
+              <button
+                type="button"
+                onClick={addSituacion}
+                disabled={loadingSituaciones}
+                className="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600 disabled:bg-gray-400 transition"
+              >
+                {loadingSituaciones ? "Cargando..." : "+ Agregar Situación"}
+              </button>
+            </div>
+
+            {errors.situaciones && (
+              <p className="text-red-500 text-sm mb-2">{errors.situaciones}</p>
+            )}
+
+            {situaciones.length === 0 ? (
+              <p className="text-gray-500 text-sm italic">No hay situaciones terapéuticas agregadas</p>
+            ) : (
+              <div className="space-y-3">
+                {situaciones.map((sit, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-3 border border-gray-300 rounded bg-gray-50">
+                    <div className="flex-1">
+                      <label className="block text-xs font-semibold mb-1">Situación</label>
+                      <select
+                        value={sit.idSituacion}
+                        onChange={(e) => updateSituacion(idx, "idSituacion", parseInt(e.target.value))}
+                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                      >
+                        {situacionesDisponibles.map((s) => (
+                          <option key={s.idSituacion} value={s.idSituacion}>
+                            {s.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex-1">
+                      <label className="block text-xs font-semibold mb-1">Fecha Finalización (opcional)</label>
+                      <input
+                        type="date"
+                        value={sit.fechaFinalizacion}
+                        onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeSituacion(idx)}
+                      className="mt-6 bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600 transition"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex justify-center gap-4 mt-6">
