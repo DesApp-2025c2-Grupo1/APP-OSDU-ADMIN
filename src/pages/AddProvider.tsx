@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Prestador, PrestadorTipo, LugarAtencion, DiaSemana } from "../model/Provider.model";
-import { SPECIALTIES, loadSpecialties } from "../data/specialties";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { API_BASE_URL } from "../config/api";
 
@@ -15,6 +14,8 @@ export function AddProvider() {
   const [cuilCuit, setCuilCuit] = useState("");
   const [nombreCompleto, setNombreCompleto] = useState("");
   const [especialidades, setEspecialidades] = useState<number[]>([]);
+  const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{id: number, nombre: string}[]>([]);
+  const [loadingEspecialidades, setLoadingEspecialidades] = useState(true);
   const [telefonos, setTelefonos] = useState<string[]>([""]);
   const [mails, setMails] = useState<string[]>([""]);
   const [lugaresAtencion, setLugaresAtencion] = useState<LugarAtencion[]>([
@@ -35,7 +36,10 @@ export function AddProvider() {
   const handleEliminarEmail = (index: number) =>
     setMails(mails.filter((_, i) => i !== index));
 
-  const handleAgregarEspecialidad = () => setEspecialidades([...especialidades, 0]);
+  const handleAgregarEspecialidad = () => {
+    const primerIdDisponible = especialidadesDisponibles[0]?.id || 1;
+    setEspecialidades([...especialidades, primerIdDisponible]);
+  };
   const handleEspecialidadChange = (index: number, valor: number) => {
     const nuevas = [...especialidades];
     nuevas[index] = valor;
@@ -65,15 +69,28 @@ export function AddProvider() {
     const cargarDatos = async () => {
       try {
         // Cargar centros médicos
-        const res = await fetch(`${API_BASE_URL}/providers/`);
-        const data = await res.json();
-        const centrosMedicos = data.filter((p: any) => p.tipoPrestador === "centro_medico");
+        const resCentros = await fetch(`${API_BASE_URL}/providers/`);
+        const dataCentros = await resCentros.json();
+        const centrosMedicos = dataCentros.filter((p: any) => p.tipoPrestador === "centro_medico");
         setCentros(centrosMedicos);
 
-        // Cargar especialidades
-        await loadSpecialties();
+        // Cargar especialidades desde API
+        setLoadingEspecialidades(true);
+        const resEsp = await fetch(`${API_BASE_URL}/specialties`);
+        const dataEsp = await resEsp.json();
+        console.log("📋 Especialidades cargadas:", dataEsp);
+        
+        // El backend puede devolver { especialidades: [...] } o array directo
+        const especialidadesArray = dataEsp.especialidades || dataEsp || [];
+        setEspecialidadesDisponibles(especialidadesArray.map((e: any) => ({
+          id: e.idEspecialidad,
+          nombre: e.nombre
+        })));
       } catch (err) {
         console.error("Error cargando datos:", err);
+        setError("No se pudieron cargar las especialidades");
+      } finally {
+        setLoadingEspecialidades(false);
       }
     };
     cargarDatos();
@@ -140,7 +157,8 @@ export function AddProvider() {
       return setError("Formato de CUIT/CUIL inválido. Ej: 20-31216123-0");
     }
 
-    if (especialidades.length === 0 || especialidades.every(e => e === 0))
+    const especialidadesValidas = especialidades.filter(id => id > 0);
+    if (especialidadesValidas.length === 0)
       return setError("Debe seleccionar al menos una especialidad.");
 
     if (lugaresAtencion.length === 0 || lugaresAtencion.some(l => !l.calle.trim() || !l.localidad?.trim() || !l.provincia?.trim() || !l.cp.trim()))
@@ -154,7 +172,7 @@ export function AddProvider() {
         cuitCuil: cuilCuit,
         nombreCompleto,
         tipoPrestador: tipo,
-        especialidades: especialidades.filter(id => id !== 0),
+        especialidades: especialidadesValidas,
         telefonos: telefonos.filter(t => t.trim() !== ""),
         mails: mails.filter(m => m.trim() !== ""),
         lugaresAtencion: lugaresAtencion.map(lugar => ({
@@ -262,9 +280,10 @@ export function AddProvider() {
                   value={esp}
                   onChange={(e) => handleEspecialidadChange(i, parseInt(e.target.value))}
                   className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                  disabled={loadingEspecialidades}
                 >
                   <option value={0}>-- Seleccionar --</option>
-                  {SPECIALTIES.map((s) => (
+                  {especialidadesDisponibles.map((s) => (
                     <option key={s.id} value={s.id}>{s.nombre}</option>
                   ))}
                 </select>
