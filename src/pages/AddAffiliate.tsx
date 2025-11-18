@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config/api";
+import { fetchPlans, type Plan } from "../api/planService";
 
 interface Situacion {
   idSituacion: number;
@@ -53,32 +54,48 @@ export function AddAffiliate() {
   const [situaciones, setSituaciones] = useState<Situacion[]>([]);
   const [situacionesDisponibles, setSituacionesDisponibles] = useState<SituacionDisponible[]>([]);
   const [loadingSituaciones, setLoadingSituaciones] = useState(true);
+  const [planesDisponibles, setPlanesDisponibles] = useState<Plan[]>([]);
+  const [loadingPlanes, setLoadingPlanes] = useState(true);
   const [familiares, setFamiliares] = useState<Familiar[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Cargar situaciones terapéuticas desde la BD al montar el componente
+  // Cargar situaciones terapéuticas y planes desde la BD al montar el componente
   useEffect(() => {
-    const fetchSituaciones = async () => {
+    const fetchData = async () => {
       try {
+        // Cargar situaciones terapéuticas
         setLoadingSituaciones(true);
-        const response = await fetch(`${API_BASE_URL}/therapeutic`);
+        const responseSit = await fetch(`${API_BASE_URL}/therapeutic`);
         
-        if (!response.ok) throw new Error("Error al cargar situaciones terapéuticas");
+        if (!responseSit.ok) throw new Error("Error al cargar situaciones terapéuticas");
         
-        const data = await response.json();
-        console.log("📋 Situaciones cargadas:", data.situaciones);
-        setSituacionesDisponibles(data.situaciones || []);
+        const dataSit = await responseSit.json();
+        console.log("📋 Situaciones cargadas:", dataSit.situaciones);
+        setSituacionesDisponibles(dataSit.situaciones || []);
       } catch (error) {
         console.error("Error al cargar situaciones:", error);
         setErrors(prev => ({ ...prev, situaciones: "No se pudieron cargar las situaciones terapéuticas" }));
       } finally {
         setLoadingSituaciones(false);
       }
+
+      try {
+        // Cargar planes
+        setLoadingPlanes(true);
+        const planes = await fetchPlans();
+        console.log("📋 Planes cargados:", planes);
+        setPlanesDisponibles(planes);
+      } catch (error) {
+        console.error("Error al cargar planes:", error);
+        setErrors(prev => ({ ...prev, planes: "No se pudieron cargar los planes médicos" }));
+      } finally {
+        setLoadingPlanes(false);
+      }
     };
 
-    fetchSituaciones();
+    fetchData();
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -539,15 +556,14 @@ export function AddAffiliate() {
                 value={formData.planMedico}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
+                disabled={loadingPlanes}
               >
-                <option value="1">210</option>
-                <option value="2">310</option>
-                <option value="3">410</option>
-                <option value="4">510</option>
-                <option value="5">Bronce</option>
-                <option value="6">Plata</option>
-                <option value="7">Oro</option>
-                <option value="8">Platino</option>
+                <option value="">-- Seleccionar --</option>
+                {planesDisponibles.map(plan => (
+                  <option key={plan.idPlan} value={plan.idPlan}>
+                    {plan.nombre}
+                  </option>
+                ))}
               </select>
               {errors.planMedico && (
                 <p className="text-red-500 text-sm mt-1">{errors.planMedico}</p>

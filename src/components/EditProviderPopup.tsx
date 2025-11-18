@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Prestador, LugarAtencion, Especialidad } from "../model/Provider.model";
-import { SPECIALTIES } from "../data/specialties";
+import { SPECIALTIES, loadSpecialties } from "../data/specialties";
 import { updateProvider } from "../api/providerService";
 import { API_BASE_URL } from "../config/api";
 

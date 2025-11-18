@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Prestador, PrestadorTipo, LugarAtencion, DiaSemana } from "../model/Provider.model";
-import { SPECIALTIES } from "../data/specialties";
+import { SPECIALTIES, loadSpecialties } from "../data/specialties";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { API_BASE_URL } from "../config/api";
 
@@ -60,19 +60,23 @@ export function AddProvider() {
 
 
   
-  // Cargar centros médicos al montar
+  // Cargar centros médicos y especialidades al montar
   useEffect(() => {
-    const cargarCentros = async () => {
+    const cargarDatos = async () => {
       try {
+        // Cargar centros médicos
         const res = await fetch(`${API_BASE_URL}/providers/`);
         const data = await res.json();
         const centrosMedicos = data.filter((p: any) => p.tipoPrestador === "centro_medico");
         setCentros(centrosMedicos);
+
+        // Cargar especialidades
+        await loadSpecialties();
       } catch (err) {
-        console.error("Error cargando centros:", err);
+        console.error("Error cargando datos:", err);
       }
     };
-    cargarCentros();
+    cargarDatos();
   }, []);
 
   const diasSemana: { label: string; id: DiaSemana }[] = [

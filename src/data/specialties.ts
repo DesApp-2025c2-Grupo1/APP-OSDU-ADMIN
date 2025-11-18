@@ -1,6 +1,8 @@
 import type { Especialidad } from "../model/Provider.model";
+import { fetchSpecialties } from "../api/specialtyService";
 
-export const SPECIALTIES: Especialidad[] = [
+// Array de especialidades con valores por defecto
+export let SPECIALTIES: Especialidad[] = [
   { id: 1, nombre: "Clínica" },
   { id: 2, nombre: "Pediatría" },
   { id: 3, nombre: "Cardiología" },
@@ -10,3 +12,15 @@ export const SPECIALTIES: Especialidad[] = [
   { id: 7, nombre: "Ginecología" },
   { id: 8, nombre: "Resonancias" },
 ];
+
+// Función para cargar las especialidades desde el backend
+export const loadSpecialties = async (): Promise<Especialidad[]> => {
+  try {
+    SPECIALTIES = await fetchSpecialties();
+    return SPECIALTIES;
+  } catch (error) {
+    console.error("Error al cargar especialidades:", error);
+    // Ya tenemos el fallback arriba
+    return SPECIALTIES;
+  }
+};
