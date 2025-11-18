@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { Prestador, PrestadorTipo, LugarAtencion, DiaSemana } from "../model/Provider.model";
 import { SPECIALTIES } from "../data/specialties";
 import { ButtonVolver } from "../util/ButtonVolver";
-import { API_URL } from "../config/api";
+import { API_BASE_URL } from "../config/api";
 
 type BloqueHorario = { dias: DiaSemana[]; desde: string; hasta: string };
 
@@ -64,7 +64,7 @@ export function AddProvider() {
   useEffect(() => {
     const cargarCentros = async () => {
       try {
-        const res = await fetch(`${API_URL}/providers/`);
+        const res = await fetch(`${API_BASE_URL}/providers/`);
         const data = await res.json();
         const centrosMedicos = data.filter((p: any) => p.tipoPrestador === "centro_medico");
         setCentros(centrosMedicos);
@@ -171,7 +171,7 @@ export function AddProvider() {
 
       console.log("Payload enviado:", JSON.stringify(payload, null, 2));
 
-      const res = await fetch(`${API_URL}/providers/`, {
+      const res = await fetch(`${API_BASE_URL}/providers/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import type { Prestador, LugarAtencion, Especialidad } from "../model/Provider.model";
 import { SPECIALTIES } from "../data/specialties";
 import { updateProvider } from "../api/providerService";
-import { API_URL } from "../config/api";
+import { API_BASE_URL } from "../config/api";
 
 interface EditProviderPopupProps {
   provider: Prestador;
@@ -31,7 +31,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
   useEffect(() => {
     const cargarCentros = async () => {
       try {
-        const res = await fetch(`${API_URL}/providers/`);
+        const res = await fetch(`${API_BASE_URL}/providers/`);
         const data = await res.json();
         const centros = data.filter((p: any) => p.tipoPrestador === "centro_medico");
         setCentrosMedicos(centros);
