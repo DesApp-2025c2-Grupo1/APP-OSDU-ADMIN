@@ -6,6 +6,7 @@ import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import ScheduledSuccessPopup from "./BajaExitosaPopup";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import { API_BASE_URL } from "../config/api";
 
 export type Affiliate = {
   grupoFamiliar: number;

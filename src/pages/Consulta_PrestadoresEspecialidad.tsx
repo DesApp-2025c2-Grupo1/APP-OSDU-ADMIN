@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { SPECIALTIES } from "../data/specialties";
+import { API_BASE_URL } from "../config/api";
 
 // 🔹 Fila de resultado (ajustarla a lo que devuelva tu API real)
 type PrestadorEspecialidadRow = {

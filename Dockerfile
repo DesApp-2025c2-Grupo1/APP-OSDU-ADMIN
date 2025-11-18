@@ -1,6 +1,10 @@
 # Multi-stage build para Frontend React con Vite
 FROM node:18-alpine AS builder
 
+# Argumento para recibir la URL del API
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 WORKDIR /app
 
 # Copiar archivos de dependencias

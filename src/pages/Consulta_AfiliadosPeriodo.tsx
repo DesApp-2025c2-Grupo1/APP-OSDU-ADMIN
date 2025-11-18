@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config/api";
 
 function isSameDay(a: Date, b: Date) {
     return (
