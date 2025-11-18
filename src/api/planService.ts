@@ -18,8 +18,8 @@ export const fetchPlans = async (): Promise<Plan[]> => {
 
     const data = await response.json();
     
-    // El backend devuelve un array directo
-    return Array.isArray(data) ? data : [];
+    // El backend devuelve { plans: [...] }
+    return data.plans || [];
   } catch (error) {
     console.error("Error en fetchPlans:", error);
     throw error;
