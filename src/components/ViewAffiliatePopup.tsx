@@ -158,24 +158,24 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
   console.log("🏥 Situaciones a mostrar:", displayAffiliate.situaciones);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 overflow-y-auto">
-      <div className="bg-white rounded-lg w-[90%] max-w-5xl my-8 p-6 relative max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 overflow-y-auto p-4">
+      <div className="bg-white rounded-lg w-full max-w-5xl my-8 p-4 sm:p-6 relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800 z-10"
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-600 text-2xl hover:text-gray-800 z-10"
         >
           ✕
         </button>
 
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">Detalles del Afiliado</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6 pr-8">Detalles del Afiliado</h1>
 
         {/* Datos de Afiliado */}
-        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+        <div className="mb-6 sm:mb-8 p-3 sm:p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-base sm:text-lg font-semibold mb-3 sm:mb-4 border-b-2 border-[#5FA92C] pb-1">
             Datos de Afiliado
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {displayAffiliate.tipoDocumento && (
               <div>
                 <label className="font-semibold mb-1 bg-gray-100 px-2 block">Tipo Documento</label>
@@ -307,10 +307,10 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
         </div>
 
         {/* Botón de cierre */}
-        <div className="flex justify-center mt-6">
+        <div className="flex justify-center mt-4 sm:mt-6">
           <button
             onClick={onClose}
-            className="bg-gray-500 text-white px-8 py-3 rounded font-semibold shadow hover:bg-gray-600 transition"
+            className="bg-gray-500 text-white px-6 sm:px-8 py-2 sm:py-3 rounded font-semibold shadow hover:bg-gray-600 transition w-full sm:w-auto"
           >
             Cerrar
           </button>
