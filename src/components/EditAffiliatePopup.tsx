@@ -42,7 +42,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   const [telefonos, setTelefonos] = useState<Array<{ idTelefono?: number; telefono: string }>>([]);
   const [emails, setEmails] = useState<Array<{ idEmail?: number; email: string }>>([]);
   const [situaciones, setSituaciones] = useState<Situacion[]>([]);
-  
+
   const [telefonosEliminados, setTelefonosEliminados] = useState<number[]>([]);
   const [emailsEliminados, setEmailsEliminados] = useState<number[]>([]);
   const [situacionesEliminadas, setSituacionesEliminadas] = useState<number[]>([]);
@@ -55,9 +55,9 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         console.log("🔍 Cargando datos para DNI:", affiliate.dni);
-        
+
         // Cargar datos del afiliado
         const [affiliateRes, situacionesRes, planesRes] = await Promise.all([
           fetch(`${API_BASE_URL}/affiliates/affiliate/${affiliate.dni}`),
@@ -77,9 +77,11 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         console.log("📋 Situaciones disponibles:", situacionesData);
         console.log("📋 Planes disponibles:", planesData);
 
-        const aff = affiliateData.affiliates;
+        // El endpoint puede devolver el afiliado directamente o dentro de un objeto
+        const aff = affiliateData.affiliate || affiliateData.affiliates || affiliateData;
 
-        if (!aff) {
+        if (!aff || !aff.dni) {
+          console.error("📦 Estructura recibida:", affiliateData);
           throw new Error("No se encontraron datos del afiliado");
         }
 
@@ -118,7 +120,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         // ✅ Situaciones terapéuticas
         console.log("🏥 Situaciones del afiliado:", aff.situaciones);
         setSituaciones(aff.situaciones || []);
-        
+
         setSituacionesDisponibles(situacionesData.situaciones || []);
         setPlanesDisponibles(planesData.plans || []);
 
@@ -251,10 +253,10 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   // SITUACIONES
   const addSituacion = () => {
     if (situacionesDisponibles.length === 0) return;
-    
+
     const primeraSituacion = situacionesDisponibles[0];
     const hoy = new Date().toISOString().split('T')[0].split('-').reverse().join('/');
-    
+
     setSituaciones(prev => [...prev, {
       idSituacion: primeraSituacion.idSituacion,
       fechaInicio: hoy,
@@ -269,7 +271,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   const removeSituacion = (idx: number) => {
     const sit = situaciones[idx];
     console.log("🗑️ Eliminando situación:", sit);
-    
+
     if (sit.idSituacionAfiliado) {
       setSituacionesEliminadas(prev => {
         const newList = [...prev, sit.idSituacionAfiliado!];
@@ -277,20 +279,20 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         return newList;
       });
     }
-    
+
     setSituaciones(prev => prev.filter((_, i) => i !== idx));
   };
 
   const updateSituacion = (idx: number, field: string, value: any) => {
     console.log(`✏️ Actualizando situación ${idx}, campo: ${field}, valor:`, value);
-    
+
     setSituaciones(prev => prev.map((s, i) => {
       if (i !== idx) return s;
-      
+
       if (field === "idSituacion") {
         const sitSelected = situacionesDisponibles.find(sd => sd.idSituacion === parseInt(value));
         console.log("🔄 Cambiando tipo de situación a:", sitSelected);
-        
+
         return {
           ...s,
           idSituacion: parseInt(value),
@@ -300,7 +302,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
           } : s.situacionTerapeutica
         };
       }
-      
+
       return { ...s, [field]: value };
     }));
   };
@@ -497,7 +499,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Situaciones Terapéuticas
           </h2>
-          
+
           <div className="space-y-3">
             {situaciones.length === 0 && (
               <p className="text-sm text-gray-500 text-center py-4">

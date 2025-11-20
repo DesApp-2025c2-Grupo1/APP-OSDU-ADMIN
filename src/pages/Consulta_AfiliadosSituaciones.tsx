@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
+import { API_BASE_URL } from "../config/api";
 
 type SituacionRow = {
   idSituacionAfiliado: number;
@@ -61,7 +62,7 @@ export function SituacionesPorAfiliado() {
       setPage(1);
 
       const res = await fetch(
-        `http://localhost:3000/api/reports/situaciones-por-afiliado?dni=${dni}`
+        `${API_BASE_URL}/reports/situaciones-por-afiliado?dni=${dni}`
       );
 
       if (!res.ok) {
