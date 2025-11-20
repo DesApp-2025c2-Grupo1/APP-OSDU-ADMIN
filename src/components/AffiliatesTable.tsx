@@ -258,6 +258,79 @@ export function AffiliatesTable({
           </table>
         </div>
 
+        <div className="md:hidden p-3">
+          {currentAffiliates.length === 0 && (
+            <div className="px-2 py-6 text-center text-sm text-gray-500">
+              No hay afiliados para mostrar.
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            {currentAffiliates.map((a) => (
+              <div key={a.credencial} className="border border-gray-200 rounded-lg shadow-sm p-4 bg-white">
+                <div className="mb-3">
+                  <div className="text-xs text-gray-500 uppercase">Credencial</div>
+                  <div className="font-semibold break-all">{a.credencial}</div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase">DNI</div>
+                    <div className="text-sm">{a.dni}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
+                    <div className="text-sm">{a.fecha_nacimiento}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase">Nombre</div>
+                    <div className="text-sm">{a.nombre}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase">Apellido</div>
+                    <div className="text-sm">{a.apellido}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-xs text-gray-500 uppercase">Plan</div>
+                    <div className="text-sm">{a.plan.nombre}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-xs text-gray-500 uppercase">Dirección</div>
+                    <div className="text-sm">{a.direccion}</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleOptionClick("Ver detalles", a)}
+                    className="flex-1 px-3 py-2 text-sm border rounded-md border-gray-300 hover:bg-gray-50"
+                  >
+                    Ver detalles
+                  </button>
+                  <button
+                    onClick={() => handleOptionClick("Editar", a)}
+                    className="flex-1 px-3 py-2 text-sm border-2 rounded-md border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white font-semibold"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleOptionClick("Ver Grupo Familiar", a)}
+                    className="flex-1 px-3 py-2 text-sm border rounded-md border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold"
+                  >
+                    Ver Grupo
+                  </button>
+                  <button
+                    onClick={() => handleOptionClick("Dar de baja", a)}
+                    className="w-full px-3 py-2 text-sm border-2 rounded-md border-red-500 text-red-600 hover:bg-red-50 font-semibold"
+                  >
+                    Dar de baja
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Footer de paginación */}
         <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
           <span className="text-sm text-gray-700">
@@ -267,14 +340,14 @@ export function AffiliatesTable({
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
-              className="px-2 py-1 border rounded"
+              className="px-2 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <NavigateBeforeIcon />
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
-              className="px-2 py-1 border rounded"
+              className="px-2 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <NavigateNextIcon />
             </button>
