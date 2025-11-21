@@ -251,7 +251,7 @@ export function Agenda() {
   };
 
   const handleAgregarAgenda = () => {
-    navigate("/add-agenda");
+    navigate("/agenda/nueva");
   };
 
   // Helper para mostrar días ordenados
