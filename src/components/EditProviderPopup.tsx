@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Prestador, LugarAtencion, Especialidad } from "../model/Provider.model";
-import { SPECIALTIES } from "../data/specialties";
 import { updateProvider } from "../api/providerService";
-
-const API_URL = "http://localhost:3000";
+import { API_BASE_URL } from "../config/api";
 
 interface EditProviderPopupProps {
   provider: Prestador;
@@ -27,20 +25,31 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
   const [error, setError] = useState<string | null>(null);
   const [selectedLugarIndex, setSelectedLugarIndex] = useState<number>(0);
   const [centrosMedicos, setCentrosMedicos] = useState<any[]>([]);
+  const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{id: number, nombre: string}[]>([]);
 
-  // Cargar centros médicos al montar
+  // Cargar centros médicos y especialidades al montar
   useEffect(() => {
-    const cargarCentros = async () => {
+    const cargarDatos = async () => {
       try {
-        const res = await fetch(`${API_URL}/providers/`);
-        const data = await res.json();
-        const centros = data.filter((p: any) => p.tipoPrestador === "centro_medico");
+        // Cargar centros médicos
+        const resCentros = await fetch(`${API_BASE_URL}/providers/`);
+        const dataCentros = await resCentros.json();
+        const centros = dataCentros.filter((p: any) => p.tipoPrestador === "centro_medico");
         setCentrosMedicos(centros);
+
+        // Cargar especialidades desde API
+        const resEsp = await fetch(`${API_BASE_URL}/specialties`);
+        const dataEsp = await resEsp.json();
+        const especialidadesArray = dataEsp.especialidades || dataEsp || [];
+        setEspecialidadesDisponibles(especialidadesArray.map((e: any) => ({
+          id: e.idEspecialidad,
+          nombre: e.nombre
+        })));
       } catch (err) {
-        console.error("Error cargando centros:", err);
+        console.error("Error cargando datos:", err);
       }
     };
-    cargarCentros();
+    cargarDatos();
 
     // Debug: imprimir datos del provider
     console.log('📋 Provider en EditProviderPopup:', {
@@ -264,7 +273,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           <div className="flex gap-2">
             <select 
               onChange={(e) => {
-                const selected = SPECIALTIES.find(s => s.id === parseInt(e.target.value));
+                const selected = especialidadesDisponibles.find(s => s.id === parseInt(e.target.value));
                 if (selected) addEsp(selected);
                 e.target.value = "";
               }}
@@ -272,7 +281,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
               defaultValue=""
             >
               <option value="">Seleccionar especialidad...</option>
-              {SPECIALTIES.map((esp) => (
+              {especialidadesDisponibles.map((esp) => (
                 <option key={esp.id} value={esp.id}>
                   {esp.nombre}
                 </option>

@@ -1,6 +1,5 @@
 import type { Prestador } from "../model/Provider.model";
-
-const API_BASE_URL = "http://localhost:3000";
+import { API_BASE_URL } from "../config/api";
 
 /**
  * Obtiene la lista completa de proveedores desde el back-end
