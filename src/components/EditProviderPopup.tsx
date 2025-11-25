@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import type { Prestador, LugarAtencion, Especialidad } from "../model/Provider.model";
 import { updateProvider } from "../api/providerService";
 import { API_BASE_URL } from "../config/api";
+import { checkProviderSpecialtyAgendas, checkProviderPlaceAgendas } from "../api/providerService";
+import { ConfirmSpecialtyChangeDialog } from "./ConfirmSpecialtyChangeDialog";
+import { ConfirmPlaceChangeDialog } from "./ConfirmPlaceChangeDialog";
 
 interface EditProviderPopupProps {
   provider: Prestador;
@@ -25,7 +28,20 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
   const [error, setError] = useState<string | null>(null);
   const [selectedLugarIndex, setSelectedLugarIndex] = useState<number>(0);
   const [centrosMedicos, setCentrosMedicos] = useState<any[]>([]);
-  const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{id: number, nombre: string}[]>([]);
+  const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{ id: number, nombre: string }[]>([]);
+
+  const [showSpecialtyWarning, setShowSpecialtyWarning] = useState(false);
+  const [pendingSpecialtyToRemove, setPendingSpecialtyToRemove] = useState<{
+    specialty: Especialidad;
+    agendas: any[];
+  } | null>(null);
+  const [checkingAgendas, setCheckingAgendas] = useState(false);
+
+  const [showPlaceWarning, setShowPlaceWarning] = useState(false);
+  const [placeAgendas, setPlaceAgendas] = useState<any[]>([]);
+  const [pendingSave, setPendingSave] = useState(false);
+  const [originalPlaces, setOriginalPlaces] = useState<LugarAtencion[]>([]);
+
 
   // Cargar centros médicos y especialidades al montar
   useEffect(() => {
@@ -50,6 +66,9 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
       }
     };
     cargarDatos();
+
+    // Guardar lugares originales para detectar cambios
+    setOriginalPlaces(JSON.parse(JSON.stringify(provider.lugaresAtencion || [])));
 
     // Debug: imprimir datos del provider
     console.log('📋 Provider en EditProviderPopup:', {
@@ -78,7 +97,6 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
   const addLugar = () => {
     const nuevoLugar: LugarAtencion = {
       calle: "",
-      numero: "",
       localidad: "",
       provincia: "",
       cp: "",
@@ -116,25 +134,123 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
     }));
 
   // ---------- especialidades ----------
-  const delEsp = (i: number) =>
-    setFormData(prev => ({
+  const delEsp = async (i: number) => {
+    const specialtyToRemove = formData.especialidades[i];
+
+    try {
+      setCheckingAgendas(true);
+
+      // Verificar agendas desde el backend
+      const result = await checkProviderSpecialtyAgendas(
+        formData.cuitCuil,
+        specialtyToRemove.id
+      );
+
+      if (result.count > 0) {
+        // Mostrar diálogo de confirmación
+        setPendingSpecialtyToRemove({
+          specialty: specialtyToRemove,
+          agendas: result.agendas,
+        });
+        setShowSpecialtyWarning(true);
+      } else {
+        // Si no hay agendas, eliminar directamente
+        setFormData((prev) => ({
+          ...prev,
+          especialidades: prev.especialidades.filter((_, idx) => idx !== i),
+        }));
+      }
+    } catch (err) {
+      console.error("Error verificando agendas:", err);
+      // Si hay error, permitir eliminar (pero mostrar alerta)
+      alert("No se pudo verificar las agendas asociadas. Por favor, intenta de nuevo.");
+    } finally {
+      setCheckingAgendas(false);
+    }
+  };
+
+  const confirmRemoveSpecialty = () => {
+    if (!pendingSpecialtyToRemove) return;
+
+    setFormData((prev) => ({
       ...prev,
-      especialidades: prev.especialidades.filter((_, idx) => idx !== i)
+      especialidades: prev.especialidades.filter(
+        (e) => e.id !== pendingSpecialtyToRemove.specialty.id
+      ),
     }));
+
+    setShowSpecialtyWarning(false);
+    setPendingSpecialtyToRemove(null);
+  };
+
+  // Agregar función para cancelar
+  const cancelRemoveSpecialty = () => {
+    setShowSpecialtyWarning(false);
+    setPendingSpecialtyToRemove(null);
+  };
+
+
 
   const addEsp = (especialidad: Especialidad) => {
     // Verificar que no exista ya
-    if (formData.especialidades.some(e => e.id === especialidad.id)) return;
+    if (formData.especialidades.some(e => e.id === especialidad.id)) {
+      alert('Esta especialidad ya ha sido agregada.');
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       especialidades: [...prev.especialidades, especialidad]
     }));
   };
 
+
   const handleSave = async () => {
+    // Verificar si los lugares de atención cambiaron
+    console.log('🔍 Verificando cambios en lugares...');
+    console.log('Lugares originales:', JSON.stringify(originalPlaces, null, 2));
+    console.log('Lugares actuales:', JSON.stringify(formData.lugaresAtencion, null, 2));
+
+    const placesChanged = JSON.stringify(originalPlaces) !== JSON.stringify(formData.lugaresAtencion);
+    console.log('¿Lugares cambiaron?', placesChanged);
+
+    if (placesChanged && !pendingSave) {
+      console.log('⚠️ Lugares cambiaron, verificando agendas...');
+      // Verificar si hay agendas asociadas a los lugares
+      try {
+        setCheckingAgendas(true);
+        const result = await checkProviderPlaceAgendas(formData.cuitCuil);
+
+        console.log('Resultado de agendas:', result);
+
+        if (result.count > 0) {
+          console.log('✋ Hay agendas, mostrando diálogo de confirmación');
+          // Mostrar diálogo de confirmación
+          setPlaceAgendas(result.agendas);
+          setShowPlaceWarning(true);
+          setCheckingAgendas(false);
+          return; // No continuar con el guardado
+        } else {
+          console.log('✅ No hay agendas, continuando con guardado');
+        }
+      } catch (err) {
+        console.error(" Error verificando agendas de lugares:", err);
+        // Si hay error, continuar con el guardado (no bloquear)
+      } finally {
+        setCheckingAgendas(false);
+      }
+    } else {
+      console.log('ℹ️ Lugares no cambiaron o guardado pendiente');
+    }
+
+    // Proceder con el guardado (ya sea sin cambios en lugares o con confirmación)
+    await performSave();
+  };
+
+  const performSave = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       // Enviar solo los IDs de especialidades, no los objetos completos
       const updated = {
@@ -151,15 +267,15 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
       if (formData.tipoPrestador === "profesional") {
         (updated as any).centroMedicoId = (formData as any).centroMedicoId || null;
       }
-      
+
       console.log('📤 Enviando actualización:', JSON.stringify(updated, null, 2));
       console.log('🏥 Centro Médico ID:', (formData as any).centroMedicoId);
-      
+
       // Llamar al API para guardar cambios
       const result = await updateProvider(formData.cuitCuil, updated);
-      
+
       console.log('✅ Respuesta del servidor:', result);
-      
+
       // Notificar que se guardó correctamente
       onSave(result);
       onClose();
@@ -173,7 +289,20 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
       setError(errorMsg);
     } finally {
       setLoading(false);
+      setPendingSave(false); // Reset pending save flag
     }
+  };
+
+  const confirmPlaceChange = () => {
+    setShowPlaceWarning(false);
+    setPendingSave(true);
+    // Llamar performSave inmediatamente después de confirmar
+    setTimeout(() => performSave(), 0);
+  };
+
+  const cancelPlaceChange = () => {
+    setShowPlaceWarning(false);
+    setPendingSave(false);
   };
 
   const lugarActual = formData.lugaresAtencion[selectedLugarIndex];
@@ -249,7 +378,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
         {/* ESPECIALIDADES (editable) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Especialidades</h2>
-          
+
           {formData.especialidades.length > 0 ? (
             <div className="space-y-2 mb-4">
               {formData.especialidades.map((esp, i) => (
@@ -271,7 +400,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
           {/* Dropdown para agregar especialidades */}
           <div className="flex gap-2">
-            <select 
+            <select
               onChange={(e) => {
                 const selected = especialidadesDisponibles.find(s => s.id === parseInt(e.target.value));
                 if (selected) addEsp(selected);
@@ -281,13 +410,21 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
               defaultValue=""
             >
               <option value="">Seleccionar especialidad...</option>
-              {especialidadesDisponibles.map((esp) => (
-                <option key={esp.id} value={esp.id}>
-                  {esp.nombre}
-                </option>
-              ))}
+              {especialidadesDisponibles
+                .filter(esp => !formData.especialidades.some(e => e.id === esp.id))
+                .map((esp) => (
+                  <option key={esp.id} value={esp.id}>
+                    {esp.nombre}
+                  </option>
+                ))
+              }
             </select>
           </div>
+          {formData.especialidades.length === especialidadesDisponibles.length && (
+            <p className="text-sm text-gray-500 mt-2">
+              ℹ️ Todas las especialidades disponibles ya han sido agregadas
+            </p>
+          )}
         </div>
 
         {/* CONTACTO */}
@@ -360,11 +497,10 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                     key={idx}
                     type="button"
                     onClick={() => setSelectedLugarIndex(idx)}
-                    className={`px-4 py-2 rounded font-semibold transition ${
-                      selectedLugarIndex === idx
-                        ? 'bg-[#5FA92C] text-white'
-                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    }`}
+                    className={`px-4 py-2 rounded font-semibold transition ${selectedLugarIndex === idx
+                      ? 'bg-[#5FA92C] text-white'
+                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                      }`}
                   >
                     Lugar {idx + 1}
                   </button>
@@ -453,14 +589,14 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
         {/* BOTONES */}
         <div className="flex justify-center gap-4 mt-4">
-          <button 
-            onClick={handleSave} 
+          <button
+            onClick={handleSave}
             disabled={loading}
             className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Guardando..." : "Guardar Cambios"}
           </button>
-          <button 
+          <button
             onClick={onClose}
             disabled={loading}
             className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
@@ -469,6 +605,27 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           </button>
         </div>
       </div>
+      {showSpecialtyWarning && pendingSpecialtyToRemove && (
+        <ConfirmSpecialtyChangeDialog
+          open={showSpecialtyWarning}
+          providerName={formData.nombreCompleto}
+          specialty={pendingSpecialtyToRemove.specialty.nombre}
+          agendaCount={pendingSpecialtyToRemove.agendas.length}
+          onConfirm={confirmRemoveSpecialty}
+          onCancel={cancelRemoveSpecialty}
+          isLoading={loading || checkingAgendas}
+        />
+      )}
+      {showPlaceWarning && (
+        <ConfirmPlaceChangeDialog
+          open={showPlaceWarning}
+          providerName={formData.nombreCompleto}
+          agendaCount={placeAgendas.length}
+          onConfirm={confirmPlaceChange}
+          onCancel={cancelPlaceChange}
+          isLoading={loading || checkingAgendas}
+        />
+      )}
     </div>
   );
 }
