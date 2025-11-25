@@ -1,78 +1,59 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { providersMock } from "../data/providers";
+import { useNavigate } from "react-router-dom";
 import { ViewAgendaPopup } from "../components/ViewAgendaPopup";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import { AgendaTable } from "../components/AgendaTable";
 import { ConfirmDeleteAgendaDialog } from "../components/ConfirmDeleteAgendaDialog";
 import { EditAgendaPopup } from "../components/EditAgendaPopup";
+import { fetchAgendas, deleteAgenda, type AgendaResponse } from "../api/agendaService";
+import { fetchProviders } from "../api/providerService";
+import { fetchSpecialties } from "../api/specialtyService";
 
 export interface HorarioAgenda {
   id: string;
   prestador: string;
+  cuitCuil: string;
   especialidad: string;
+  idEspecialidad: number;
   lugar: string;
+  idLugar: number;
   dias: string[];
   horario: string;
   duracion: number;
+  bloques?: {
+    dias: string[];
+    desde: string;
+    hasta: string;
+  }[];
 }
 
 interface FiltrosAgenda {
-  prestador: string;    
-  especialidad: string; 
+  prestador: string;
+  especialidad: string;
 }
 
 const PAGE_SIZE = 5;
 
-const construirHorariosDesdeProviders = (): HorarioAgenda[] => {
-  const diaMap: Record<number, string> = {
-    1: "Lunes",
-    2: "Martes",
-    3: "Miércoles",
-    4: "Jueves",
-    5: "Viernes",
-    6: "Sábado",
-    7: "Domingo",
-  };
-
-  const horarios: HorarioAgenda[] = [];
-
-  (providersMock as any[]).forEach((provider, indexPrestador) => {
-    const direcciones = provider.direcciones || [];
-    direcciones.forEach((dir: any, indexDireccion: number) => {
-      const bloques = dir.horarios || [];
-      bloques.forEach((bloque: any, indexBloque: number) => {
-        const diasNumeros: number[] = Array.isArray(bloque.dias) ? bloque.dias : [];
-        const diasLabels = diasNumeros
-          .map((n) => diaMap[n] || `Día ${n}`)
-          .filter(Boolean);
-
-        horarios.push({
-          id: `${provider.id ?? indexPrestador}-${indexDireccion}-${indexBloque}`,
-          prestador: provider.nombreCompleto ?? "",
-          especialidad: Array.isArray(provider.especialidades)
-            ? provider.especialidades.join(", ")
-            : "",
-          lugar: `${dir.etiqueta ? dir.etiqueta + " - " : ""}${dir.calle ?? ""} ${
-            dir.numero ?? ""
-          }, ${dir.localidad ?? ""}`.trim(),
-          dias: diasLabels,
-          horario: `${bloque.desde ?? ""} - ${bloque.hasta ?? ""}`,
-          duracion: 30,
-        });
-      });
-    });
-  });
-
-  return horarios;
-};
+// Toast component
+const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => (
+  <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in z-50">
+    {message}
+    <button className="ml-3 font-bold text-white" onClick={onClose}>×</button>
+  </div>
+);
 
 export function Agenda() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   // Estados principales
-  const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [horarios, setHorarios] = useState<HorarioAgenda[]>([]);
+  const [prestadores, setPrestadores] = useState<any[]>([]);
+  const [especialidades, setEspecialidades] = useState<any[]>([]);
+
+  // Popups
   const [viewingAgenda, setViewingAgenda] = useState<HorarioAgenda | null>(null);
   const [openViewPopup, setOpenViewPopup] = useState(false);
   const [agendaToDelete, setAgendaToDelete] = useState<HorarioAgenda | null>(null);
@@ -80,84 +61,93 @@ export function Agenda() {
 
   // Búsqueda y filtros
   const [busquedaPrestador, setBusquedaPrestador] = useState("");
-  const [mostrarDropdownPrestador, setMostrarDropdownPrestador] =
-    useState(false);
-
+  const [mostrarDropdownPrestador, setMostrarDropdownPrestador] = useState(false);
   const [filtros, setFiltros] = useState<FiltrosAgenda>({
     prestador: "",
     especialidad: "",
   });
 
-  const [horarios, setHorarios] = useState<HorarioAgenda[]>(() =>
-    construirHorariosDesdeProviders()
-  );
-
   const [currentPage, setCurrentPage] = useState(1);
-  useEffect(() => {
-    const state = location.state as { nuevaAgenda?: HorarioAgenda } | null;
-    if (state?.nuevaAgenda) {
-      setHorarios((prev) => [...prev, state.nuevaAgenda]);
-      navigate(location.pathname, { replace: true, state: {} });
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Cargar datos iniciales
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Cargar agendas, prestadores y especialidades en paralelo
+      const [agendasData, prestadoresData, especialidadesData] = await Promise.all([
+        fetchAgendas(),
+        fetchProviders(),
+        fetchSpecialties()
+      ]);
+
+      // Mapear agendas al formato del componente
+      const agendasMapeadas = agendasData.map((agenda: AgendaResponse) => ({
+        id: agenda.id,
+        prestador: agenda.prestador,
+        cuitCuil: agenda.cuitCuil,
+        especialidad: agenda.especialidad,
+        idEspecialidad: agenda.idEspecialidad,
+        lugar: agenda.lugar,
+        idLugar: agenda.idLugar,
+        dias: agenda.dias,
+        horario: agenda.horario,
+        duracion: agenda.duracion,
+        bloques: agenda.bloques
+      }));
+
+      setHorarios(agendasMapeadas);
+      setPrestadores(prestadoresData);
+      setEspecialidades(especialidadesData);
+    } catch (err) {
+      console.error("Error al cargar datos:", err);
+      setError("No se pudieron cargar las agendas");
+    } finally {
+      setLoading(false);
     }
-  }, [location.state, location.pathname, navigate]);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const prestadoresFiltrados = useMemo(() => {
-    if (!busquedaPrestador.trim()) return providersMock;
+    if (!busquedaPrestador.trim()) return prestadores;
     const busqueda = busquedaPrestador.toLowerCase();
-    return providersMock.filter(
+    return prestadores.filter(
       (p: any) =>
         (p.nombreCompleto ?? "").toLowerCase().includes(busqueda) ||
-        (p.tipo ?? "").toLowerCase().includes(busqueda)
+        (p.tipoPrestador ?? "").toLowerCase().includes(busqueda)
     );
-  }, [busquedaPrestador]);
-
-  const prestadores = useMemo(() => {
-    return (providersMock as any[]).map((provider) => ({
-      id: provider.id as string,
-      nombre: provider.nombreCompleto as string,
-      tipo: provider.tipo as string,
-      especialidades: (provider.especialidades as string[]) ?? [],
-    }));
-  }, []);
-
-
-  const todasEspecialidades = useMemo(() => {
-    const codigos = new Set<string>();
-
-    (providersMock as any[]).forEach((p) => {
-      (p.especialidades ?? []).forEach((code: string) => codigos.add(code));
-    });
-
-    return Array.from(codigos).map((code) => ({
-      id: code,
-      nombre: code.charAt(0).toUpperCase() + code.slice(1),
-    }));
-  }, []);
+  }, [busquedaPrestador, prestadores]);
 
   // Horarios filtrados según prestador y/o especialidad
   const horariosFiltrados = useMemo(() => {
     return horarios.filter((h) => {
       if (filtros.prestador) {
-        const prestadorSeleccionado = prestadores.find(
-          (p) => p.id === filtros.prestador
-        );
-        if (prestadorSeleccionado && h.prestador !== prestadorSeleccionado.nombre) {
+        if (h.cuitCuil !== filtros.prestador) {
           return false;
         }
       }
       if (filtros.especialidad) {
-        const codigo = filtros.especialidad.toLowerCase();
-        if (!h.especialidad.toLowerCase().includes(codigo)) {
+        if (h.idEspecialidad.toString() !== filtros.especialidad) {
           return false;
         }
       }
-
       return true;
     });
-  }, [horarios, filtros, prestadores]);
+  }, [horarios, filtros]);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [filtros, busquedaPrestador, horarios.length]);
+
   const totalPages = Math.max(1, Math.ceil(horariosFiltrados.length / PAGE_SIZE));
   const currentPageSafe = Math.min(currentPage, totalPages);
   const startIndex = (currentPageSafe - 1) * PAGE_SIZE;
@@ -167,9 +157,7 @@ export function Agenda() {
   );
 
   // Handlers de búsqueda
-  const handleBusquedaPrestadorChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleBusquedaPrestadorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.value;
     setBusquedaPrestador(valor);
     setMostrarDropdownPrestador(true);
@@ -178,10 +166,10 @@ export function Agenda() {
     }
   };
 
-  const seleccionarPrestador = (prestadorId: string, nombreCompleto: string) => {
+  const seleccionarPrestador = (cuitCuil: string, nombreCompleto: string) => {
     setFiltros((prev) => ({
       ...prev,
-      prestador: prestadorId,
+      prestador: cuitCuil,
     }));
     setBusquedaPrestador(nombreCompleto);
     setMostrarDropdownPrestador(false);
@@ -207,42 +195,47 @@ export function Agenda() {
   };
 
   // Acciones menú
-  const toggleMenu = (id: string) => {
-    setMenuAbierto(menuAbierto === id ? null : id);
-  };
-
   const handleVerDetalle = (id: string) => {
     const agenda = horarios.find((h) => h.id === id);
     if (agenda) {
       setViewingAgenda(agenda);
       setOpenViewPopup(true);
     }
-    setMenuAbierto(null);
   };
 
   const handleEditarAgenda = (id: string) => {
     const agenda = horarios.find((h) => h.id === id);
     if (agenda) setEditingAgenda(agenda);
-    setMenuAbierto(null);
   };
 
-  const handleSaveEditedAgenda = (updatedAgenda: HorarioAgenda) => {
-    setHorarios((prev) =>
-      prev.map((h) => (h.id === updatedAgenda.id ? updatedAgenda : h))
-    );
-    setEditingAgenda(null);
+  const handleSaveEditedAgenda = async (updatedAgenda: HorarioAgenda) => {
+    try {
+      // Recargar desde la API
+      await loadData();
+      setEditingAgenda(null);
+      showToast("Agenda actualizada correctamente");
+    } catch (err) {
+      console.error("Error al actualizar agenda:", err);
+      showToast("Error al actualizar la agenda");
+    }
   };
 
   const handleEliminarAgenda = (id: string) => {
     const agenda = horarios.find((h) => h.id === id);
     if (agenda) setAgendaToDelete(agenda);
-    setMenuAbierto(null);
   };
 
-  const confirmEliminarAgenda = () => {
-    if (agendaToDelete) {
-      setHorarios((prev) => prev.filter((h) => h.id !== agendaToDelete.id));
+  const confirmEliminarAgenda = async () => {
+    if (!agendaToDelete) return;
+
+    try {
+      await deleteAgenda(agendaToDelete.id);
+      await loadData();
       setAgendaToDelete(null);
+      showToast(`Agenda de ${agendaToDelete.prestador} eliminada correctamente`);
+    } catch (err) {
+      console.error("Error al eliminar agenda:", err);
+      showToast("Error al eliminar la agenda");
     }
   };
 
@@ -256,23 +249,10 @@ export function Agenda() {
 
   // Helper para mostrar días ordenados
   const formatDias = (dias: string[]) => {
-    const orden = [
-      "Lunes",
-      "Martes",
-      "Miércoles",
-      "Jueves",
-      "Viernes",
-      "Sábado",
-      "Domingo",
-    ];
+    const orden = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
-    if (
-      dias.includes("Lunes") &&
-      dias.includes("Martes") &&
-      dias.includes("Miércoles") &&
-      dias.includes("Jueves") &&
-      dias.includes("Viernes")
-    ) {
+    if (dias.includes("Lun") && dias.includes("Mar") && dias.includes("Mié") &&
+      dias.includes("Jue") && dias.includes("Vie")) {
       return "Lun - Vie";
     }
 
@@ -281,6 +261,25 @@ export function Agenda() {
       .sort((a, b) => orden.indexOf(a) - orden.indexOf(b))
       .join(", ");
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
+          <p className="text-gray-600 text-sm font-medium">Cargando agendas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-600 py-6 border border-red-300 rounded-md bg-red-50">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full p-6 space-y-6">
@@ -304,6 +303,7 @@ export function Agenda() {
               value={busquedaPrestador}
               onChange={handleBusquedaPrestadorChange}
               onFocus={() => setMostrarDropdownPrestador(true)}
+              onBlur={() => setTimeout(() => setMostrarDropdownPrestador(false), 200)}
               className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
               placeholder="Buscar prestador..."
             />
@@ -311,13 +311,8 @@ export function Agenda() {
               <ul className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded shadow z-50 max-h-48 overflow-y-auto">
                 {prestadoresFiltrados.map((p: any) => (
                   <li
-                    key={p.id}
-                    onClick={() =>
-                      seleccionarPrestador(
-                        p.id as string,
-                        p.nombreCompleto as string
-                      )
-                    }
+                    key={p.cuitCuil}
+                    onClick={() => seleccionarPrestador(p.cuitCuil, p.nombreCompleto)}
                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                   >
                     {p.nombreCompleto}
@@ -327,7 +322,7 @@ export function Agenda() {
             )}
           </div>
 
-          {/* Especialidad (global, no depende de prestador) */}
+          {/* Especialidad */}
           <div className="flex flex-col">
             <label className="font-semibold mb-2 text-gray-700">Especialidad</label>
             <select
@@ -336,8 +331,8 @@ export function Agenda() {
               className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
             >
               <option value="">Todas</option>
-              {todasEspecialidades.map((especialidad) => (
-                <option key={especialidad.id} value={especialidad.id}>
+              {especialidades.map((especialidad: any) => (
+                <option key={especialidad.idEspecialidad} value={especialidad.idEspecialidad}>
                   {especialidad.nombre}
                 </option>
               ))}
@@ -362,19 +357,19 @@ export function Agenda() {
         </div>
       </div>
 
-      {/* Tabla + paginado con estilo Home.tsx */}
+      {/* Tabla + paginado */}
       <div className="rounded-md shadow-sm border border-gray-200 overflow-hidden bg-white">
         <AgendaTable
           horarios={paginatedHorarios}
-          menuAbierto={menuAbierto}
-          toggleMenu={toggleMenu}
+          menuAbierto={null}
+          toggleMenu={() => { }}
           handleEditarAgenda={handleEditarAgenda}
           handleVerDetalle={handleVerDetalle}
           handleEliminarAgenda={handleEliminarAgenda}
           formatDias={formatDias}
         />
 
-        {/* Controles de paginación estilo "Página X de Y" */}
+        {/* Controles de paginación */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
           <p className="text-sm text-gray-700">
             Página{" "}
@@ -386,24 +381,20 @@ export function Agenda() {
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPageSafe === 1}
-              className={`w-8 h-8 flex items-center justify-center border rounded text-sm ${
-                currentPageSafe === 1
+              className={`w-8 h-8 flex items-center justify-center border rounded text-sm ${currentPageSafe === 1
                   ? "text-gray-300 border-gray-200 cursor-not-allowed bg-gray-50"
                   : "text-gray-700 border-gray-300 hover:bg-gray-100"
-              }`}
+                }`}
             >
               ◀
             </button>
             <button
-              onClick={() =>
-                setCurrentPage((p) => Math.min(totalPages, p + 1))
-              }
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPageSafe === totalPages}
-              className={`w-8 h-8 flex items-center justify-center border rounded text-sm ${
-                currentPageSafe === totalPages
+              className={`w-8 h-8 flex items-center justify-center border rounded text-sm ${currentPageSafe === totalPages
                   ? "text-gray-300 border-gray-200 cursor-not-allowed bg-gray-50"
                   : "text-gray-700 border-gray-300 hover:bg-gray-100"
-              }`}
+                }`}
             >
               ▶
             </button>
@@ -420,7 +411,7 @@ export function Agenda() {
       )}
 
       <ConfirmDeleteAgendaDialog
-        isOpen={!!agendaToDelete}
+        open={!!agendaToDelete} 
         onClose={cancelEliminarAgenda}
         onConfirm={confirmEliminarAgenda}
         agenda={agendaToDelete}
@@ -433,6 +424,9 @@ export function Agenda() {
           onSave={handleSaveEditedAgenda}
         />
       )}
+
+      {/* Toast visual */}
+      {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
     </div>
   );
 }

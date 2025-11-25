@@ -10,7 +10,7 @@ import { Prestadores } from "./pages/Providers";
 
 import { GrupoFamiliar } from "./pages/GrupoFamiliar";
 import { AddProvider } from "./pages/AddProvider";
-import { AddAgendaPage } from "./pages/AddAgenda"; // Importar el nuevo componente
+import { AddAgendaPage } from "./pages/AddAgenda"; 
 import { AddAffiliate } from "./pages/AddAffiliate";
 
 import { Consultas } from "./pages/Consulta";
