@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
+import { PDFDownloadButton } from "../util/ReportPDFExporter";
 import { API_BASE_URL } from "../config/api";
 
 type PrestadorSinAgendaRow = {
@@ -42,8 +43,6 @@ export function PrestadoresSinAgendas() {
       }
 
       const data = await res.json();
-
-      // Asegurar que es un array
       const rows: PrestadorSinAgendaRow[] = Array.isArray(data)
         ? data
         : data.results || data.providers || [];
@@ -58,6 +57,13 @@ export function PrestadoresSinAgendas() {
       setLoading(false);
     }
   };
+
+  // 📌 CONFIGURACIÓN DEL PDF
+  const pdfColumns = [
+    { key: "nombreCompleto", label: "Nombre Completo" },
+    { key: "cuitCuil", label: "CUIL/CUIT" },
+    { key: "tipoPrestador", label: "Tipo de Prestador" },
+  ];
 
   return (
     <div className="w-full flex justify-center px-2">
@@ -77,7 +83,7 @@ export function PrestadoresSinAgendas() {
           </p>
         </div>
 
-        {/* BOTÓN BUSCAR */}
+        {/* BOTONES BUSCAR Y DESCARGAR */}
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             type="button"
@@ -94,6 +100,17 @@ export function PrestadoresSinAgendas() {
           >
             {loading ? "Cargando..." : "Cargar Prestadores"}
           </button>
+
+          {/* 📌 BOTÓN PDF - Solo visible si hay resultados */}
+          {results.length > 0 && (
+            <PDFDownloadButton
+              title="Prestadores sin agendas cargadas"
+              subtitle={`Total de prestadores: ${results.length}`}
+              data={results}
+              columns={pdfColumns}
+              filename="prestadores-sin-agendas"
+            />
+          )}
         </div>
 
         {/* MENSAJE DE ERROR */}

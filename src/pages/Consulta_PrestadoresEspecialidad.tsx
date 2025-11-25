@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { SPECIALTIES, loadSpecialties } from "../data/specialties";
 import { API_BASE_URL } from "../config/api";
+import { PDFDownloadButton } from "../util/ReportPDFExporter";
+
 
 // 🔹 Fila de resultado (ajustarla a lo que devuelva tu API real)
 type PrestadorEspecialidadRow = {
@@ -68,6 +70,14 @@ export function PrestadoresPorEspecialidad() {
     }
   };
 
+  const pdfColumns = [
+    { key: "nombreCompleto", label: "Nombre Completo" },
+    { key: "cuitCuil", label: "CUIL/CUIT" },
+    { key: "tipoPrestador", label: "Tipo de Prestador" },
+    { key: "especialidadNombre", label: "Especialidad" },
+  ];
+
+
   return (
     <div className="w-full flex justify-center px-2">
       <div className="w-full max-w-4xl bg-white rounded-xl shadow-md border border-gray-200 p-6 space-y-6">
@@ -104,10 +114,9 @@ export function PrestadoresPorEspecialidad() {
               disabled={!selectedSpecialtyId || loading}
               className={`
                 px-5 py-2 rounded-md text-white font-semibold
-                ${
-                  selectedSpecialtyId && !loading
-                    ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
-                    : "bg-gray-300 cursor-not-allowed"
+                ${selectedSpecialtyId && !loading
+                  ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
+                  : "bg-gray-300 cursor-not-allowed"
                 }
               `}
             >
@@ -115,8 +124,18 @@ export function PrestadoresPorEspecialidad() {
             </button>
           </div>
 
-          
+
         </div>
+
+        {results.length > 0 && (
+          <PDFDownloadButton
+            title="Prestadores por especialidad"
+            subtitle={selectedSpecialty?.nombre || "—"}
+            data={results}
+            columns={pdfColumns}
+            filename="prestadores-especialidad"
+          />
+        )}
 
         {/* MENSAJE DE ERROR */}
         {error && (

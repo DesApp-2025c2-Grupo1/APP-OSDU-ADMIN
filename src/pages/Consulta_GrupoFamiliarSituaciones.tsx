@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
+import { PDFDownloadButton } from "../util/ReportPDFExporter";
 import { API_BASE_URL } from "../config/api";
 
 type SituacionRow = {
@@ -74,6 +75,30 @@ export function SituacionesPorGrupo() {
     0
   );
 
+  // 📌 CONFIGURACIÓN PDF
+  // Aplanar datos para el PDF (una fila por situación)
+  const dataPDF = useMemo(() => {
+    return miembros.flatMap((m) =>
+      m.situaciones.map((s) => ({
+        afiliadoNombre: `${m.nombre} ${m.apellido}`,
+        parentesco: m.parentesco,
+        situacion: s.situacion,
+        fechaInicio: s.fechaInicio,
+        fechaFin: s.fechaFin,
+        estado: s.estado,
+      }))
+    );
+  }, [miembros]);
+
+  const pdfColumns = [
+    { key: "afiliadoNombre", label: "Nombre Completo" },
+    { key: "parentesco", label: "Parentesco" },
+    { key: "situacion", label: "Situación" },
+    { key: "fechaInicio", label: "Fecha Inicio", format: (val: string) => formatFecha(val) },
+    { key: "fechaFin", label: "Fecha Fin", format: (val: string | null) => (val ? formatFecha(val) : "—") },
+    { key: "estado", label: "Estado" },
+  ];
+
   return (
     <div className="w-full flex justify-center px-2">
       <div className="w-full max-w-5xl bg-white rounded-xl shadow-md border border-gray-200 p-6 space-y-6">
@@ -140,20 +165,33 @@ export function SituacionesPorGrupo() {
           {miembros.length > 0 && (
             <>
               {/* Resumen */}
-              <div className="mb-4 p-4 bg-[#F2FAEC] rounded-lg border border-[#5FA92C]">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                  Resumen del Grupo Familiar
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <span className="text-gray-600">Miembros:</span>{" "}
-                    <span className="font-medium">{miembros.length}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Total situaciones:</span>{" "}
-                    <span className="font-medium">{totalSituaciones}</span>
+              <div className="mb-4 p-4 bg-[#F2FAEC] rounded-lg border border-[#5FA92C] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                    Resumen del Grupo Familiar
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-gray-600">Miembros:</span>{" "}
+                      <span className="font-medium">{miembros.length}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Total situaciones:</span>{" "}
+                      <span className="font-medium">{totalSituaciones}</span>
+                    </div>
                   </div>
                 </div>
+
+                {/* 📌 BOTÓN PDF */}
+                {dataPDF.length > 0 && (
+                  <PDFDownloadButton
+                    title="Situaciones terapéuticas por grupo familiar"
+                    subtitle={`${miembros.length} miembro(s) - ${totalSituaciones} situación(es)`}
+                    data={dataPDF}
+                    columns={pdfColumns}
+                    filename="situaciones-grupo-familiar"
+                  />
+                )}
               </div>
 
               {/* MIEMBROS Y SUS SITUACIONES */}

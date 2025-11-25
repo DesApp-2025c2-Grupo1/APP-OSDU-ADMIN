@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
+import { PDFDownloadButton } from "../util/ReportPDFExporter";
 import { API_BASE_URL } from "../config/api";
 
 type SituacionRow = {
@@ -36,7 +37,6 @@ export function SituacionesPorAfiliado() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Paginación
   const [page, setPage] = useState(1);
   const pageSize = 5;
   const totalPages = result ? Math.max(1, Math.ceil(result.situaciones.length / pageSize)) : 1;
@@ -81,6 +81,21 @@ export function SituacionesPorAfiliado() {
       setLoading(false);
     }
   };
+
+  // 📌 CONFIGURACIÓN PDF
+  const pdfColumns = [
+    { key: "situacion", label: "Situación" },
+    { key: "fechaInicio", label: "Fecha Inicio", format: (val: string) => formatFecha(val) },
+    { key: "fechaFin", label: "Fecha Fin", format: (val: string | null) => (val ? formatFecha(val) : "—") },
+    { key: "estado", label: "Estado" },
+  ];
+
+  // Datos para PDF: combinar info del afiliado con situaciones
+  const dataPDF = result?.situaciones.map((s) => ({
+    ...s,
+    afiliadoNombre: `${result.afiliado.nombre} ${result.afiliado.apellido}`,
+    afiliadoDNI: result.afiliado.dni,
+  })) || [];
 
   return (
     <div className="w-full flex justify-center px-2">
@@ -168,10 +183,23 @@ export function SituacionesPorAfiliado() {
               </div>
 
               {/* Resumen cantidad */}
-              <p className="mb-2 text-sm text-gray-700">
-                Situaciones encontradas:{" "}
-                <span className="font-semibold">{result.situaciones.length}</span>
-              </p>
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between mb-4">
+                <p className="text-sm text-gray-700">
+                  Situaciones encontradas:{" "}
+                  <span className="font-semibold">{result.situaciones.length}</span>
+                </p>
+
+                {/* 📌 BOTÓN PDF */}
+                {result.situaciones.length > 0 && (
+                  <PDFDownloadButton
+                    title="Situaciones terapéuticas por afiliado"
+                    subtitle={`${result.afiliado.nombre} ${result.afiliado.apellido} (DNI: ${result.afiliado.dni})`}
+                    data={dataPDF}
+                    columns={pdfColumns}
+                    filename="situaciones-afiliado"
+                  />
+                )}
+              </div>
 
               {result.situaciones.length === 0 ? (
                 <p className="text-sm text-gray-600">
@@ -270,7 +298,7 @@ export function SituacionesPorAfiliado() {
                   {/* PAGINACIÓN */}
                   <div className="mt-3 flex items-center justify-between text-sm text-gray-700">
                     <span>
-                      {result.situaciones.length === 0 ? 0 : startIndex + 1}—
+                      {result.situaciones.length === 0 ? 0 : startIndex + 1}–
                       {Math.min(endIndex, result.situaciones.length)} de{" "}
                       {result.situaciones.length}
                     </span>
