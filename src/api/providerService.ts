@@ -7,16 +7,16 @@ import { API_BASE_URL } from "../config/api";
 export const fetchProviders = async (): Promise<Prestador[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/providers`);
-    
+
     if (!response.ok) {
       throw new Error(`Error al obtener proveedores: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     // El back-end devuelve un array directo o un objeto con propiedad 'prestadores'
     const providers = Array.isArray(data) ? data : data.prestadores || [];
-    
+
     return providers;
   } catch (error) {
     console.error("Error en fetchProviders:", error);
@@ -24,13 +24,53 @@ export const fetchProviders = async (): Promise<Prestador[]> => {
   }
 };
 
+export async function checkProviderSpecialtyAgendas(
+  cuitCuil: string,
+  specialtyId: number
+): Promise<{ agendas: any[]; count: number }> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/providers/${cuitCuil}/agendas-by-specialty?specialtyId=${specialtyId}`
+    );
+
+    if (!response.ok) {
+      throw new Error('Error al verificar agendas');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error en checkProviderSpecialtyAgendas:', error);
+    throw error;
+  }
+}
+
+export async function checkProviderPlaceAgendas(
+  cuitCuil: string
+): Promise<{ agendas: any[]; count: number }> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/providers/${cuitCuil}/agendas-by-places`
+    );
+
+    if (!response.ok) {
+      throw new Error('Error al verificar agendas de lugares');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error en checkProviderPlaceAgendas:', error);
+    throw error;
+  }
+}
+
+
 /**
  * Obtiene un proveedor específico por CUIT/CUIL
  */
 export const fetchProviderByCuit = async (cuitCuil: string): Promise<Prestador> => {
   try {
     const response = await fetch(`${API_BASE_URL}/providers/${cuitCuil}`);
-    
+
     if (!response.ok) {
       throw new Error(`Proveedor no encontrado: ${cuitCuil}`);
     }
@@ -73,7 +113,7 @@ export const createProvider = async (provider: Omit<Prestador, "lugarAtencion"> 
 export const updateProvider = async (cuitCuil: string, updates: Partial<Prestador>): Promise<Prestador> => {
   try {
     console.log(`📤 PUT /providers/${cuitCuil}:`, JSON.stringify(updates, null, 2));
-    
+
     const response = await fetch(`${API_BASE_URL}/providers/${cuitCuil}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -85,14 +125,14 @@ export const updateProvider = async (cuitCuil: string, updates: Partial<Prestado
     if (!response.ok) {
       const errorData = await response.json();
       console.error(`❌ Error del servidor (${response.status}):`, errorData);
-      
+
       // Mostrar errores específicos si existen
       if (errorData.errores && Array.isArray(errorData.errores)) {
         console.error('Detalles de errores:', errorData.errores);
         const errorMessages = errorData.errores.map((e: any) => e.mensaje || e.message || JSON.stringify(e)).join(', ');
         throw new Error(`Error de validación: ${errorMessages}`);
       }
-      
+
       throw new Error(errorData.error || errorData.message || `Error al actualizar proveedor (${response.status})`);
     }
 

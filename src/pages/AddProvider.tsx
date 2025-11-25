@@ -14,7 +14,7 @@ export function AddProvider() {
   const [cuilCuit, setCuilCuit] = useState("");
   const [nombreCompleto, setNombreCompleto] = useState("");
   const [especialidades, setEspecialidades] = useState<number[]>([]);
-  const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{id: number, nombre: string}[]>([]);
+  const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{ id: number, nombre: string }[]>([]);
   const [loadingEspecialidades, setLoadingEspecialidades] = useState(true);
   const [telefonos, setTelefonos] = useState<string[]>([""]);
   const [mails, setMails] = useState<string[]>([""]);
@@ -37,14 +37,34 @@ export function AddProvider() {
     setMails(mails.filter((_, i) => i !== index));
 
   const handleAgregarEspecialidad = () => {
-    const primerIdDisponible = especialidadesDisponibles[0]?.id || 1;
+    // Verificar si hay especialidades disponibles no seleccionadas
+    const especialidadesDisponiblesNoSeleccionadas = especialidadesDisponibles.filter(
+      esp => !especialidades.includes(esp.id)
+    );
+
+    if (especialidadesDisponiblesNoSeleccionadas.length === 0) {
+      alert('Ya has seleccionado todas las especialidades disponibles.');
+      return;
+    }
+
+    const primerIdDisponible = especialidadesDisponiblesNoSeleccionadas[0].id;
     setEspecialidades([...especialidades, primerIdDisponible]);
   };
+
+
   const handleEspecialidadChange = (index: number, valor: number) => {
+    // Verificar si la especialidad ya está seleccionada en otro índice
+    const yaSeleccionada = especialidades.some((esp, idx) => idx !== index && esp === valor);
+    if (yaSeleccionada && valor !== 0) {
+      alert('Esta especialidad ya ha sido seleccionada. Por favor, elija una diferente.');
+      return;
+    }
+
     const nuevas = [...especialidades];
     nuevas[index] = valor;
     setEspecialidades(nuevas);
   };
+
   const handleEliminarEspecialidad = (index: number) => {
     setEspecialidades(especialidades.filter((_, i) => i !== index));
   };
@@ -63,7 +83,7 @@ export function AddProvider() {
     setLugaresAtencion(lugaresAtencion.filter((_, i) => i !== index));
 
 
-  
+
   // Cargar centros médicos y especialidades al montar
   useEffect(() => {
     const cargarDatos = async () => {
@@ -79,7 +99,7 @@ export function AddProvider() {
         const resEsp = await fetch(`${API_BASE_URL}/specialties`);
         const dataEsp = await resEsp.json();
         console.log("📋 Especialidades cargadas:", dataEsp);
-        
+
         // El backend puede devolver { especialidades: [...] } o array directo
         const especialidadesArray = dataEsp.especialidades || dataEsp || [];
         setEspecialidadesDisponibles(especialidadesArray.map((e: any) => ({
@@ -213,7 +233,7 @@ export function AddProvider() {
     } finally {
       setLoading(false);
     }
-  };  return (
+  }; return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
       <h1 className="text-2xl font-bold text-[#5FA92C] mb-4">Agregar Prestador</h1>
       <div className="flex items-center gap-2 ">
@@ -283,9 +303,20 @@ export function AddProvider() {
                   disabled={loadingEspecialidades}
                 >
                   <option value={0}>-- Seleccionar --</option>
-                  {especialidadesDisponibles.map((s) => (
-                    <option key={s.id} value={s.id}>{s.nombre}</option>
-                  ))}
+                  {especialidadesDisponibles.map((s) => {
+                    // Deshabilitar si ya está seleccionada en otro select
+                    const yaSeleccionada = especialidades.some((e, idx) => idx !== i && e === s.id);
+                    return (
+                      <option
+                        key={s.id}
+                        value={s.id}
+                        disabled={yaSeleccionada}
+                        style={{ color: yaSeleccionada ? '#ccc' : 'inherit' }}
+                      >
+                        {s.nombre} {yaSeleccionada ? '(ya seleccionada)' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
                 {especialidades.length > 1 && (
                   <button
@@ -301,12 +332,12 @@ export function AddProvider() {
             <button
               type="button"
               onClick={handleAgregarEspecialidad}
-              className="text-[#5FA92C] text-sm font-semibold"
+              className="text-[#5FA92C] text-sm font-semibold hover:underline"
+              disabled={especialidades.length >= especialidadesDisponibles.length}
             >
               + Agregar otra especialidad
             </button>
           </div>
-
           {/* Centro médico (solo profesionales) */}
           {tipo === "profesional" && (
             <div className="mb-6">
