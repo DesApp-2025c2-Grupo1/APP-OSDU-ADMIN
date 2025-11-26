@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config/api";
 import { fetchPlans, type Plan } from "../api/planService";
+import AltaProgramadaPopup from "../components/AltaProgramadaPopup";
 
 interface Situacion {
   idSituacion: number;
@@ -68,9 +69,9 @@ export function AddAffiliate() {
         // Cargar situaciones terapéuticas
         setLoadingSituaciones(true);
         const responseSit = await fetch(`${API_BASE_URL}/therapeutic`);
-        
+
         if (!responseSit.ok) throw new Error("Error al cargar situaciones terapéuticas");
-        
+
         const dataSit = await responseSit.json();
         console.log("📋 Situaciones cargadas:", dataSit.situaciones);
         setSituacionesDisponibles(dataSit.situaciones || []);
@@ -188,147 +189,263 @@ export function AddAffiliate() {
   };
 
   const validate = () => {
-  const newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {};
 
-  // DNI del titular
-  if (!formData.nroDocumento?.trim()) {
-    newErrors.nroDocumento = "Requerido";
-  } else if (!/^[0-9]{7,8}$/.test(formData.nroDocumento)) {
-    newErrors.nroDocumento = "El DNI debe tener 7 u 8 dígitos numéricos";
-  }
-
-  // Nombre del titular
-  if (!formData.nombre?.trim()) {
-    newErrors.nombre = "Requerido";
-  } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
-    newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
-  }
-
-  // Apellido del titular
-  if (!formData.apellido?.trim()) {
-    newErrors.apellido = "Requerido";
-  } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
-    newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
-  }
-
-  // Fecha de nacimiento del titular
-  if (!formData.fechaNacimiento) {
-    newErrors.fechaNacimiento = "Requerido";
-  } else {
-    const fechaNac = new Date(formData.fechaNacimiento);
-    const hoy = new Date();
-    
-    if (fechaNac > hoy) {
-      newErrors.fechaNacimiento = "La fecha no puede ser futura";
-    }
-    
-    const edad = (hoy.getTime() - fechaNac.getTime()) / (1000 * 60 * 60 * 24 * 365);
-    //if (edad < 18) {
-    //  newErrors.fechaNacimiento = "El titular debe ser mayor de 18 años";
-   // }
-    
-    if (edad > 150) {
-      newErrors.fechaNacimiento = "La fecha de nacimiento no es válida";
-    }
-  }
-
-  // Emails del titular
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (formData.email && !emailRegex.test(formData.email)) {
-    newErrors.email = "Formato de email inválido";
-  }
-  if (formData.email2 && !emailRegex.test(formData.email2)) {
-    newErrors.email2 = "Formato de email inválido";
-  }
-
-  // Teléfonos del titular
-  if (formData.telefono && !/^[0-9]{7,15}$/.test(formData.telefono.replace(/\s/g, ''))) {
-    newErrors.telefono = "El teléfono debe tener entre 7 y 15 dígitos";
-  }
-  if (formData.telefono2 && !/^[0-9]{7,15}$/.test(formData.telefono2.replace(/\s/g, ''))) {
-    newErrors.telefono2 = "El teléfono debe tener entre 7 y 15 dígitos";
-  }
-
-  // Plan del titular
-  if (!formData.planMedico) {
-    newErrors.planMedico = "Requerido";
-  }
-
-  // Dirección del titular (opcional pero con límite)
-  if (formData.direccion && formData.direccion.length > 100) {
-    newErrors.direccion = "La dirección no puede superar los 100 caracteres";
-  }
-
-  // Validaciones de familiares
-  familiares.forEach((f, index) => {
-    const prefix = `familiares[${index}]`;
-    
-    // DNI del familiar
-    if (!f.nroDocumento?.trim()) {
-      newErrors[`${prefix}.nroDocumento`] = "Requerido";
-    } else if (!/^[0-9]{7,8}$/.test(f.nroDocumento)) {
-      newErrors[`${prefix}.nroDocumento`] = "El DNI debe tener 7 u 8 dígitos numéricos";
+    // DNI del titular
+    if (!formData.nroDocumento?.trim()) {
+      newErrors.nroDocumento = "Requerido";
+    } else if (!/^[0-9]{7,8}$/.test(formData.nroDocumento)) {
+      newErrors.nroDocumento = "El DNI debe tener 7 u 8 dígitos numéricos";
     }
 
-    // Nombre del familiar
-    if (!f.nombre?.trim()) {
-      newErrors[`${prefix}.nombre`] = "Requerido";
-    } else if (f.nombre.trim().length < 2 || f.nombre.trim().length > 50) {
-      newErrors[`${prefix}.nombre`] = "El nombre debe tener entre 2 y 50 caracteres";
+    // Nombre del titular
+    if (!formData.nombre?.trim()) {
+      newErrors.nombre = "Requerido";
+    } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
+      newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
     }
 
-    // Apellido del familiar
-    if (!f.apellido?.trim()) {
-      newErrors[`${prefix}.apellido`] = "Requerido";
-    } else if (f.apellido.trim().length < 2 || f.apellido.trim().length > 50) {
-      newErrors[`${prefix}.apellido`] = "El apellido debe tener entre 2 y 50 caracteres";
+    // Apellido del titular
+    if (!formData.apellido?.trim()) {
+      newErrors.apellido = "Requerido";
+    } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
+      newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
     }
 
-    // Fecha de nacimiento del familiar
-    if (!f.fechaNacimiento) {
-      newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
+    // Fecha de nacimiento del titular
+    if (!formData.fechaNacimiento) {
+      newErrors.fechaNacimiento = "Requerido";
     } else {
-      const fechaNac = new Date(f.fechaNacimiento);
+      const fechaNac = new Date(formData.fechaNacimiento);
       const hoy = new Date();
-      
+
       if (fechaNac > hoy) {
-        newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+        newErrors.fechaNacimiento = "La fecha no puede ser futura";
       }
-      
+
       const edad = (hoy.getTime() - fechaNac.getTime()) / (1000 * 60 * 60 * 24 * 365);
+      //if (edad < 18) {
+      //  newErrors.fechaNacimiento = "El titular debe ser mayor de 18 años";
+      // }
+
       if (edad > 150) {
-        newErrors[`${prefix}.fechaNacimiento`] = "La fecha de nacimiento no es válida";
+        newErrors.fechaNacimiento = "La fecha de nacimiento no es válida";
       }
     }
 
-    // Email del familiar
-    if (f.email && !emailRegex.test(f.email)) {
-      newErrors[`${prefix}.email`] = "Formato de email inválido";
+    // Emails del titular
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email)) {
+      newErrors.email = "Formato de email inválido";
+    }
+    if (formData.email2 && !emailRegex.test(formData.email2)) {
+      newErrors.email2 = "Formato de email inválido";
     }
 
-    // Teléfono del familiar
-    if (f.telefono && !/^[0-9]{7,15}$/.test(f.telefono.replace(/\s/g, ''))) {
-      newErrors[`${prefix}.telefono`] = "El teléfono debe tener entre 7 y 15 dígitos";
+    // Teléfonos del titular
+    if (formData.telefono && !/^[0-9]{7,15}$/.test(formData.telefono.replace(/\s/g, ''))) {
+      newErrors.telefono = "El teléfono debe tener entre 7 y 15 dígitos";
+    }
+    if (formData.telefono2 && !/^[0-9]{7,15}$/.test(formData.telefono2.replace(/\s/g, ''))) {
+      newErrors.telefono2 = "El teléfono debe tener entre 7 y 15 dígitos";
     }
 
-    // Validar que el DNI del familiar no sea igual al del titular
-    if (f.nroDocumento === formData.nroDocumento) {
-      newErrors[`${prefix}.nroDocumento`] = "El DNI del familiar no puede ser igual al del titular";
+    // Plan del titular
+    if (!formData.planMedico) {
+      newErrors.planMedico = "Requerido";
     }
 
-    // Validar que no haya DNIs duplicados entre familiares
-    const duplicados = familiares.filter((fam, idx) => 
-      idx !== index && fam.nroDocumento === f.nroDocumento
-    );
-    if (duplicados.length > 0 && f.nroDocumento) {
-      newErrors[`${prefix}.nroDocumento`] = "Este DNI ya está en uso por otro familiar";
+    // Dirección del titular (opcional pero con límite)
+    if (formData.direccion && formData.direccion.length > 100) {
+      newErrors.direccion = "La dirección no puede superar los 100 caracteres";
     }
-  });
 
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
+    // Validaciones de familiares
+    familiares.forEach((f, index) => {
+      const prefix = `familiares[${index}]`;
 
+      // DNI del familiar
+      if (!f.nroDocumento?.trim()) {
+        newErrors[`${prefix}.nroDocumento`] = "Requerido";
+      } else if (!/^[0-9]{7,8}$/.test(f.nroDocumento)) {
+        newErrors[`${prefix}.nroDocumento`] = "El DNI debe tener 7 u 8 dígitos numéricos";
+      }
+
+      // Nombre del familiar
+      if (!f.nombre?.trim()) {
+        newErrors[`${prefix}.nombre`] = "Requerido";
+      } else if (f.nombre.trim().length < 2 || f.nombre.trim().length > 50) {
+        newErrors[`${prefix}.nombre`] = "El nombre debe tener entre 2 y 50 caracteres";
+      }
+
+      // Apellido del familiar
+      if (!f.apellido?.trim()) {
+        newErrors[`${prefix}.apellido`] = "Requerido";
+      } else if (f.apellido.trim().length < 2 || f.apellido.trim().length > 50) {
+        newErrors[`${prefix}.apellido`] = "El apellido debe tener entre 2 y 50 caracteres";
+      }
+
+      // Fecha de nacimiento del familiar
+      if (!f.fechaNacimiento) {
+        newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
+      } else {
+        const fechaNac = new Date(f.fechaNacimiento);
+        const hoy = new Date();
+
+        if (fechaNac > hoy) {
+          newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+        }
+
+        const edad = (hoy.getTime() - fechaNac.getTime()) / (1000 * 60 * 60 * 24 * 365);
+        if (edad > 150) {
+          newErrors[`${prefix}.fechaNacimiento`] = "La fecha de nacimiento no es válida";
+        }
+      }
+
+      // Email del familiar
+      if (f.email && !emailRegex.test(f.email)) {
+        newErrors[`${prefix}.email`] = "Formato de email inválido";
+      }
+
+      // Teléfono del familiar
+      if (f.telefono && !/^[0-9]{7,15}$/.test(f.telefono.replace(/\s/g, ''))) {
+        newErrors[`${prefix}.telefono`] = "El teléfono debe tener entre 7 y 15 dígitos";
+      }
+
+      // Validar que el DNI del familiar no sea igual al del titular
+      if (f.nroDocumento === formData.nroDocumento) {
+        newErrors[`${prefix}.nroDocumento`] = "El DNI del familiar no puede ser igual al del titular";
+      }
+
+      // Validar que no haya DNIs duplicados entre familiares
+      const duplicados = familiares.filter((fam, idx) =>
+        idx !== index && fam.nroDocumento === f.nroDocumento
+      );
+      if (duplicados.length > 0 && f.nroDocumento) {
+        newErrors[`${prefix}.nroDocumento`] = "Este DNI ya está en uso por otro familiar";
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+
+  const handleProgramarAlta = async (fechaAltaISO: string) => {
+    if (!validate()) {
+      setShowAltaPopup(false);
+      return;
+    }
+
+    setLoading(true);
+    setSuccess(null);
+    setShowAltaPopup(false);
+
+    try {
+      // Construir emails del titular
+      const emails = [];
+      if (formData.email?.trim()) emails.push({ email: formData.email.trim() });
+      if (formData.email2?.trim()) emails.push({ email: formData.email2.trim() });
+
+      // Construir teléfonos del titular
+      const telefonos = [];
+      if (formData.telefono?.trim()) telefonos.push({ telefono: formData.telefono.trim() });
+      if (formData.telefono2?.trim()) telefonos.push({ telefono: formData.telefono2.trim() });
+
+      // Construir situaciones del titular con IDs de la BD
+      const situacionesPayload = situaciones
+        .filter(s => s.idSituacion)
+        .map(s => ({
+          id: s.idSituacion,
+          fecha_inicio: new Date().toISOString().split('T')[0],
+          fecha_fin: s.fechaFinalizacion || null,
+        }));
+
+      // Construir familiares
+      const familiaresPayload = familiares.map(f => {
+        const emailsFam = [];
+        if (f.usaContactoTitular && formData.email) {
+          emailsFam.push({ email: formData.email });
+        } else if (f.email?.trim()) {
+          emailsFam.push({ email: f.email.trim() });
+        }
+
+        const telefonosFam = [];
+        if (f.usaContactoTitular && formData.telefono) {
+          telefonosFam.push({ telefono: formData.telefono });
+        } else if (f.telefono?.trim()) {
+          telefonosFam.push({ telefono: f.telefono.trim() });
+        }
+
+        const situacionesFam = (f.situaciones || [])
+          .filter(s => s.idSituacion)
+          .map(s => ({
+            id: s.idSituacion,
+            fecha_inicio: new Date().toISOString().split('T')[0],
+            fecha_fin: s.fechaFinalizacion || null,
+          }));
+
+        return {
+          dni: f.nroDocumento,
+          nombre: f.nombre,
+          apellido: f.apellido,
+          parentesco: f.parentesco,
+          direccion: f.usaDireccionTitular ? formData.direccion : (f.direccion || ""),
+          tipoDocumento: f.tipoDocumento,
+          fecha_nacimiento: f.fechaNacimiento,
+          emails: emailsFam,
+          telefonos: telefonosFam,
+          situaciones: situacionesFam,
+        };
+      });
+
+      // Construir payload completo con fecha_alta programada
+      const payload = {
+        dni: formData.nroDocumento,
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        direccion: formData.direccion,
+        tipoDocumento: formData.tipoDocumento,
+        fecha_nacimiento: formData.fechaNacimiento,
+        fecha_alta: fechaAltaISO, // Fecha programada
+        plan: parseInt(formData.planMedico),
+        emails: emails,
+        telefonos: telefonos,
+        situaciones: situacionesPayload,
+        familiares: familiaresPayload,
+      };
+
+      console.log("Payload programado a enviar:", JSON.stringify(payload, null, 2));
+
+      // Hacer la petición al API
+      const response = await fetch(`${API_BASE_URL}/affiliates`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log("Respuesta del servidor:", result);
+
+      setLoading(false);
+      setSuccess("Afiliado programado exitosamente para alta futura");
+      setTimeout(() => navigate("/home"), 1500);
+    } catch (err: any) {
+      console.error("Error al programar:", err);
+      setLoading(false);
+      setErrors((prev) => ({
+        ...prev,
+        submit: err.message || "Error al programar. Verifica la conexión con el servidor."
+      }));
+    }
+  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -435,9 +552,9 @@ export function AddAffiliate() {
     } catch (err: any) {
       console.error("Error al guardar:", err);
       setLoading(false);
-      setErrors((prev) => ({ 
-        ...prev, 
-        submit: err.message || "Error al guardar. Verifica la conexión con el servidor." 
+      setErrors((prev) => ({
+        ...prev,
+        submit: err.message || "Error al guardar. Verifica la conexión con el servidor."
       }));
     }
   };
@@ -455,12 +572,6 @@ export function AddAffiliate() {
             className="px-4 py-2 border rounded hover:bg-gray-50"
           >
             Volver
-          </button>
-          <button
-            onClick={() => setShowAltaPopup(true)}
-            className="px-4 py-2 bg-[#5FA92C] text-white rounded hover:bg-green-700"
-          >
-            Programar Alta
           </button>
         </div>
       </div>
@@ -1008,6 +1119,14 @@ export function AddAffiliate() {
         >
           Cancelar
         </button>
+        <button
+          type="button"
+          onClick={() => setShowAltaPopup(true)}
+          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
+          disabled={loading}
+        >
+          Programar Alta
+        </button>
       </div>
 
       {errors.submit && (
@@ -1019,6 +1138,13 @@ export function AddAffiliate() {
         <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded text-center">
           <p className="text-green-600 font-semibold">{success}</p>
         </div>
+      )}
+
+      {showAltaPopup && (
+        <AltaProgramadaPopup
+          onClose={() => setShowAltaPopup(false)}
+          onConfirm={handleProgramarAlta}
+        />
       )}
     </div>
   );

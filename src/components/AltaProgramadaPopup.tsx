@@ -15,7 +15,9 @@ export default function AltaProgramadaPopup({ onClose, onConfirm }: AltaPrograma
       alert("La fecha/hora debe ser al menos 1 minuto en el futuro.");
       return;
     }
-    onConfirm(new Date(fechaHora).toISOString());
+    // Enviar el valor del datetime-local directamente, SIN convertir a ISO
+    // Esto mantiene la hora local (ej: "2025-11-25T17:20")
+    onConfirm(fechaHora);
   };
 
   return (

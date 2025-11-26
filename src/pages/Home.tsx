@@ -42,6 +42,7 @@ export function Home() {
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showPending, setShowPending] = useState(false);
 
   const navigate = useNavigate();
 
@@ -52,10 +53,11 @@ export function Home() {
   };
 
   // 🔹 Carga de afiliados desde API
-  const fetchAffiliates = async () => {
+  const fetchAffiliates = async (pending: boolean) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/affiliates`);
+      const endpoint = pending ? `${API_BASE_URL}/affiliates/pending` : `${API_BASE_URL}/affiliates`;
+      const response = await fetch(endpoint);
       if (!response.ok) throw new Error("Error en la respuesta del servidor");
 
       const data = await response.json();
@@ -71,8 +73,8 @@ export function Home() {
   };
 
   useEffect(() => {
-    fetchAffiliates();
-  }, []);
+    fetchAffiliates(showPending);
+  }, [showPending]);
 
   const fieldMap: Record<string, (a: Affiliate) => string> = {
     dni: (a) => a.dni,
@@ -214,7 +216,16 @@ export function Home() {
           className="w-full md:w-2/3"
         />
 
-        <div className="self-start md:self-auto">
+        <div className="self-start md:self-auto flex gap-2">
+          <button
+            onClick={() => setShowPending(!showPending)}
+            className={`px-4 py-2 rounded font-medium transition-colors ${showPending
+                ? "bg-blue-100 text-blue-800 border border-blue-300 hover:bg-blue-200"
+                : "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200"
+              }`}
+          >
+            {showPending ? "Ver Activos" : "Ver Pendientes"}
+          </button>
           <ButtonAddAffiliate
             text="Agregar Afiliado"
             onClick={() => navigate("/home/agregarAfiliado")}
