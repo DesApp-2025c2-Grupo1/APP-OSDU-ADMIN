@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { useNavigate } from "react-router-dom";
+import { PDFDownloadButton } from "../util/ReportPDFExporter";
 import { API_BASE_URL } from "../config/api";
 
 function isSameDay(a: Date, b: Date) {
@@ -46,6 +47,7 @@ export function AltasPrestadoresPeriodo() {
   const [results, setResults] = useState<AltaPrestadorRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
 
   // 🔹 Paginación
   const [page, setPage] = useState(1);
@@ -148,13 +150,35 @@ export function AltasPrestadoresPeriodo() {
         : data.results || data.providers || [];
 
       setResults(rows);
+      setSearched(true);
     } catch (e: any) {
       console.error(e);
       setError(e.message || "Error al consultar el reporte de prestadores");
+      setSearched(true);
     } finally {
       setLoading(false);
     }
   };
+
+  // 📌 CONFIGURACIÓN PDF
+  const pdfColumns = [
+    { key: "nombreCompleto", label: "Nombre" },
+    { key: "cuitCuil", label: "CUIL/CUIT" },
+    {
+      key: "tipoPrestador",
+      label: "Tipo de Prestador",
+      format: (val: string) => val.charAt(0).toUpperCase() + val.slice(1),
+    },
+    {
+      key: "fechaAlta",
+      label: "Fecha de Alta",
+      format: (val: string) => formatFechaAlta(val),
+    },
+  ];
+
+  const subtitulo = startDate && endDate
+    ? `Período: ${formatEs(startDate)} - ${formatEs(endDate)}`
+    : "";
 
   return (
     <div className="w-full flex justify-center px-2">
@@ -277,22 +301,32 @@ export function AltasPrestadoresPeriodo() {
         </div>
 
         {/* BOTÓN BUSCAR */}
-        <div className="mt-6 mb-4">
+        <div className="mt-6 mb-4 flex flex-col sm:flex-row gap-3">
           <button
             type="button"
             onClick={handleBuscar}
             disabled={!hasValidRange || loading}
             className={`
               px-5 py-2 rounded-md text-white font-semibold
-              ${
-                hasValidRange && !loading
-                  ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
-                  : "bg-gray-300 cursor-not-allowed"
+              ${hasValidRange && !loading
+                ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
+                : "bg-gray-300 cursor-not-allowed"
               }
             `}
           >
             {loading ? "Buscando..." : "Buscar"}
           </button>
+
+          {/* 📌 BOTÓN PDF */}
+          {results.length > 0 && (
+            <PDFDownloadButton
+              title="Alta de prestadores por período"
+              subtitle={subtitulo}
+              data={results}
+              columns={pdfColumns}
+              filename="altas-prestadores"
+            />
+          )}
         </div>
 
         {/* MENSAJE DE ERROR */}
@@ -304,10 +338,16 @@ export function AltasPrestadoresPeriodo() {
 
         {/* RESULTADOS */}
         <div className="mt-4">
-          {!loading && results.length === 0 && !error && (
+          {!loading && results.length === 0 && !error && !searched && (
             <p className="text-sm text-gray-600">
               Seleccione un rango de fechas y presione{" "}
               <span className="font-semibold">Buscar</span> para ver las altas de prestadores.
+            </p>
+          )}
+
+          {!loading && results.length === 0 && !error && searched && (
+            <p className="text-sm text-gray-600">
+              No se encontraron prestadores dados de alta en el período seleccionado.
             </p>
           )}
 
