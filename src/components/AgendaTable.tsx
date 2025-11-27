@@ -4,33 +4,17 @@ import { OptionsMenu } from "./OptionsMenu";
 
 interface AgendaTableProps {
   horarios: HorarioAgenda[];
-  menuAbierto: string | null;
-  toggleMenu: (id: string) => void;
-  handleEditarAgenda: (id: string) => void;
-  handleVerDetalle: (id: string) => void;
-  handleEliminarAgenda: (id: string) => void;
+  onOptionClick: (option: string, horario: HorarioAgenda) => void;
   formatDias: (dias: string[]) => string;
 }
 
 export function AgendaTable({
   horarios,
-  handleEditarAgenda,
-  handleVerDetalle,
-  handleEliminarAgenda,
+  onOptionClick,
   formatDias,
 }: AgendaTableProps) {
   const handleOptionClick = (option: string, horario: HorarioAgenda) => {
-    switch (option) {
-      case "Editar":
-        handleEditarAgenda(horario.id);
-        break;
-      case "Ver Detalles":
-        handleVerDetalle(horario.id);
-        break;
-      case "Dar de Baja":
-        handleEliminarAgenda(horario.id);
-        break;
-    }
+    onOptionClick(option, horario);
   };
 
   return (
@@ -72,7 +56,7 @@ export function AgendaTable({
                       nombre: horario.prestador.split(' ')[0] || '',
                       apellido: horario.prestador.split(' ').slice(1).join(' ') || '',
                     }}
-                    options={["Editar", "Ver Detalles", "Dar de Baja"]}
+                    options={["Editar", "Ver detalles", "Dar de baja"]}
                     onOptionClick={(opt) => handleOptionClick(opt, horario)}
                   />
                 </td>
