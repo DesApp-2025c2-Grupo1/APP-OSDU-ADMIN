@@ -224,9 +224,6 @@ export function AddAffiliate() {
       }
 
       const edad = (hoy.getTime() - fechaNac.getTime()) / (1000 * 60 * 60 * 24 * 365);
-      //if (edad < 18) {
-      //  newErrors.fechaNacimiento = "El titular debe ser mayor de 18 años";
-      // }
 
       if (edad > 150) {
         newErrors.fechaNacimiento = "La fecha de nacimiento no es válida";
@@ -560,7 +557,7 @@ export function AddAffiliate() {
   };
 
   return (
-    <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 mx-auto mt-6 shadow">
+    <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto mt-4 sm:mt-6 shadow">
       <div className="flex flex-col items-center sm:items-start mb-6 gap-4">
         <h1 className="text-2xl font-semibold text-gray-800 text-center sm:text-left">
           Crear nuevo afiliado
@@ -594,7 +591,7 @@ export function AddAffiliate() {
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Datos de Afiliado (Titular)
           </h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo Documento (*)</label>
               <select
@@ -685,7 +682,7 @@ export function AddAffiliate() {
               )}
             </div>
 
-            <div className="flex flex-col col-span-2">
+            <div className="flex flex-col md:col-span-2">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Dirección</label>
               <input
                 type="text"
@@ -703,8 +700,8 @@ export function AddAffiliate() {
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Datos de Contacto
           </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col md:col-span-2">
               <label className="font-semibold mb-1">Teléfono</label>
               <input
                 type="text"
@@ -716,7 +713,7 @@ export function AddAffiliate() {
               />
 
               {showPhone2 && (
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     name="telefono2"
@@ -749,7 +746,7 @@ export function AddAffiliate() {
               )}
             </div>
 
-            <div className="flex flex-col col-span-2">
+            <div className="flex flex-col md:col-span-2">
               <label className="font-semibold mb-1">Email</label>
               <input
                 type="email"
@@ -762,7 +759,7 @@ export function AddAffiliate() {
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
 
               {showEmail2 && (
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex flex-col sm:flex-row gap-2">
                   <input
                     type="email"
                     name="email2"
@@ -811,7 +808,10 @@ export function AddAffiliate() {
             )}
 
             {situaciones.map((s, idx) => (
-              <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full">
+              <div
+                key={idx}
+                className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
+              >
                 <div className="flex flex-col">
                   <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
                   <select
@@ -839,7 +839,7 @@ export function AddAffiliate() {
                   />
                 </div>
 
-                <div className="justify-self-end">
+                <div className="justify-self-start md:justify-self-end">
                   <button
                     type="button"
                     onClick={() => removeSituacion(idx)}
@@ -874,7 +874,7 @@ export function AddAffiliate() {
 
           {familiares.map((familiar, i) => (
             <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-4">
-              <div className="flex justify-between items-center mb-3">
+              <div className="flex flex-col sm:flex-row justify-between gap-2 items-start sm:items-center mb-3">
                 <h3 className="font-semibold text-gray-700">Familiar {i + 1}</h3>
                 <button
                   type="button"
@@ -885,7 +885,7 @@ export function AddAffiliate() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
                   <label className="font-semibold mb-1 text-sm">Tipo Documento</label>
                   <select
@@ -968,7 +968,7 @@ export function AddAffiliate() {
                   </select>
                 </div>
 
-                <div className="flex flex-col col-span-2">
+                <div className="flex flex-col md:col-span-2">
                   <label className="font-semibold mb-1 text-sm flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -989,7 +989,7 @@ export function AddAffiliate() {
                   )}
                 </div>
 
-                <div className="flex flex-col col-span-2">
+                <div className="flex flex-col md:col-span-2">
                   <label className="font-semibold mb-1 text-sm flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -1000,7 +1000,7 @@ export function AddAffiliate() {
                     Usar contacto del titular
                   </label>
                   {!familiar.usaContactoTitular && (
-                    <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                       <div className="flex flex-col">
                         <label className="text-sm mb-1">Teléfono</label>
                         <input
@@ -1039,7 +1039,10 @@ export function AddAffiliate() {
                   )}
 
                   {familiar.situaciones?.map((s, idx) => (
-                    <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full">
+                    <div
+                      key={idx}
+                      className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
+                    >
                       <div className="flex flex-col">
                         <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
                         <select
@@ -1067,7 +1070,7 @@ export function AddAffiliate() {
                         />
                       </div>
 
-                      <div className="justify-self-end">
+                      <div className="justify-self-start md:justify-self-end">
                         <button
                           type="button"
                           onClick={() => removeSituacionFamiliar(i, idx)}
@@ -1103,11 +1106,11 @@ export function AddAffiliate() {
       </div>
 
       {/* BOTONES */}
-      <div className="flex justify-center gap-4 mt-4">
+      <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-4">
         <button
           type="submit"
           onClick={handleSubmit}
-          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
+          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition w-full sm:w-auto"
           disabled={loading}
         >
           {loading ? "Guardando..." : "Crear Afiliado"}
@@ -1115,14 +1118,14 @@ export function AddAffiliate() {
         <button
           type="button"
           onClick={() => navigate("/home")}
-          className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition"
+          className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition w-full sm:w-auto"
         >
           Cancelar
         </button>
         <button
           type="button"
           onClick={() => setShowAltaPopup(true)}
-          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
+          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition w-full sm:w-auto"
           disabled={loading}
         >
           Programar Alta
