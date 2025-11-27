@@ -22,6 +22,7 @@ export function PrestadoresPorEspecialidad() {
   const [results, setResults] = useState<PrestadorEspecialidadRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
 
   // 🔹 Paginación
   const [page, setPage] = useState(1);
@@ -62,9 +63,11 @@ export function PrestadoresPorEspecialidad() {
         : data.results || data.providers || [];
 
       setResults(rows);
+      setSearched(true);
     } catch (e: any) {
       console.error(e);
       setError(e.message || "Error al consultar el reporte");
+      setSearched(true);
     } finally {
       setLoading(false);
     }
@@ -146,11 +149,17 @@ export function PrestadoresPorEspecialidad() {
 
         {/* RESULTADOS */}
         <div className="mt-2">
-          {!loading && results.length === 0 && !error && (
+          {!loading && results.length === 0 && !error && !searched && (
             <p className="text-sm text-gray-600">
               Seleccione una especialidad y presione{" "}
               <span className="font-semibold">Buscar</span> para ver los
               prestadores que la poseen.
+            </p>
+          )}
+
+          {!loading && results.length === 0 && !error && searched && (
+            <p className="text-sm text-gray-600">
+              No se encontraron prestadores con la especialidad seleccionada.
             </p>
           )}
 

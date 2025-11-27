@@ -20,6 +20,7 @@ export function PrestadoresPorCodigoPostal() {
   const [results, setResults] = useState<PrestadorCodigoPostalRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
 
   // 🔹 Paginación
   const [page, setPage] = useState(1);
@@ -64,9 +65,11 @@ export function PrestadoresPorCodigoPostal() {
         : data.results || data.providers || [];
 
       setResults(rows);
+      setSearched(true);
     } catch (e: any) {
       console.error(e);
       setError(e.message || "Error al consultar el reporte");
+      setSearched(true);
     } finally {
       setLoading(false);
     }
@@ -147,11 +150,17 @@ export function PrestadoresPorCodigoPostal() {
 
         {/* RESULTADOS */}
         <div className="mt-2">
-          {!loading && results.length === 0 && !error && (
+          {!loading && results.length === 0 && !error && !searched && (
             <p className="text-sm text-gray-600">
               Ingrese un código postal válido y presione{" "}
               <span className="font-semibold">Buscar</span> para ver los
               prestadores que atienden en ese código postal.
+            </p>
+          )}
+
+          {!loading && results.length === 0 && !error && searched && (
+            <p className="text-sm text-gray-600">
+              No se encontraron prestadores que atiendan en el código postal indicado.
             </p>
           )}
 

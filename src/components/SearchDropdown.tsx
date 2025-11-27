@@ -85,7 +85,7 @@ export default function SearchDropdown({
         <div className="relative flex-1 h-[42px]">
           {/* Mobile */}
           <input
-            type="search"
+            type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar"
@@ -97,7 +97,7 @@ export default function SearchDropdown({
           />
           {/* Desktop */}
           <input
-            type="search"
+            type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Buscar por ${fieldLabel}`}
