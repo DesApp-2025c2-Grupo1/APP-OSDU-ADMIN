@@ -98,7 +98,6 @@ export function AddProvider() {
         setLoadingEspecialidades(true);
         const resEsp = await fetch(`${API_BASE_URL}/specialties`);
         const dataEsp = await resEsp.json();
-        console.log("📋 Especialidades cargadas:", dataEsp);
 
         // El backend puede devolver { especialidades: [...] } o array directo
         const especialidadesArray = dataEsp.especialidades || dataEsp || [];
@@ -107,7 +106,6 @@ export function AddProvider() {
           nombre: e.nombre
         })));
       } catch (err) {
-        console.error("Error cargando datos:", err);
         setError("No se pudieron cargar las especialidades");
       } finally {
         setLoadingEspecialidades(false);
@@ -211,8 +209,6 @@ export function AddProvider() {
         ...(tipo === "profesional" && integraCentro && { centroMedicoId: integraCentro })
       };
 
-      console.log("Payload enviado:", JSON.stringify(payload, null, 2));
-
       const res = await fetch(`${API_BASE_URL}/providers/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -221,7 +217,6 @@ export function AddProvider() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        console.error("Error del servidor:", errorData);
         throw new Error(errorData.error || errorData.message || "Error al crear prestador");
       }
 
@@ -229,7 +224,6 @@ export function AddProvider() {
       navigate("/prestadores");
     } catch (err: any) {
       setError(err.message || "Error al guardar");
-      console.error(err);
     } finally {
       setLoading(false);
     }

@@ -19,7 +19,6 @@ export const fetchProviders = async (): Promise<Prestador[]> => {
 
     return providers;
   } catch (error) {
-    console.error("Error en fetchProviders:", error);
     throw error;
   }
 };
@@ -39,7 +38,6 @@ export async function checkProviderSpecialtyAgendas(
 
     return await response.json();
   } catch (error) {
-    console.error('Error en checkProviderSpecialtyAgendas:', error);
     throw error;
   }
 }
@@ -58,7 +56,6 @@ export async function checkProviderPlaceAgendas(
 
     return await response.json();
   } catch (error) {
-    console.error('Error en checkProviderPlaceAgendas:', error);
     throw error;
   }
 }
@@ -78,7 +75,6 @@ export const fetchProviderByCuit = async (cuitCuil: string): Promise<Prestador> 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error("Error en fetchProviderByCuit:", error);
     throw error;
   }
 };
@@ -102,7 +98,6 @@ export const createProvider = async (provider: Omit<Prestador, "lugarAtencion"> 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error("Error en createProvider:", error);
     throw error;
   }
 };
@@ -112,7 +107,6 @@ export const createProvider = async (provider: Omit<Prestador, "lugarAtencion"> 
  */
 export const updateProvider = async (cuitCuil: string, updates: Partial<Prestador>): Promise<Prestador> => {
   try {
-    console.log(`📤 PUT /providers/${cuitCuil}:`, JSON.stringify(updates, null, 2));
 
     const response = await fetch(`${API_BASE_URL}/providers/${cuitCuil}`, {
       method: "PUT",
@@ -120,15 +114,12 @@ export const updateProvider = async (cuitCuil: string, updates: Partial<Prestado
       body: JSON.stringify(updates),
     });
 
-    console.log(`📊 Respuesta HTTP: ${response.status} ${response.statusText}`);
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error(`❌ Error del servidor (${response.status}):`, errorData);
 
       // Mostrar errores específicos si existen
       if (errorData.errores && Array.isArray(errorData.errores)) {
-        console.error('Detalles de errores:', errorData.errores);
         const errorMessages = errorData.errores.map((e: any) => e.mensaje || e.message || JSON.stringify(e)).join(', ');
         throw new Error(`Error de validación: ${errorMessages}`);
       }
@@ -137,10 +128,8 @@ export const updateProvider = async (cuitCuil: string, updates: Partial<Prestado
     }
 
     const data = await response.json();
-    console.log(`✅ Actualización exitosa:`, data);
     return data;
   } catch (error) {
-    console.error("❌ Error en updateProvider:", error);
     throw error;
   }
 };
@@ -158,7 +147,6 @@ export const deleteProvider = async (cuitCuil: string): Promise<void> => {
       throw new Error(`Error al eliminar proveedor: ${cuitCuil}`);
     }
   } catch (error) {
-    console.error("Error en deleteProvider:", error);
     throw error;
   }
 };

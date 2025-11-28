@@ -73,10 +73,8 @@ export function AddAffiliate() {
         if (!responseSit.ok) throw new Error("Error al cargar situaciones terapéuticas");
 
         const dataSit = await responseSit.json();
-        console.log("📋 Situaciones cargadas:", dataSit.situaciones);
         setSituacionesDisponibles(dataSit.situaciones || []);
       } catch (error) {
-        console.error("Error al cargar situaciones:", error);
         setErrors(prev => ({ ...prev, situaciones: "No se pudieron cargar las situaciones terapéuticas" }));
       } finally {
         setLoadingSituaciones(false);
@@ -86,10 +84,8 @@ export function AddAffiliate() {
         // Cargar planes
         setLoadingPlanes(true);
         const planes = await fetchPlans();
-        console.log("📋 Planes cargados:", planes);
         setPlanesDisponibles(planes);
       } catch (error) {
-        console.error("Error al cargar planes:", error);
         setErrors(prev => ({ ...prev, planes: "No se pudieron cargar los planes médicos" }));
       } finally {
         setLoadingPlanes(false);
@@ -412,8 +408,6 @@ export function AddAffiliate() {
         familiares: familiaresPayload,
       };
 
-      console.log("Payload programado a enviar:", JSON.stringify(payload, null, 2));
-
       // Hacer la petición al API
       const response = await fetch(`${API_BASE_URL}/affiliates`, {
         method: "POST",
@@ -429,13 +423,11 @@ export function AddAffiliate() {
       }
 
       const result = await response.json();
-      console.log("Respuesta del servidor:", result);
 
       setLoading(false);
       setSuccess("Afiliado programado exitosamente para alta futura");
       setTimeout(() => navigate("/home"), 1500);
     } catch (err: any) {
-      console.error("Error al programar:", err);
       setLoading(false);
       setErrors((prev) => ({
         ...prev,
@@ -524,8 +516,6 @@ export function AddAffiliate() {
         familiares: familiaresPayload,
       };
 
-      console.log("Payload a enviar:", JSON.stringify(payload, null, 2));
-
       // Hacer la petición al API
       const response = await fetch(`${API_BASE_URL}/affiliates`, {
         method: "POST",
@@ -541,13 +531,11 @@ export function AddAffiliate() {
       }
 
       const result = await response.json();
-      console.log("Respuesta del servidor:", result);
 
       setLoading(false);
       setSuccess("Afiliado y familiares creados con éxito");
       setTimeout(() => navigate("/home"), 1500);
     } catch (err: any) {
-      console.error("Error al guardar:", err);
       setLoading(false);
       setErrors((prev) => ({
         ...prev,

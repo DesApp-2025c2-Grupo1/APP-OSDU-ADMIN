@@ -6,22 +6,22 @@ import { fetchSpecialties } from "../api/specialtyService";
 import { createAgenda } from "../api/agendaService";
 
 type DiaSemana = "Lunes" | "Martes" | "Miercoles" | "Jueves" | "Viernes" | "Sabado" | "Domingo";
-type BloqueHorario = { 
-  dias: DiaSemana[]; 
-  desde: string; 
-  hasta: string; 
+type BloqueHorario = {
+  dias: DiaSemana[];
+  desde: string;
+  hasta: string;
 };
 
-interface AddAgendaPageProps {}
+interface AddAgendaPageProps { }
 
-export function AddAgendaPage({}: AddAgendaPageProps) {
+export function AddAgendaPage({ }: AddAgendaPageProps) {
   const navigate = useNavigate();
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [prestadores, setPrestadores] = useState<any[]>([]);
   const [especialidades, setEspecialidades] = useState<any[]>([]);
-  
+
   const [formData, setFormData] = useState({
     prestadorId: "",
     especialidadId: "",
@@ -53,11 +53,10 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
           fetchProviders(),
           fetchSpecialties()
         ]);
-        
+
         setPrestadores(prestadoresData);
         setEspecialidades(especialidadesData);
       } catch (err) {
-        console.error("Error cargando datos:", err);
         setError("No se pudieron cargar los datos iniciales");
       }
     };
@@ -69,7 +68,7 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
     if (!busquedaPrestador.trim()) {
       return prestadores;
     }
-    
+
     const busqueda = busquedaPrestador.toLowerCase();
     return prestadores.filter(prestador =>
       prestador.nombreCompleto.toLowerCase().includes(busqueda) ||
@@ -88,14 +87,14 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
           nombre: esp.nombre
         }));
         setEspecialidadesDisponibles(especialidadesPrestador);
-        
+
         // Mapear lugares de atención del prestador
         const lugaresPrestador = (prestador.lugaresAtencion || []).map((lugar: any) => ({
           id: lugar.idLugar,
           nombre: `${lugar.calle}, ${lugar.localidad}`
         }));
         setLugaresDisponibles(lugaresPrestador);
-        
+
         // Si solo hay una especialidad, seleccionarla automáticamente
         if (especialidadesPrestador.length === 1) {
           setFormData(prev => ({ ...prev, especialidadId: especialidadesPrestador[0].id.toString() }));
@@ -105,7 +104,7 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
         if (lugaresPrestador.length === 1) {
           setFormData(prev => ({ ...prev, lugarAtencionId: lugaresPrestador[0].id.toString() }));
         }
-        
+
         // Actualizar la búsqueda con el nombre del prestador seleccionado
         setBusquedaPrestador(prestador.nombreCompleto);
       }
@@ -135,7 +134,7 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
     const valor = e.target.value;
     setBusquedaPrestador(valor);
     setMostrarDropdown(true);
-    
+
     if (!valor.trim()) {
       setFormData(prev => ({ ...prev, prestadorId: "" }));
     }
@@ -167,13 +166,13 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
   };
 
   const toggleDia = (bloqueIndex: number, dia: DiaSemana) => {
-    setBloquesHorarios(prev => 
+    setBloquesHorarios(prev =>
       prev.map((bloque, index) => {
         if (index === bloqueIndex) {
           const estaSeleccionado = bloque.dias.includes(dia);
           return {
             ...bloque,
-            dias: estaSeleccionado 
+            dias: estaSeleccionado
               ? bloque.dias.filter(d => d !== dia)
               : [...bloque.dias, dia]
           };
@@ -184,16 +183,16 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
   };
 
   const cambiarHorarioDesde = (bloqueIndex: number, valor: string) => {
-    setBloquesHorarios(prev => 
-      prev.map((bloque, index) => 
+    setBloquesHorarios(prev =>
+      prev.map((bloque, index) =>
         index === bloqueIndex ? { ...bloque, desde: valor } : bloque
       )
     );
   };
 
   const cambiarHorarioHasta = (bloqueIndex: number, valor: string) => {
-    setBloquesHorarios(prev => 
-      prev.map((bloque, index) => 
+    setBloquesHorarios(prev =>
+      prev.map((bloque, index) =>
         index === bloqueIndex ? { ...bloque, hasta: valor } : bloque
       )
     );
@@ -201,7 +200,7 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validaciones
     if (!formData.prestadorId) {
       setError("Debe seleccionar un prestador.");
@@ -218,7 +217,7 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
       return;
     }
 
-    const bloquesValidos = bloquesHorarios.filter(bloque => 
+    const bloquesValidos = bloquesHorarios.filter(bloque =>
       bloque.dias.length > 0 && bloque.desde && bloque.hasta
     );
 
@@ -244,11 +243,10 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
       };
 
       await createAgenda(payload);
-      
+
       // Redirigir a la página de agenda
       navigate("/agenda");
     } catch (err: any) {
-      console.error("Error al crear agenda:", err);
       setError(err.message || "Error al guardar la agenda");
     } finally {
       setLoading(false);
@@ -281,13 +279,13 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
             Datos del prestador
           </h3>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Nombre
               </label>
-              
+
               {/* Campo de búsqueda de prestador */}
               <div className="relative">
                 <input
@@ -300,7 +298,7 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
                   placeholder="Buscar prestador..."
                   required
                 />
-                
+
                 {/* Dropdown de resultados */}
                 {mostrarDropdown && prestadoresFiltrados.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
@@ -308,9 +306,8 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
                       <div
                         key={prestador.cuitCuil}
                         onClick={() => seleccionarPrestador(prestador.cuitCuil, prestador.nombreCompleto)}
-                        className={`p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0 ${
-                          formData.prestadorId === prestador.cuitCuil ? 'bg-green-50' : ''
-                        }`}
+                        className={`p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0 ${formData.prestadorId === prestador.cuitCuil ? 'bg-green-50' : ''
+                          }`}
                       >
                         <div className="font-medium">{prestador.nombreCompleto}</div>
                         <div className="text-sm text-gray-600 capitalize">({prestador.tipoPrestador})</div>
@@ -318,7 +315,7 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
                     ))}
                   </div>
                 )}
-                
+
                 {/* Mensaje cuando no hay resultados */}
                 {mostrarDropdown && busquedaPrestador && prestadoresFiltrados.length === 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
@@ -410,7 +407,7 @@ export function AddAgendaPage({}: AddAgendaPageProps) {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Días y horarios de atención
             </label>
-            
+
             {bloquesHorarios.map((bloque, bloqueIndex) => (
               <div key={bloqueIndex} className="border rounded-lg p-4 mb-4 bg-gray-50">
                 {/* Días de la semana */}

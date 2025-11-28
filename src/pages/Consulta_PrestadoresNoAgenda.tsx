@@ -50,7 +50,6 @@ export function PrestadoresSinAgendas() {
       setResults(rows);
       setSearched(true);
     } catch (e: any) {
-      console.error(e);
       setError(e.message || "Error al consultar el reporte");
       setSearched(true);
     } finally {
@@ -91,10 +90,9 @@ export function PrestadoresSinAgendas() {
             disabled={loading}
             className={`
               px-5 py-2 rounded-md text-white font-semibold
-              ${
-                !loading
-                  ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
-                  : "bg-gray-300 cursor-not-allowed"
+              ${!loading
+                ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
+                : "bg-gray-300 cursor-not-allowed"
               }
             `}
           >

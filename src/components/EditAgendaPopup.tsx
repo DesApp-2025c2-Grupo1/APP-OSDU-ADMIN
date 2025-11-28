@@ -35,15 +35,15 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
   // Inicializar franjas desde los bloques de la agenda
   const initialFranjas = agenda.bloques && agenda.bloques.length > 0
     ? agenda.bloques.map(bloque => ({
-        dias: bloque.dias.map(mapDiaToComplete),
-        desde: bloque.desde,
-        hasta: bloque.hasta,
-      }))
+      dias: bloque.dias.map(mapDiaToComplete),
+      desde: bloque.desde,
+      hasta: bloque.hasta,
+    }))
     : [{
-        dias: agenda.dias.map(mapDiaToComplete),
-        desde: agenda.horario.split(" - ")[0] || "",
-        hasta: agenda.horario.split(" - ")[1] || "",
-      }];
+      dias: agenda.dias.map(mapDiaToComplete),
+      desde: agenda.horario.split(" - ")[0] || "",
+      hasta: agenda.horario.split(" - ")[1] || "",
+    }];
 
   const [formData, setFormData] = useState({
     duracion: agenda.duracion,
@@ -105,7 +105,7 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
       return;
     }
 
-    const franjasValidas = formData.franjas.filter(f => 
+    const franjasValidas = formData.franjas.filter(f =>
       f.dias.length > 0 && f.desde && f.hasta
     );
 
@@ -128,17 +128,16 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
       };
 
       await updateAgenda(agenda.id, payload);
-      
+
       // Crear objeto actualizado para el estado local
       const updated: HorarioAgenda = {
         ...agenda,
         duracion: formData.duracion,
         bloques: franjasValidas,
       };
-      
+
       onSave(updated);
     } catch (err: any) {
-      console.error("Error al actualizar agenda:", err);
       setError(err.message || "Error al actualizar la agenda");
     } finally {
       setLoading(false);

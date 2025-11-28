@@ -62,21 +62,12 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           nombre: e.nombre
         })));
       } catch (err) {
-        console.error("Error cargando datos:", err);
       }
     };
     cargarDatos();
 
     // Guardar lugares originales para detectar cambios
     setOriginalPlaces(JSON.parse(JSON.stringify(provider.lugaresAtencion || [])));
-
-    // Debug: imprimir datos del provider
-    console.log('📋 Provider en EditProviderPopup:', {
-      cuitCuil: provider.cuitCuil,
-      tipoPrestador: provider.tipoPrestador,
-      centroMedicoId: (provider as any).centroMedicoId,
-      formDataCentroMedicoId: (formData as any).centroMedicoId
-    });
   }, []);
 
   // ---------- helpers campos simples ----------
@@ -161,7 +152,6 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
         }));
       }
     } catch (err) {
-      console.error("Error verificando agendas:", err);
       // Si hay error, permitir eliminar (pero mostrar alerta)
       alert("No se pudo verificar las agendas asociadas. Por favor, intenta de nuevo.");
     } finally {
@@ -206,44 +196,26 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
 
   const handleSave = async () => {
-    // Verificar si los lugares de atención cambiaron
-    console.log('🔍 Verificando cambios en lugares...');
-    console.log('Lugares originales:', JSON.stringify(originalPlaces, null, 2));
-    console.log('Lugares actuales:', JSON.stringify(formData.lugaresAtencion, null, 2));
-
     const placesChanged = JSON.stringify(originalPlaces) !== JSON.stringify(formData.lugaresAtencion);
-    console.log('¿Lugares cambiaron?', placesChanged);
 
     if (placesChanged && !pendingSave) {
-      console.log('⚠️ Lugares cambiaron, verificando agendas...');
-      // Verificar si hay agendas asociadas a los lugares
       try {
         setCheckingAgendas(true);
         const result = await checkProviderPlaceAgendas(formData.cuitCuil);
 
-        console.log('Resultado de agendas:', result);
-
         if (result.count > 0) {
-          console.log('✋ Hay agendas, mostrando diálogo de confirmación');
-          // Mostrar diálogo de confirmación
           setPlaceAgendas(result.agendas);
           setShowPlaceWarning(true);
           setCheckingAgendas(false);
           return; // No continuar con el guardado
         } else {
-          console.log('✅ No hay agendas, continuando con guardado');
         }
       } catch (err) {
-        console.error(" Error verificando agendas de lugares:", err);
-        // Si hay error, continuar con el guardado (no bloquear)
       } finally {
         setCheckingAgendas(false);
       }
     } else {
-      console.log('ℹ️ Lugares no cambiaron o guardado pendiente');
     }
-
-    // Proceder con el guardado (ya sea sin cambios en lugares o con confirmación)
     await performSave();
   };
 
@@ -268,24 +240,14 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
         (updated as any).centroMedicoId = (formData as any).centroMedicoId || null;
       }
 
-      console.log('📤 Enviando actualización:', JSON.stringify(updated, null, 2));
-      console.log('🏥 Centro Médico ID:', (formData as any).centroMedicoId);
 
       // Llamar al API para guardar cambios
       const result = await updateProvider(formData.cuitCuil, updated);
 
-      console.log('✅ Respuesta del servidor:', result);
-
-      // Notificar que se guardó correctamente
       onSave(result);
       onClose();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
-      console.error('❌ Error al guardar:', {
-        error: err,
-        errorMessage: errorMsg,
-        cuitCuil: formData.cuitCuil
-      });
       setError(errorMsg);
     } finally {
       setLoading(false);

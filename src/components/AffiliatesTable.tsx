@@ -101,7 +101,6 @@ export function AffiliatesTable({
 
   const handleSaveAffiliate = async (data: any) => {
     try {
-      console.log("Datos que se envían al backend:", JSON.stringify(data, null, 2));
 
       const response = await fetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate?.dni}`,
@@ -116,11 +115,9 @@ export function AffiliatesTable({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("❌ Error del servidor:", errorData);
         throw new Error(errorData.message || "Error al actualizar afiliado");
       }
 
-      console.log("✅ Respuesta exitosa del servidor");
 
       // Recargar el afiliado actualizado
       const updatedResponse = await fetch(
@@ -129,7 +126,6 @@ export function AffiliatesTable({
 
       if (updatedResponse.ok) {
         const updatedData = await updatedResponse.json();
-        console.log("📦 Afiliado actualizado:", updatedData);
         onAffiliateUpdated?.(updatedData.affiliates);
       }
 
@@ -137,7 +133,6 @@ export function AffiliatesTable({
       setSelectedAffiliate(null);
 
     } catch (error) {
-      console.error("❌ Error al actualizar afiliado:", error);
       alert("Error al actualizar el afiliado. Por favor, intente nuevamente.");
     }
   };
@@ -174,7 +169,6 @@ export function AffiliatesTable({
       setSelectedAffiliate(null);
 
     } catch (error) {
-      console.error("❌ Error al eliminar afiliado:", error);
     } finally {
       setIsDeleting(false);
     }
@@ -202,7 +196,6 @@ export function AffiliatesTable({
       setShowDeleteDialog(false);
       setSelectedAffiliate(null);
     } catch (error) {
-      console.error("❌ Error al programar baja:", error);
     }
   };
 

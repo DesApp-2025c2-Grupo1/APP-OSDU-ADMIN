@@ -66,7 +66,6 @@ export function Home() {
 
       setAffiliates(affiliatesData);
     } catch (error) {
-      console.error("Error al obtener afiliados:", error);
     } finally {
       setLoading(false);
     }
@@ -140,7 +139,6 @@ export function Home() {
 
       showToast(`Afiliado ${selectedAffiliate.nombre} eliminado correctamente`);
     } catch (error) {
-      console.error("Error al eliminar afiliado:", error);
       showToast("Error al eliminar el afiliado");
     } finally {
       setIsDeleting(false);
@@ -163,7 +161,6 @@ export function Home() {
       );
       showToast(`Baja programada para ${selectedAffiliate.nombre}`);
     } catch (e) {
-      console.error(e);
       showToast("No se pudo programar la baja");
     } finally {
       setShowDeleteDialog(false);
@@ -196,7 +193,6 @@ export function Home() {
       setSelectedAffiliate(null);
       showToast(`Afiliado ${updatedAffiliate.nombre} actualizado`);
     } catch (error) {
-      console.error("Error al actualizar afiliado:", error);
       showToast("Error al actualizar el afiliado");
     }
   };
@@ -220,8 +216,8 @@ export function Home() {
           <button
             onClick={() => setShowPending(!showPending)}
             className={`px-4 py-2 rounded font-medium transition-colors ${showPending
-                ? "bg-blue-100 text-blue-800 border border-blue-300 hover:bg-blue-200"
-                : "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200"
+              ? "bg-blue-100 text-blue-800 border border-blue-300 hover:bg-blue-200"
+              : "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200"
               }`}
           >
             {showPending ? "Ver Activos" : "Ver Pendientes"}

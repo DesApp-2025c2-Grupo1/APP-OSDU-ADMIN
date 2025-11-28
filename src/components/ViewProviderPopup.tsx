@@ -18,17 +18,16 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
           const response = await fetch(`${API_BASE_URL}/providers`);
           const data = await response.json();
           const centros = Array.isArray(data) ? data : (data.data || []);
-          
+
           // Filtrar solo centros médicos
           const centrosMedicos = centros.filter((c: any) => c.tipoPrestador === "centro_medico");
-          
+
           const centro = centrosMedicos.find(
             (c: any) => c.cuitCuil === provider.centroMedicoId
           );
           setCentroNombre(centro?.nombreCompleto || null);
         }
       } catch (error) {
-        console.error("Error al cargar centros médicos:", error);
       }
     };
 
@@ -111,7 +110,7 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
             <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
               Lugares de Atención ({provider.lugaresAtencion.length})
             </h2>
-            
+
             {/* TABS PARA MÚLTIPLES LUGARES */}
             {provider.lugaresAtencion.length > 1 && (
               <div className="flex flex-wrap gap-2 mb-4 border-b border-gray-300">
@@ -119,11 +118,10 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
                   <button
                     key={idx}
                     onClick={() => setSelectedLugarIndex(idx)}
-                    className={`px-4 py-2 font-semibold transition ${
-                      selectedLugarIndex === idx
-                        ? "text-[#5FA92C] border-b-2 border-[#5FA92C]"
-                        : "text-gray-600 hover:text-gray-800"
-                    }`}
+                    className={`px-4 py-2 font-semibold transition ${selectedLugarIndex === idx
+                      ? "text-[#5FA92C] border-b-2 border-[#5FA92C]"
+                      : "text-gray-600 hover:text-gray-800"
+                      }`}
                   >
                     Lugar {idx + 1}
                   </button>
@@ -136,34 +134,34 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
               <p className="text-gray-700 font-semibold mb-2">
                 {provider.lugaresAtencion[selectedLugarIndex].calle}
               </p>
-              {(provider.lugaresAtencion[selectedLugarIndex].localidad || 
+              {(provider.lugaresAtencion[selectedLugarIndex].localidad ||
                 provider.lugaresAtencion[selectedLugarIndex].provincia) && (
-                <p className="text-gray-700 text-sm">
-                  {provider.lugaresAtencion[selectedLugarIndex].localidad && 
-                    provider.lugaresAtencion[selectedLugarIndex].localidad}
-                  {provider.lugaresAtencion[selectedLugarIndex].localidad && 
-                    provider.lugaresAtencion[selectedLugarIndex].provincia && " - "}
-                  {provider.lugaresAtencion[selectedLugarIndex].provincia && 
-                    provider.lugaresAtencion[selectedLugarIndex].provincia}
-                </p>
-              )}
+                  <p className="text-gray-700 text-sm">
+                    {provider.lugaresAtencion[selectedLugarIndex].localidad &&
+                      provider.lugaresAtencion[selectedLugarIndex].localidad}
+                    {provider.lugaresAtencion[selectedLugarIndex].localidad &&
+                      provider.lugaresAtencion[selectedLugarIndex].provincia && " - "}
+                    {provider.lugaresAtencion[selectedLugarIndex].provincia &&
+                      provider.lugaresAtencion[selectedLugarIndex].provincia}
+                  </p>
+                )}
               <p className="text-gray-700 text-sm">
                 CP: {provider.lugaresAtencion[selectedLugarIndex].cp}
               </p>
-              
-              {provider.lugaresAtencion[selectedLugarIndex].horarios && 
-               provider.lugaresAtencion[selectedLugarIndex].horarios!.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-300">
-                  <p className="font-semibold text-gray-700 mb-2">Horarios de Atención:</p>
-                  <ul className="space-y-1 text-sm">
-                    {provider.lugaresAtencion[selectedLugarIndex].horarios!.map((h, idx) => (
-                      <li key={idx} className="text-gray-600">
-                        {h.dias.join(", ")}: {h.desde} - {h.hasta}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+
+              {provider.lugaresAtencion[selectedLugarIndex].horarios &&
+                provider.lugaresAtencion[selectedLugarIndex].horarios!.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-300">
+                    <p className="font-semibold text-gray-700 mb-2">Horarios de Atención:</p>
+                    <ul className="space-y-1 text-sm">
+                      {provider.lugaresAtencion[selectedLugarIndex].horarios!.map((h, idx) => (
+                        <li key={idx} className="text-gray-600">
+                          {h.dias.join(", ")}: {h.desde} - {h.hasta}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
             </div>
           </div>
         )}
