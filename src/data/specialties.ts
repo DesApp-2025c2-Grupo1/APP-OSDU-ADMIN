@@ -19,8 +19,6 @@ export const loadSpecialties = async (): Promise<Especialidad[]> => {
     SPECIALTIES = await fetchSpecialties();
     return SPECIALTIES;
   } catch (error) {
-    console.error("Error al cargar especialidades:", error);
-    // Ya tenemos el fallback arriba
     return SPECIALTIES;
   }
 };

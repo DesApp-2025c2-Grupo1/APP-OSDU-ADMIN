@@ -59,10 +59,8 @@ export function AddFamiliarMember({
         if (!response.ok) throw new Error("Error al cargar situaciones terapéuticas");
 
         const data = await response.json();
-        console.log("📋 Situaciones cargadas:", data.situaciones);
         setSituacionesDisponibles(data.situaciones || []);
       } catch (error) {
-        console.error("Error al cargar situaciones:", error);
         setErrors(prev => ({
           ...prev,
           situaciones: "No se pudieron cargar las situaciones terapéuticas"

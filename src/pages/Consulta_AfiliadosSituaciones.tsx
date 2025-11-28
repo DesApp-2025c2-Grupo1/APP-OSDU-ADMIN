@@ -75,7 +75,6 @@ export function SituacionesPorAfiliado() {
       const data: ResultData = await res.json();
       setResult(data);
     } catch (e: any) {
-      console.error(e);
       setError(e.message || "Error al consultar el reporte");
     } finally {
       setLoading(false);
@@ -130,10 +129,9 @@ export function SituacionesPorAfiliado() {
               disabled={!dniValido || loading}
               className={`
                 px-5 py-2 rounded-md text-white font-semibold
-                ${
-                  dniValido && !loading
-                    ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
-                    : "bg-gray-300 cursor-not-allowed"
+                ${dniValido && !loading
+                  ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
+                  : "bg-gray-300 cursor-not-allowed"
                 }
               `}
             >
@@ -236,11 +234,10 @@ export function SituacionesPorAfiliado() {
                             </td>
                             <td className="px-4 py-2 text-sm">
                               <span
-                                className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                  s.estado === "Activa"
+                                className={`px-2 py-1 rounded-full text-xs font-semibold ${s.estado === "Activa"
                                     ? "bg-green-100 text-green-800"
                                     : "bg-gray-100 text-gray-800"
-                                }`}
+                                  }`}
                               >
                                 {s.estado}
                               </span>
@@ -282,11 +279,10 @@ export function SituacionesPorAfiliado() {
 
                         <div className="mt-2">
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              s.estado === "Activa"
+                            className={`px-2 py-1 rounded-full text-xs font-semibold ${s.estado === "Activa"
                                 ? "bg-green-100 text-green-800"
                                 : "bg-gray-100 text-gray-800"
-                            }`}
+                              }`}
                           >
                             {s.estado}
                           </span>

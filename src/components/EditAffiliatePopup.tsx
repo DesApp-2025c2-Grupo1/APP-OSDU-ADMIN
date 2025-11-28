@@ -56,7 +56,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
       try {
         setLoading(true);
 
-        console.log("🔍 Cargando datos para DNI:", affiliate.dni);
 
         // Cargar datos del afiliado
         const [affiliateRes, situacionesRes, planesRes] = await Promise.all([
@@ -73,15 +72,10 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         const situacionesData = await situacionesRes.json();
         const planesData = await planesRes.json();
 
-        console.log("📦 Datos recibidos del afiliado:", affiliateData);
-        console.log("📋 Situaciones disponibles:", situacionesData);
-        console.log("📋 Planes disponibles:", planesData);
-
         // El endpoint puede devolver el afiliado directamente o dentro de un objeto
         const aff = affiliateData.affiliate || affiliateData.affiliates || affiliateData;
 
         if (!aff || !aff.dni) {
-          console.error("📦 Estructura recibida:", affiliateData);
           throw new Error("No se encontraron datos del afiliado");
         }
 
@@ -118,14 +112,12 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         );
 
         // ✅ Situaciones terapéuticas
-        console.log("🏥 Situaciones del afiliado:", aff.situaciones);
         setSituaciones(aff.situaciones || []);
 
         setSituacionesDisponibles(situacionesData.situaciones || []);
         setPlanesDisponibles(planesData.plans || []);
 
       } catch (error) {
-        console.error("❌ Error al cargar datos:", error);
         alert(`Error al cargar datos: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       } finally {
         setLoading(false);
@@ -217,10 +209,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
       situacionesEliminadas
     };
 
-    console.log("📤 Payload completo que se envía:", payload);
-    console.log("🗑️ Situaciones a eliminar:", situacionesEliminadas);
-    console.log("📋 Situaciones actuales:", situaciones);
-
     onSave(payload);
   };
 
@@ -270,12 +258,10 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
 
   const removeSituacion = (idx: number) => {
     const sit = situaciones[idx];
-    console.log("🗑️ Eliminando situación:", sit);
 
     if (sit.idSituacionAfiliado) {
       setSituacionesEliminadas(prev => {
         const newList = [...prev, sit.idSituacionAfiliado!];
-        console.log("📝 Situaciones marcadas para eliminar:", newList);
         return newList;
       });
     }
@@ -284,14 +270,12 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   };
 
   const updateSituacion = (idx: number, field: string, value: any) => {
-    console.log(`✏️ Actualizando situación ${idx}, campo: ${field}, valor:`, value);
 
     setSituaciones(prev => prev.map((s, i) => {
       if (i !== idx) return s;
 
       if (field === "idSituacion") {
         const sitSelected = situacionesDisponibles.find(sd => sd.idSituacion === parseInt(value));
-        console.log("🔄 Cambiando tipo de situación a:", sitSelected);
 
         return {
           ...s,

@@ -31,7 +31,6 @@ export default function ScheduledAffiliates() {
             const data = await response.json();
             setAffiliates(data.affiliates || []);
         } catch (err: any) {
-            console.error('Error:', err);
             setError(err.message || 'Error al cargar afiliados programados');
         } finally {
             setLoading(false);

@@ -56,7 +56,6 @@ export function Prestadores() {
       const data = await fetchProviders();
       setPrestadores(data);
     } catch (err) {
-      console.error("Error al obtener proveedores:", err);
       setError("No se pudieron cargar los proveedores");
     } finally {
       setLoading(false);
@@ -128,12 +127,11 @@ export function Prestadores() {
       // El popup ya hizo el updateProvider, solo necesitamos recargar
       setOpenEditPopup(false);
       setEditingProvider(null);
-      
+
       // Recargar la lista de proveedores desde el API
       await loadProviders();
       showToast(`Proveedor ${updated.nombreCompleto} actualizado correctamente`);
     } catch (err) {
-      console.error("Error al actualizar proveedor:", err);
       showToast("Error al actualizar el proveedor");
     }
   };
@@ -148,7 +146,6 @@ export function Prestadores() {
       setDeletingProvider(null);
       showToast(`Proveedor ${deletingProvider.nombreCompleto} eliminado correctamente`);
     } catch (err) {
-      console.error("Error al eliminar proveedor:", err);
       showToast("Error al eliminar el proveedor");
     }
   };
@@ -178,8 +175,8 @@ export function Prestadores() {
               }}
               aria-pressed={tipoFiltro === "profesional"}
               className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors ${tipoFiltro === "profesional"
-                  ? "bg-[#5FA92C] text-white border-[#5FA92C]"
-                  : "border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white"
+                ? "bg-[#5FA92C] text-white border-[#5FA92C]"
+                : "border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white"
                 } btn-filter`}
             >
               Ver profesionales
@@ -192,8 +189,8 @@ export function Prestadores() {
               }}
               aria-pressed={tipoFiltro === "centro_medico"}
               className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors ${tipoFiltro === "centro_medico"
-                  ? "bg-[#5FA92C] text-white border-[#5FA92C]"
-                  : "border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white"
+                ? "bg-[#5FA92C] text-white border-[#5FA92C]"
+                : "border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white"
                 } btn-filter`}
             >
               Ver centros
@@ -229,116 +226,116 @@ export function Prestadores() {
 
           {/* MOBILE: cards + paginación */}
           <div className="md:hidden">
-        {/* Cards */}
-        <div className="grid grid-cols-1 gap-4">
-          {current.length === 0 && (
-            <div className="text-center text-gray-500 py-6 border rounded-md bg-white">
-              No hay prestadores para mostrar.
+            {/* Cards */}
+            <div className="grid grid-cols-1 gap-4">
+              {current.length === 0 && (
+                <div className="text-center text-gray-500 py-6 border rounded-md bg-white">
+                  No hay prestadores para mostrar.
+                </div>
+              )}
+
+              {current.map((p) => (
+                <div
+                  key={p.cuitCuil}
+                  className="bg-white border border-gray-200 rounded-lg shadow-sm p-4"
+                >
+                  <div className="mb-3">
+                    <div className="text-xs text-gray-500 uppercase">CUIL/CUIT</div>
+                    <div className="font-semibold break-all">{p.cuitCuil}</div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <div className="text-xs text-gray-500 uppercase">Nombre</div>
+                      <div className="text-sm">{p.nombreCompleto}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase">Tipo</div>
+                      <div className="text-sm capitalize">{p.tipoPrestador}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleOptionClick("Ver Detalles", p)}
+                      className="px-3 py-2 text-sm border rounded-md border-gray-300 hover:bg-gray-50"
+                    >
+                      Ver detalles
+                    </button>
+                    <button
+                      onClick={() => handleOptionClick("Editar", p)}
+                      className="px-3 py-2 text-sm border-2 rounded-md border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white font-semibold"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleOptionClick("Dar de Baja", p)}
+                      className="px-3 py-2 text-sm border-2 rounded-md border-red-500 text-red-600 hover:bg-red-50 font-semibold"
+                    >
+                      Dar de baja
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
+
+            {/* Paginación (compacta en mobile) */}
+            <div className="bg-white px-4 py-3 mt-3 flex items-center justify-between gap-3 border border-gray-200 rounded">
+              <span className="text-sm text-gray-700">
+                {total === 0 ? 0 : startIndex + 1}
+                –{endIndex} de {total} {safePage}/{totalPages}
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage === 1}
+                  className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Página anterior"
+                  title="Página anterior"
+                >
+                  <NavigateBeforeIcon fontSize="small" />
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage === totalPages}
+                  className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Página siguiente"
+                  title="Página siguiente"
+                >
+                  <NavigateNextIcon fontSize="small" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Popups */}
+          {openEditPopup && editingProvider && (
+            <EditProviderPopup
+              provider={editingProvider}
+              onClose={() => setOpenEditPopup(false)}
+              onSave={handleSaveProvider}
+            />
           )}
 
-          {current.map((p) => (
-            <div
-              key={p.cuitCuil}
-              className="bg-white border border-gray-200 rounded-lg shadow-sm p-4"
-            >
-              <div className="mb-3">
-                <div className="text-xs text-gray-500 uppercase">CUIL/CUIT</div>
-                <div className="font-semibold break-all">{p.cuitCuil}</div>
-              </div>
+          {openViewPopup && viewingProvider && (
+            <ViewProviderPopup
+              provider={viewingProvider}
+              onClose={() => setOpenViewPopup(false)}
+            />
+          )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <div className="text-xs text-gray-500 uppercase">Nombre</div>
-                  <div className="text-sm">{p.nombreCompleto}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 uppercase">Tipo</div>
-                  <div className="text-sm capitalize">{p.tipoPrestador}</div>
-                </div>
-              </div>
+          {openDeletePopup && deletingProvider && (
+            <ConfirmDeleteProviderDialog
+              open={openDeletePopup}
+              provider={deletingProvider}
+              onClose={() => setOpenDeletePopup(false)}
+              onConfirm={handleDeleteProvider}
+            />
+          )}
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  onClick={() => handleOptionClick("Ver Detalles", p)}
-                  className="px-3 py-2 text-sm border rounded-md border-gray-300 hover:bg-gray-50"
-                >
-                  Ver detalles
-                </button>
-                <button
-                  onClick={() => handleOptionClick("Editar", p)}
-                  className="px-3 py-2 text-sm border-2 rounded-md border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white font-semibold"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleOptionClick("Dar de Baja", p)}
-                  className="px-3 py-2 text-sm border-2 rounded-md border-red-500 text-red-600 hover:bg-red-50 font-semibold"
-                >
-                  Dar de baja
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Paginación (compacta en mobile) */}
-        <div className="bg-white px-4 py-3 mt-3 flex items-center justify-between gap-3 border border-gray-200 rounded">
-          <span className="text-sm text-gray-700">
-            {total === 0 ? 0 : startIndex + 1}
-            –{endIndex} de {total} {safePage}/{totalPages}
-          </span>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={safePage === 1}
-              className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Página anterior"
-              title="Página anterior"
-            >
-              <NavigateBeforeIcon fontSize="small" />
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={safePage === totalPages}
-              className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Página siguiente"
-              title="Página siguiente"
-            >
-              <NavigateNextIcon fontSize="small" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Popups */}
-      {openEditPopup && editingProvider && (
-        <EditProviderPopup
-          provider={editingProvider}
-          onClose={() => setOpenEditPopup(false)}
-          onSave={handleSaveProvider}
-        />
-      )}
-
-      {openViewPopup && viewingProvider && (
-        <ViewProviderPopup
-          provider={viewingProvider}
-          onClose={() => setOpenViewPopup(false)}
-        />
-      )}
-
-      {openDeletePopup && deletingProvider && (
-        <ConfirmDeleteProviderDialog
-          open={openDeletePopup}
-          provider={deletingProvider}
-          onClose={() => setOpenDeletePopup(false)}
-          onConfirm={handleDeleteProvider}
-        />
-      )}
-
-      {/* ✅ Toast visual */}
-      {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
+          {/* ✅ Toast visual */}
+          {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
         </>
       )}
     </div>

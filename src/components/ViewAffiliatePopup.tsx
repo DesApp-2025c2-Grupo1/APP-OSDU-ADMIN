@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from "../config/api";
+
 
 interface SituacionTerapeutica {
   idSituacionAfiliado?: number;
@@ -59,10 +61,9 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
     const fetchAffiliateDetails = async () => {
       try {
         setLoading(true);
-        
+
         const dniToFetch = affiliate.dni || affiliate.nroDocumento;
-        console.log("🔍 Cargando detalles para DNI:", dniToFetch);
-        
+
         const response = await fetch(
           `${API_BASE_URL}/affiliates/affiliate/${dniToFetch}`
         );
@@ -70,12 +71,9 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
         if (!response.ok) throw new Error("Error al cargar datos del afiliado");
 
         const data = await response.json();
-        console.log("📦 Datos completos recibidos:", data);
-        console.log("🏥 Situaciones en los datos:", data.affiliates?.situaciones);
-        
+
         setFullAffiliate(data.affiliates);
       } catch (error) {
-        console.error("❌ Error al cargar datos:", error);
         setFullAffiliate(affiliate); // Usar datos básicos si falla
       } finally {
         setLoading(false);
@@ -105,11 +103,11 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
   const obtenerNombrePlan = (plan: Plan | string | number | undefined, planMedico?: string) => {
     if (planMedico) return planMedico;
     if (!plan) return "Sin plan";
-    
+
     if (typeof plan === 'object' && plan.nombre) {
       return plan.nombre;
     }
-    
+
     return String(plan);
   };
 
@@ -153,9 +151,6 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
   const emails = obtenerEmails(displayAffiliate);
   const telefonos = obtenerTelefonos(displayAffiliate);
   const fechaNac = displayAffiliate.fechaNacimiento || displayAffiliate.fecha_nacimiento;
-  
-  console.log("👁️ Mostrando afiliado:", displayAffiliate);
-  console.log("🏥 Situaciones a mostrar:", displayAffiliate.situaciones);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 overflow-y-auto p-4">
@@ -292,6 +287,16 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
                       {!sit.fechaFin && (
                         <span className="bg-yellow-100 px-3 py-1 rounded">
                           En curso
+                        </span>
+                      )}
+                      {sit.fechaFin && new Date(sit.fechaFin) > new Date() && (
+                        <span className="bg-blue-100 px-3 py-1 rounded">
+                          Activa
+                        </span>
+                      )}
+                      {sit.fechaFin && new Date(sit.fechaFin) <= new Date() && (
+                        <span className="bg-gray-100 px-3 py-1 rounded text-gray-600">
+                          Finalizada
                         </span>
                       )}
                     </div>

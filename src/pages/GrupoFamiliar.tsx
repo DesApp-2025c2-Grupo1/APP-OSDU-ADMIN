@@ -64,9 +64,9 @@ function transformAffiliate(apiAffiliate: AffiliateFromAPI): Affiliate {
     nombre: apiAffiliate.nombre,
     parentesco: apiAffiliate.parentesco,
     email: apiAffiliate.email || [],
-    telefonos: (apiAffiliate.telefonos || []).map(t => ({ 
-      idTelefono: t.idTelefono || 0, 
-      telefono: t.telefono 
+    telefonos: (apiAffiliate.telefonos || []).map(t => ({
+      idTelefono: t.idTelefono || 0,
+      telefono: t.telefono
     })),
     plan: apiAffiliate.plan,
     situaciones: apiAffiliate.situaciones || [],
@@ -119,7 +119,6 @@ export function GrupoFamiliar() {
       }
 
       const data: FamilyGroupAPIResponse = await response.json();
-      console.log("✅ Grupo familiar cargado:", data);
 
       if (!data.affiliates || data.affiliates.length === 0) {
         setError("No se encontraron afiliados en el grupo familiar");
@@ -128,14 +127,12 @@ export function GrupoFamiliar() {
       }
 
       const transformedMembers = data.affiliates.map(transformAffiliate);
-      console.log("✅ Miembros transformados:", transformedMembers);
-      
+
       setMembers(transformedMembers);
       setPlanNombre(data.affiliates[0].plan.nombre);
       setPlanId(data.affiliates[0].plan.idPlan);
       setGrupoFamiliarId(data.affiliates[0].grupoFamiliar);
     } catch (err) {
-      console.error("❌ Error al cargar grupo familiar:", err);
       setError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
       setLoading(false);
@@ -171,8 +168,6 @@ export function GrupoFamiliar() {
 
   const handleSaveFamiliar = async (nuevoFamiliar: any) => {
     try {
-      console.log("📤 Guardando nuevo familiar con planId:", planId);
-      
       const payload = {
         dni: nuevoFamiliar.dni || nuevoFamiliar.nroDocumento,
         tipoDocumento: nuevoFamiliar.tipoDocumento,
@@ -188,8 +183,6 @@ export function GrupoFamiliar() {
         grupoFamiliar: grupoFamiliarId,
       };
 
-      console.log("📤 Payload para agregar familiar:", JSON.stringify(payload, null, 2));
-
       const response = await fetch(
         `${API_BASE_URL}/affiliates/family/${dniTitular}`,
         {
@@ -203,31 +196,24 @@ export function GrupoFamiliar() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("❌ Error al agregar familiar:", errorData);
         throw new Error(errorData.message || "Error al agregar familiar");
       }
 
       const result = await response.json();
-      console.log("✅ Nuevo familiar guardado:", result);
 
       await fetchFamilyGroup();
       setShowAddFamiliarPopup(false);
       showToast(`Familiar ${nuevoFamiliar.nombre} ${nuevoFamiliar.apellido} agregado correctamente`);
     } catch (error) {
-      console.error("❌ Error al guardar familiar:", error);
       showToast(`Error al agregar el familiar: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
     const opt = option.trim().toLowerCase();
-    
-    console.log("🔍 Opción seleccionada:", opt);
-    console.log("👤 Afiliado seleccionado:", affiliate);
 
     if (opt === "editar") {
       if (!affiliate || !affiliate.dni) {
-        console.error("❌ Afiliado nulo o sin DNI al intentar editar");
         showToast("Error: No se pueden cargar los datos del afiliado");
         return;
       }
@@ -238,7 +224,6 @@ export function GrupoFamiliar() {
 
     if (opt === "ver detalles") {
       if (!affiliate || !affiliate.dni) {
-        console.error("❌ Afiliado nulo o sin DNI al intentar ver detalles");
         showToast("Error: No se pueden cargar los datos del afiliado");
         return;
       }
@@ -249,7 +234,6 @@ export function GrupoFamiliar() {
 
     if (opt === "dar de baja") {
       if (!affiliate || !affiliate.dni) {
-        console.error("❌ Afiliado nulo o sin DNI al intentar eliminar");
         showToast("Error: No se puede eliminar el afiliado");
         return;
       }
@@ -261,13 +245,10 @@ export function GrupoFamiliar() {
 
   const handleSaveAffiliate = async (data: any) => {
     if (!selectedAffiliate) {
-      console.error("❌ No hay afiliado seleccionado");
       return;
     }
 
     try {
-      console.log("📤 Datos que se envían al backend:", JSON.stringify(data, null, 2));
-
       const response = await fetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`,
         {
@@ -281,18 +262,14 @@ export function GrupoFamiliar() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("❌ Error del servidor:", errorData);
         throw new Error(errorData.message || "Error al actualizar afiliado");
       }
-
-      console.log("✅ Respuesta exitosa del servidor");
       await fetchFamilyGroup();
       setShowEditPopup(false);
       setSelectedAffiliate(null);
       showToast(`Afiliado ${selectedAffiliate.nombre} ${selectedAffiliate.apellido} actualizado correctamente`);
 
     } catch (error) {
-      console.error("❌ Error al actualizar afiliado:", error);
       showToast(`Error al actualizar el afiliado: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       setShowEditPopup(false);
       setSelectedAffiliate(null);
@@ -304,9 +281,10 @@ export function GrupoFamiliar() {
     setIsDeleting(true);
 
     try {
-      console.log("🗑️ Intentando eliminar afiliado:", selectedAffiliate);
-      console.log("👤 DNI del afiliado a eliminar:", selectedAffiliate.dni);
-      
+      // Detectar si estamos eliminando al titular
+      const isTitular = selectedAffiliate.parentesco === 'Titular' ||
+        determinarParentesco(selectedAffiliate) === 'Titular';
+
       // Usar el nuevo endpoint para eliminar solo un miembro del grupo familiar
       const response = await fetch(
         `${API_BASE_URL}/affiliates/family/member/${selectedAffiliate.dni}`,
@@ -318,26 +296,27 @@ export function GrupoFamiliar() {
         }
       );
 
-      console.log("📡 Respuesta del servidor:", response.status, response.statusText);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("❌ Error del servidor:", errorData);
         throw new Error(errorData.error || "No se pudo eliminar el afiliado");
       }
 
-      console.log("✅ Afiliado eliminado exitosamente");
-
-      // Recargar el grupo familiar
-      await fetchFamilyGroup();
-
       setShowDeleteDialog(false);
       setSelectedAffiliate(null);
-      
+
       showToast(`Afiliado ${selectedAffiliate.nombre} ${selectedAffiliate.apellido} eliminado correctamente`);
 
+      // Si eliminamos al titular, redirigir al home
+      if (isTitular) {
+        setTimeout(() => {
+          navigate('/home');
+        }, 1500); // Dar tiempo para ver el toast
+      } else {
+        // Si es un familiar, recargar el grupo
+        await fetchFamilyGroup();
+      }
+
     } catch (error) {
-      console.error("❌ Error al eliminar afiliado:", error);
       showToast(`Error al eliminar el afiliado: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setIsDeleting(false);
@@ -365,7 +344,6 @@ export function GrupoFamiliar() {
       setShowDeleteDialog(false);
       setSelectedAffiliate(null);
     } catch (error) {
-      console.error("❌ Error al programar baja:", error);
     }
   };
 
@@ -723,7 +701,6 @@ function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, titular, onCl
         const data = await response.json();
         setSituacionesDisponibles(data.situaciones || []);
       } catch (error) {
-        console.error("Error al cargar situaciones:", error);
         setErrors(prev => ({ ...prev, situaciones: "No se pudieron cargar las situaciones terapéuticas" }));
       } finally {
         setLoadingSituaciones(false);
@@ -735,7 +712,7 @@ function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, titular, onCl
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
-    
+
     if (type === 'checkbox') {
       setFormData((prev) => ({ ...prev, [name]: checked }));
     } else {
@@ -819,14 +796,14 @@ function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, titular, onCl
     }));
 
     // Determinar qué datos usar basándose en los checkboxes
-    const direccionFinal = formData.usaDireccionTitular && titular?.direccion 
-      ? titular.direccion 
+    const direccionFinal = formData.usaDireccionTitular && titular?.direccion
+      ? titular.direccion
       : formData.direccion || "";
-    
+
     const emailFinal = formData.usaContactoTitular && titular?.email && titular.email.length > 0
       ? titular.email[0].email
       : formData.email;
-    
+
     const telefonoFinal = formData.usaContactoTitular && titular?.telefonos && titular.telefonos.length > 0
       ? titular.telefonos[0].telefono
       : formData.telefono;
@@ -844,7 +821,6 @@ function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, titular, onCl
       situaciones: situacionesPayload,
     };
 
-    console.log("📤 Payload para agregar familiar:", payload);
     onSave(payload);
   };
 

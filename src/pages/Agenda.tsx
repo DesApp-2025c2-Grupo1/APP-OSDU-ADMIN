@@ -110,7 +110,6 @@ export function Agenda() {
       setPrestadores(prestadoresData);
       setEspecialidades(especialidadesData);
     } catch (err) {
-      console.error("Error al cargar datos:", err);
       setError("No se pudieron cargar las agendas");
     } finally {
       setLoading(false);
@@ -179,7 +178,7 @@ export function Agenda() {
   };
 
   const buscarHorarios = () => {
-    console.log("Buscando con filtros:", filtros);
+    // Filtros aplicados automáticamente
   };
 
   const limpiarFiltros = () => {
@@ -207,7 +206,6 @@ export function Agenda() {
       setEditingAgenda(null);
       showToast("Agenda actualizada correctamente");
     } catch (err) {
-      console.error("Error al actualizar agenda:", err);
       showToast("Error al actualizar la agenda");
     }
   };
@@ -225,7 +223,6 @@ export function Agenda() {
       showToast(`Agenda de ${agendaToDelete.prestador} eliminada correctamente`);
       setAgendaToDelete(null);
     } catch (err) {
-      console.error("Error al eliminar agenda:", err);
       showToast("Error al eliminar la agenda");
     }
   };
@@ -239,7 +236,7 @@ export function Agenda() {
   };
 
   const handleOptionClick = (
-    action: "Editar" | "Ver detalles" | "Dar de baja",
+    action: string,
     agenda: HorarioAgenda
   ) => {
     switch (action) {
@@ -399,22 +396,20 @@ export function Agenda() {
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPageSafe === 1}
-              className={`w-8 h-8 flex items-center justify-center border rounded ${
-                currentPageSafe === 1
-                  ? "text-gray-300 border-gray-200 cursor-not-allowed bg-gray-50"
-                  : "text-gray-700 border-gray-300 hover:bg-gray-100"
-              }`}
+              className={`w-8 h-8 flex items-center justify-center border rounded ${currentPageSafe === 1
+                ? "text-gray-300 border-gray-200 cursor-not-allowed bg-gray-50"
+                : "text-gray-700 border-gray-300 hover:bg-gray-100"
+                }`}
             >
               ◀
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPageSafe === totalPages}
-              className={`w-8 h-8 flex items-center justify-center border rounded ${
-                currentPageSafe === totalPages
-                  ? "text-gray-300 border-gray-200 cursor-not-allowed bg-gray-50"
-                  : "text-gray-700 border-gray-300 hover:bg-gray-100"
-              }`}
+              className={`w-8 h-8 flex items-center justify-center border rounded ${currentPageSafe === totalPages
+                ? "text-gray-300 border-gray-200 cursor-not-allowed bg-gray-50"
+                : "text-gray-700 border-gray-300 hover:bg-gray-100"
+                }`}
             >
               ▶
             </button>

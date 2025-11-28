@@ -146,7 +146,6 @@ export function AltasAfiliadosPeriodo() {
             setResults(rows);
             setSearched(true);
         } catch (e: any) {
-            console.error(e);
             setError(e.message || "Error al consultar el reporte");
             setSearched(true);
         } finally {
