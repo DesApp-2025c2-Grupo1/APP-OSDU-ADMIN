@@ -111,9 +111,22 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
   };
 
   // ---------- telefonos / mails ----------
+  // Formatea teléfono en Edit popup
+  const formatPhone = (input: string) => {
+    const digits = input.replace(/\D/g, "");
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 7) {
+      return digits.slice(0, 3) + " " + digits.slice(3);
+    }
+    const middle = digits.slice(3, digits.length - 4);
+    const last = digits.slice(-4);
+    return `${digits.slice(0,3)} ${middle}-${last}`;
+  };
+
   const setArr = (field: "telefonos" | "mails", i: number, val: string) => {
     const arr = [...formData[field]];
-    arr[i] = val;
+    const newVal = field === "telefonos" ? formatPhone(val) : val;
+    arr[i] = newVal;
     setFormData(prev => ({ ...prev, [field]: arr }));
   };
   const addArr = (field: "telefonos" | "mails") =>
