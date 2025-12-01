@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Prestador, PrestadorTipo, LugarAtencion, DiaSemana } from "../model/Provider.model";
 import { ButtonVolver } from "../util/ButtonVolver";
+import Toast from "../components/Toast";
 import { API_BASE_URL } from "../config/api";
 
 type BloqueHorario = { dias: DiaSemana[]; desde: string; hasta: string };
@@ -26,6 +27,33 @@ export function AddProvider() {
   const [integraCentro, setIntegraCentro] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [openSuccess, setOpenSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Formatea CUIT/CUIL: inserta guiones en el patrón 2-8-1 cuando sea posible
+  const formatCuil = (input: string) => {
+    const digits = input.replace(/\D/g, "");
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 10) {
+      return digits.slice(0, 2) + "-" + digits.slice(2);
+    }
+    // 11+ -> take first 11 digits and format 2-8-1
+    const d = digits.slice(0, 11);
+    return `${d.slice(0,2)}-${d.slice(2,10)}-${d.slice(10)}`;
+  };
+
+  // Formatea teléfono: ejemplo '011 4444-5555'
+  const formatPhone = (input: string) => {
+    const digits = input.replace(/\D/g, "");
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 7) {
+      return digits.slice(0, 3) + " " + digits.slice(3);
+    }
+    // 8+ -> 3 digits, space, middle, hyphen last 4
+    const middle = digits.slice(3, digits.length - 4);
+    const last = digits.slice(-4);
+    return `${digits.slice(0,3)} ${middle}-${last}`;
+  };
 
 
   const handleAgregarTelefono = () => setTelefonos([...telefonos, ""]);
@@ -220,8 +248,9 @@ export function AddProvider() {
         throw new Error(errorData.error || errorData.message || "Error al crear prestador");
       }
 
-      alert("Prestador creado correctamente");
-      navigate("/prestadores");
+      // Mostrar diálogo de éxito en lugar de alert
+      setSuccessMessage("Prestador creado correctamente");
+      setOpenSuccess(true);
     } catch (err: any) {
       setError(err.message || "Error al guardar");
     } finally {
@@ -269,7 +298,8 @@ export function AddProvider() {
               <input
                 type="text"
                 value={cuilCuit}
-                onChange={(e) => setCuilCuit(e.target.value)}
+                onChange={(e) => setCuilCuit(formatCuil(e.target.value))}
+                placeholder="20-12345678-3"
                 className="border border-gray-300 rounded-lg px-3 py-2 w-full"
               />
             </div>
@@ -298,7 +328,6 @@ export function AddProvider() {
                 >
                   <option value={0}>-- Seleccionar --</option>
                   {especialidadesDisponibles.map((s) => {
-                    // Deshabilitar si ya está seleccionada en otro select
                     const yaSeleccionada = especialidades.some((e, idx) => idx !== i && e === s.id);
                     return (
                       <option
@@ -312,6 +341,7 @@ export function AddProvider() {
                     );
                   })}
                 </select>
+
                 {especialidades.length > 1 && (
                   <button
                     type="button"
@@ -362,7 +392,7 @@ export function AddProvider() {
                     value={t}
                     onChange={(e) => {
                       const arr = [...telefonos];
-                      arr[i] = e.target.value;
+                      arr[i] = formatPhone(e.target.value);
                       setTelefonos(arr);
                     }}
                     placeholder="Ej: 011 4444-5555"
@@ -498,6 +528,16 @@ export function AddProvider() {
           </div>
         </>
       )}
+      <Toast
+        open={openSuccess}
+        message={successMessage}
+        variant="success"
+        duration={3000}
+        onClose={() => {
+          setOpenSuccess(false);
+          navigate("/prestadores");
+        }}
+      />
     </div>
   );
 }

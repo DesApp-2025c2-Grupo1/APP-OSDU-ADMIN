@@ -130,7 +130,8 @@ export function Prestadores() {
 
       // Recargar la lista de proveedores desde el API
       await loadProviders();
-      showToast(`Proveedor ${updated.nombreCompleto} actualizado correctamente`);
+      const updatedName = updated?.nombreCompleto ? ` ${updated.nombreCompleto}` : "";
+      showToast(`Proveedor${updatedName} actualizado correctamente`);
     } catch (err) {
       showToast("Error al actualizar el proveedor");
     }
@@ -144,7 +145,8 @@ export function Prestadores() {
       setPrestadores((prev) => prev.filter((p) => p.cuitCuil !== deletingProvider.cuitCuil));
       setOpenDeletePopup(false);
       setDeletingProvider(null);
-      showToast(`Proveedor ${deletingProvider.nombreCompleto} eliminado correctamente`);
+      const deletedName = deletingProvider?.nombreCompleto ? ` ${deletingProvider.nombreCompleto}` : "";
+      showToast(`Proveedor${deletedName} eliminado correctamente`);
     } catch (err) {
       showToast("Error al eliminar el proveedor");
     }
@@ -159,7 +161,7 @@ export function Prestadores() {
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <SearchDropdown
             options={[
-              { value: "cuilCuit", label: "CUIL/CUIT" },
+              { value: "cuitCuil", label: "CUIL/CUIT" },
               { value: "nombreCompleto", label: "Nombre" },
             ]}
             placeholder="Buscar"
