@@ -19,15 +19,11 @@ export function AgendaTable({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-      <div className="p-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800">Horarios de Atención</h3>
-      </div>
-
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-[#5FA92C] text-white">
             <tr>
-              {["Prestador", "Especialidad", "Lugar", "Días", "Horario", "Duración", ""].map(
+              {["Prestador", "Especialidad", "Lugar", "Días", "Duración", ""].map(
                 (header) => (
                   <th
                     key={header}
@@ -46,7 +42,6 @@ export function AgendaTable({
                 <td className="px-6 py-4 text-sm">{horario.especialidad}</td>
                 <td className="px-6 py-4 text-sm">{horario.lugar}</td>
                 <td className="px-6 py-4 text-sm">{formatDias(horario.dias)}</td>
-                <td className="px-6 py-4 text-sm">{horario.horario}</td>
                 <td className="px-6 py-4 text-sm">{horario.duracion} min</td>
                 <td className="px-2 py-4 text-right w-10">
                   <OptionsMenu

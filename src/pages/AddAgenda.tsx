@@ -26,7 +26,7 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
     prestadorId: "",
     especialidadId: "",
     lugarAtencionId: "",
-    duracionTurno: "30",
+    duracionTurno: "60",
   });
 
   const [bloquesHorarios, setBloquesHorarios] = useState<BloqueHorario[]>([
@@ -389,17 +389,18 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Duración del turno (min)
             </label>
-            <input
-              type="number"
+            <select
               value={formData.duracionTurno}
               onChange={(e) => handleChange("duracionTurno", e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
-              placeholder="Ej: 30"
-              min="15"
-              max="120"
-              step="15"
               required
-            />
+            >
+              <option value="15">15 min</option>
+              <option value="20">20 min</option>
+              <option value="30">30 min</option>
+              <option value="45">45 min</option>
+              <option value="60">60 min</option>
+            </select>
           </div>
 
           {/* Bloques horarios */}
