@@ -228,7 +228,9 @@ export function AddAffiliate() {
 
     // Emails del titular
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.email && !emailRegex.test(formData.email)) {
+    if (!formData.email?.trim()) {
+      newErrors.email = "Requerido";
+    } else if (!emailRegex.test(formData.email)) {
       newErrors.email = "Formato de email inválido";
     }
     if (formData.email2 && !emailRegex.test(formData.email2)) {
@@ -236,7 +238,9 @@ export function AddAffiliate() {
     }
 
     // Teléfonos del titular
-    if (formData.telefono && !/^[0-9]{7,15}$/.test(formData.telefono.replace(/\s/g, ''))) {
+    if (!formData.telefono?.trim()) {
+      newErrors.telefono = "Requerido";
+    } else if (!/^[0-9]{7,15}$/.test(formData.telefono.replace(/\s/g, ''))) {
       newErrors.telefono = "El teléfono debe tener entre 7 y 15 dígitos";
     }
     if (formData.telefono2 && !/^[0-9]{7,15}$/.test(formData.telefono2.replace(/\s/g, ''))) {
@@ -296,13 +300,23 @@ export function AddAffiliate() {
       }
 
       // Email del familiar
-      if (f.email && !emailRegex.test(f.email)) {
-        newErrors[`${prefix}.email`] = "Formato de email inválido";
+      if (!f.usaContactoTitular) {
+        // Si no usa contacto del titular, debe proveer su propio email
+        if (!f.email?.trim()) {
+          newErrors[`${prefix}.email`] = "Requerido";
+        } else if (!emailRegex.test(f.email)) {
+          newErrors[`${prefix}.email`] = "Formato de email inválido";
+        }
       }
 
       // Teléfono del familiar
-      if (f.telefono && !/^[0-9]{7,15}$/.test(f.telefono.replace(/\s/g, ''))) {
-        newErrors[`${prefix}.telefono`] = "El teléfono debe tener entre 7 y 15 dígitos";
+      if (!f.usaContactoTitular) {
+        // Si no usa contacto del titular, debe proveer su propio teléfono
+        if (!f.telefono?.trim()) {
+          newErrors[`${prefix}.telefono`] = "Requerido";
+        } else if (!/^[0-9]{7,15}$/.test(f.telefono.replace(/\s/g, ''))) {
+          newErrors[`${prefix}.telefono`] = "El teléfono debe tener entre 7 y 15 dígitos";
+        }
       }
 
       // Validar que el DNI del familiar no sea igual al del titular
@@ -690,7 +704,7 @@ export function AddAffiliate() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col md:col-span-2">
-              <label className="font-semibold mb-1">Teléfono</label>
+              <label className="font-semibold mb-1">Teléfono (*)</label>
               <input
                 type="text"
                 name="telefono"
@@ -699,27 +713,31 @@ export function AddAffiliate() {
                 className="p-2 border border-gray-300 rounded"
                 placeholder="Teléfono"
               />
+              {errors.telefono && <p className="text-red-500 text-xs mt-1">{errors.telefono}</p>}
 
               {showPhone2 && (
-                <div className="mt-2 flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="text"
-                    name="telefono2"
-                    value={formData.telefono2}
-                    onChange={handleInputChange}
-                    className="flex-1 p-2 border border-gray-300 rounded"
-                    placeholder="Teléfono adicional"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({ ...prev, telefono2: "" }));
-                      setShowPhone2(false);
-                    }}
-                    className="px-3 py-2 border rounded hover:bg-gray-50"
-                  >
-                    Quitar
-                  </button>
+                <div className="mt-2 flex flex-col gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      name="telefono2"
+                      value={formData.telefono2}
+                      onChange={handleInputChange}
+                      className="flex-1 p-2 border border-gray-300 rounded"
+                      placeholder="Teléfono adicional"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, telefono2: "" }));
+                        setShowPhone2(false);
+                      }}
+                      className="px-3 py-2 border rounded hover:bg-gray-50"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                  {errors.telefono2 && <p className="text-red-500 text-xs mt-1">{errors.telefono2}</p>}
                 </div>
               )}
 
@@ -735,7 +753,7 @@ export function AddAffiliate() {
             </div>
 
             <div className="flex flex-col md:col-span-2">
-              <label className="font-semibold mb-1">Email</label>
+              <label className="font-semibold mb-1">Email (*)</label>
               <input
                 type="email"
                 name="email"
@@ -990,16 +1008,19 @@ export function AddAffiliate() {
                   {!familiar.usaContactoTitular && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                       <div className="flex flex-col">
-                        <label className="text-sm mb-1">Teléfono</label>
+                        <label className="text-sm mb-1">Teléfono (*)</label>
                         <input
                           type="text"
                           value={familiar.telefono || ""}
                           onChange={(e) => cambiarDatoFamiliar(i, "telefono", e.target.value)}
                           className="p-2 border border-gray-300 rounded"
                         />
+                        {errors[`familiares[${i}].telefono`] && (
+                          <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].telefono`]}</p>
+                        )}
                       </div>
                       <div className="flex flex-col">
-                        <label className="text-sm mb-1">Email</label>
+                        <label className="text-sm mb-1">Email (*)</label>
                         <input
                           type="email"
                           value={familiar.email || ""}

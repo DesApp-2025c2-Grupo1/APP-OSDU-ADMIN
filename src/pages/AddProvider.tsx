@@ -27,6 +27,8 @@ export function AddProvider() {
   const [integraCentro, setIntegraCentro] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [telefonoErrors, setTelefonoErrors] = useState<string[]>([""]);
+  const [emailErrors, setEmailErrors] = useState<string[]>([""]);
   const [openSuccess, setOpenSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -39,30 +41,27 @@ export function AddProvider() {
     }
     // 11+ -> take first 11 digits and format 2-8-1
     const d = digits.slice(0, 11);
-    return `${d.slice(0,2)}-${d.slice(2,10)}-${d.slice(10)}`;
-  };
-
-  // Formatea teléfono: ejemplo '011 4444-5555'
-  const formatPhone = (input: string) => {
-    const digits = input.replace(/\D/g, "");
-    if (digits.length <= 3) return digits;
-    if (digits.length <= 7) {
-      return digits.slice(0, 3) + " " + digits.slice(3);
-    }
-    // 8+ -> 3 digits, space, middle, hyphen last 4
-    const middle = digits.slice(3, digits.length - 4);
-    const last = digits.slice(-4);
-    return `${digits.slice(0,3)} ${middle}-${last}`;
+    return `${d.slice(0, 2)}-${d.slice(2, 10)}-${d.slice(10)}`;
   };
 
 
-  const handleAgregarTelefono = () => setTelefonos([...telefonos, ""]);
-  const handleEliminarTelefono = (index: number) =>
+  const handleAgregarTelefono = () => {
+    setTelefonos([...telefonos, ""]);
+    setTelefonoErrors([...telefonoErrors, ""]);
+  };
+  const handleEliminarTelefono = (index: number) => {
     setTelefonos(telefonos.filter((_, i) => i !== index));
+    setTelefonoErrors(telefonoErrors.filter((_, i) => i !== index));
+  };
 
-  const handleAgregarEmail = () => setMails([...mails, ""]);
-  const handleEliminarEmail = (index: number) =>
+  const handleAgregarEmail = () => {
+    setMails([...mails, ""]);
+    setEmailErrors([...emailErrors, ""]);
+  };
+  const handleEliminarEmail = (index: number) => {
     setMails(mails.filter((_, i) => i !== index));
+    setEmailErrors(emailErrors.filter((_, i) => i !== index));
+  };
 
   const handleAgregarEspecialidad = () => {
     // Verificar si hay especialidades disponibles no seleccionadas
@@ -195,7 +194,7 @@ export function AddProvider() {
   const handleGuardar = async () => {
     if (!tipo) return setError("Debe seleccionar si es profesional o centro médico.");
     if (!cuilCuit.trim() || !nombreCompleto.trim())
-      return setError("Complete el CUIL/CUIT y el nombre completo.");
+      return setError("Complete el CUIL/CUIL y el nombre completo.");
 
     // Validar formato CUIT/CUIL (XX-XXXXXXXX-X o similar)
     const cuitRegex = /^[0-9]{1,2}-?[0-9]{6,8}-?[0-9]{1}$/;
@@ -209,6 +208,61 @@ export function AddProvider() {
 
     if (lugaresAtencion.length === 0 || lugaresAtencion.some(l => !l.calle.trim() || !l.localidad?.trim() || !l.provincia?.trim() || !l.cp.trim()))
       return setError("Complete todos los datos de los lugares de atención.");
+
+    // Validar teléfonos
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const newTelefonoErrors: string[] = [];
+    const newEmailErrors: string[] = [];
+    let hasErrors = false;
+
+    telefonos.forEach((tel, idx) => {
+      if (tel.trim()) {
+        const digitsOnly = tel.replace(/\D/g, '');
+        if (!/^[0-9]{7,15}$/.test(digitsOnly)) {
+          newTelefonoErrors[idx] = "El teléfono debe tener entre 7 y 15 dígitos";
+          hasErrors = true;
+        } else {
+          newTelefonoErrors[idx] = "";
+        }
+      } else {
+        newTelefonoErrors[idx] = "";
+      }
+    });
+
+    mails.forEach((email, idx) => {
+      if (email.trim()) {
+        if (!emailRegex.test(email)) {
+          newEmailErrors[idx] = "Formato de email inválido";
+          hasErrors = true;
+        } else {
+          newEmailErrors[idx] = "";
+        }
+      } else {
+        newEmailErrors[idx] = "";
+      }
+    });
+
+    setTelefonoErrors(newTelefonoErrors);
+    setEmailErrors(newEmailErrors);
+
+    if (hasErrors) {
+      setError("Corrija los errores en teléfonos y emails antes de continuar.");
+      return;
+    }
+
+    // Validar que haya al menos un teléfono válido
+    const telefonosValidos = telefonos.filter(t => t.trim() !== "");
+    if (telefonosValidos.length === 0) {
+      setError("Debe ingresar al menos un teléfono.");
+      return;
+    }
+
+    // Validar que haya al menos un email válido
+    const emailsValidos = mails.filter(e => e.trim() !== "");
+    if (emailsValidos.length === 0) {
+      setError("Debe ingresar al menos un email.");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -386,26 +440,36 @@ export function AddProvider() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Teléfonos</label>
               {telefonos.map((t, i) => (
-                <div key={i} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={t}
-                    onChange={(e) => {
-                      const arr = [...telefonos];
-                      arr[i] = formatPhone(e.target.value);
-                      setTelefonos(arr);
-                    }}
-                    placeholder="Ej: 011 4444-5555"
-                    className="border border-gray-300 rounded-lg px-3 py-2 w-full"
-                  />
-                  {telefonos.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleEliminarTelefono(i)}
-                      className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
-                    >
-                      X
-                    </button>
+                <div key={i} className="flex flex-col gap-1 mb-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={t}
+                      onChange={(e) => {
+                        const arr = [...telefonos];
+                        arr[i] = e.target.value;
+                        setTelefonos(arr);
+                        // Limpiar error al cambiar
+                        const errors = [...telefonoErrors];
+                        errors[i] = "";
+                        setTelefonoErrors(errors);
+                      }}
+                      placeholder="Ej: 011 4444-5555 o 1234567890"
+                      className={`border rounded-lg px-3 py-2 w-full ${telefonoErrors[i] ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                    />
+                    {telefonos.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleEliminarTelefono(i)}
+                        className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
+                      >
+                        X
+                      </button>
+                    )}
+                  </div>
+                  {telefonoErrors[i] && (
+                    <p className="text-red-500 text-xs">{telefonoErrors[i]}</p>
                   )}
                 </div>
               ))}
@@ -421,26 +485,36 @@ export function AddProvider() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Emails</label>
               {mails.map((em, i) => (
-                <div key={i} className="flex gap-2 mb-2">
-                  <input
-                    type="email"
-                    value={em}
-                    onChange={(e) => {
-                      const arr = [...mails];
-                      arr[i] = e.target.value;
-                      setMails(arr);
-                    }}
-                    placeholder="ejemplo@correo.com"
-                    className="border border-gray-300 rounded-lg px-3 py-2 w-full"
-                  />
-                  {mails.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleEliminarEmail(i)}
-                      className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
-                    >
-                      X
-                    </button>
+                <div key={i} className="flex flex-col gap-1 mb-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={em}
+                      onChange={(e) => {
+                        const arr = [...mails];
+                        arr[i] = e.target.value;
+                        setMails(arr);
+                        // Limpiar error al cambiar
+                        const errors = [...emailErrors];
+                        errors[i] = "";
+                        setEmailErrors(errors);
+                      }}
+                      placeholder="ejemplo@correo.com"
+                      className={`border rounded-lg px-3 py-2 w-full ${emailErrors[i] ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                    />
+                    {mails.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleEliminarEmail(i)}
+                        className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
+                      >
+                        X
+                      </button>
+                    )}
+                  </div>
+                  {emailErrors[i] && (
+                    <p className="text-red-500 text-xs">{emailErrors[i]}</p>
                   )}
                 </div>
               ))}

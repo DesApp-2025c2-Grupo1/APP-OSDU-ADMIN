@@ -26,6 +26,8 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [telefonoErrors, setTelefonoErrors] = useState<string[]>([]);
+  const [emailErrors, setEmailErrors] = useState<string[]>([]);
   const [selectedLugarIndex, setSelectedLugarIndex] = useState<number>(0);
   const [centrosMedicos, setCentrosMedicos] = useState<any[]>([]);
   const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{ id: number, nombre: string }[]>([]);
@@ -111,31 +113,41 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
   };
 
   // ---------- telefonos / mails ----------
-  // Formatea teléfono en Edit popup
-  const formatPhone = (input: string) => {
-    const digits = input.replace(/\D/g, "");
-    if (digits.length <= 3) return digits;
-    if (digits.length <= 7) {
-      return digits.slice(0, 3) + " " + digits.slice(3);
-    }
-    const middle = digits.slice(3, digits.length - 4);
-    const last = digits.slice(-4);
-    return `${digits.slice(0,3)} ${middle}-${last}`;
-  };
-
+  // Sin formateo automático - el usuario puede escribir libremente
   const setArr = (field: "telefonos" | "mails", i: number, val: string) => {
     const arr = [...formData[field]];
-    const newVal = field === "telefonos" ? formatPhone(val) : val;
-    arr[i] = newVal;
+    arr[i] = val;
     setFormData(prev => ({ ...prev, [field]: arr }));
+    // Limpiar error al cambiar
+    if (field === "telefonos") {
+      const errors = [...telefonoErrors];
+      errors[i] = "";
+      setTelefonoErrors(errors);
+    } else if (field === "mails") {
+      const errors = [...emailErrors];
+      errors[i] = "";
+      setEmailErrors(errors);
+    }
   };
-  const addArr = (field: "telefonos" | "mails") =>
+  const addArr = (field: "telefonos" | "mails") => {
     setFormData(prev => ({ ...prev, [field]: [...prev[field], ""] }));
-  const delArr = (field: "telefonos" | "mails", i: number) =>
+    if (field === "telefonos") {
+      setTelefonoErrors([...telefonoErrors, ""]);
+    } else if (field === "mails") {
+      setEmailErrors([...emailErrors, ""]);
+    }
+  };
+  const delArr = (field: "telefonos" | "mails", i: number) => {
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].filter((_, idx) => idx !== i)
     }));
+    if (field === "telefonos") {
+      setTelefonoErrors(telefonoErrors.filter((_, idx) => idx !== i));
+    } else if (field === "mails") {
+      setEmailErrors(emailErrors.filter((_, idx) => idx !== i));
+    }
+  };
 
   // ---------- especialidades ----------
   const delEsp = async (i: number) => {
@@ -207,6 +219,65 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
     }));
   };
 
+
+  const handleSaveClick = async () => {
+    // Validar teléfonos y emails
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const newTelefonoErrors: string[] = [];
+    const newEmailErrors: string[] = [];
+    let hasErrors = false;
+
+    formData.telefonos.forEach((tel, idx) => {
+      if (tel.trim()) {
+        const digitsOnly = tel.replace(/\D/g, '');
+        if (!/^[0-9]{7,15}$/.test(digitsOnly)) {
+          newTelefonoErrors[idx] = "El teléfono debe tener entre 7 y 15 dígitos";
+          hasErrors = true;
+        } else {
+          newTelefonoErrors[idx] = "";
+        }
+      } else {
+        newTelefonoErrors[idx] = "";
+      }
+    });
+
+    formData.mails.forEach((email, idx) => {
+      if (email.trim()) {
+        if (!emailRegex.test(email)) {
+          newEmailErrors[idx] = "Formato de email inválido";
+          hasErrors = true;
+        } else {
+          newEmailErrors[idx] = "";
+        }
+      } else {
+        newEmailErrors[idx] = "";
+      }
+    });
+
+    setTelefonoErrors(newTelefonoErrors);
+    setEmailErrors(newEmailErrors);
+
+    if (hasErrors) {
+      setError("Corrija los errores en teléfonos y emails antes de continuar.");
+      return;
+    }
+
+    // Validar que haya al menos un teléfono válido
+    const telefonosValidos = formData.telefonos.filter(t => t.trim() !== "");
+    if (telefonosValidos.length === 0) {
+      setError("Debe ingresar al menos un teléfono.");
+      return;
+    }
+
+    // Validar que haya al menos un email válido
+    const emailsValidos = formData.mails.filter(e => e.trim() !== "");
+    if (emailsValidos.length === 0) {
+      setError("Debe ingresar al menos un email.");
+      return;
+    }
+
+    await handleSave();
+  };
 
   const handleSave = async () => {
     const placesChanged = JSON.stringify(originalPlaces) !== JSON.stringify(formData.lugaresAtencion);
@@ -410,21 +481,27 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           <div className="mb-6">
             <label className="font-semibold mb-2 block">Teléfonos</label>
             {formData.telefonos.map((tel, i) => (
-              <div key={i} className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={tel}
-                  onChange={(e) => setArr("telefonos", i, e.target.value)}
-                  className="p-2 border border-gray-300 rounded w-full"
-                  placeholder="Ej: 011-1234-5678"
-                />
-                <button
-                  type="button"
-                  onClick={() => delArr("telefonos", i)}
-                  className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
-                >
-                  X
-                </button>
+              <div key={i} className="flex flex-col gap-1 mb-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={tel}
+                    onChange={(e) => setArr("telefonos", i, e.target.value)}
+                    className={`p-2 border rounded w-full ${telefonoErrors[i] ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    placeholder="Ej: 011 4444-5555 o 1234567890"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => delArr("telefonos", i)}
+                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
+                  >
+                    X
+                  </button>
+                </div>
+                {telefonoErrors[i] && (
+                  <p className="text-red-500 text-xs">{telefonoErrors[i]}</p>
+                )}
               </div>
             ))}
             <button type="button" onClick={() => addArr("telefonos")} className="text-sm text-[#5FA92C] font-semibold hover:underline">
@@ -436,21 +513,27 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           <div>
             <label className="font-semibold mb-2 block">Emails</label>
             {formData.mails.map((mail, i) => (
-              <div key={i} className="flex gap-2 mb-2">
-                <input
-                  type="email"
-                  value={mail}
-                  onChange={(e) => setArr("mails", i, e.target.value)}
-                  className="p-2 border border-gray-300 rounded w-full"
-                  placeholder="Ej: email@example.com"
-                />
-                <button
-                  type="button"
-                  onClick={() => delArr("mails", i)}
-                  className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
-                >
-                  X
-                </button>
+              <div key={i} className="flex flex-col gap-1 mb-2">
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={mail}
+                    onChange={(e) => setArr("mails", i, e.target.value)}
+                    className={`p-2 border rounded w-full ${emailErrors[i] ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    placeholder="Ej: email@example.com"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => delArr("mails", i)}
+                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
+                  >
+                    X
+                  </button>
+                </div>
+                {emailErrors[i] && (
+                  <p className="text-red-500 text-xs">{emailErrors[i]}</p>
+                )}
               </div>
             ))}
             <button type="button" onClick={() => addArr("mails")} className="text-sm text-[#5FA92C] font-semibold hover:underline">
@@ -565,7 +648,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
         {/* BOTONES */}
         <div className="flex justify-center gap-4 mt-4">
           <button
-            onClick={handleSave}
+            onClick={handleSaveClick}
             disabled={loading}
             className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
