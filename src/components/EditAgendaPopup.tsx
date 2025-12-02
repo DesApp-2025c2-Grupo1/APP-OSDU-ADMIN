@@ -98,6 +98,42 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
     }));
   };
 
+  // Función para validar que no haya días y horarios duplicados
+  const validarFranjasDuplicadas = (franjas: FranjaHoraria[]): string | null => {
+    for (let i = 0; i < franjas.length; i++) {
+      for (let j = i + 1; j < franjas.length; j++) {
+        const franja1 = franjas[i];
+        const franja2 = franjas[j];
+
+        // Verificar si hay días en común
+        const diasEnComun = franja1.dias.filter(dia => franja2.dias.includes(dia));
+
+        if (diasEnComun.length > 0) {
+          // Convertir horarios a minutos para comparar
+          const [h1Desde, m1Desde] = franja1.desde.split(':').map(Number);
+          const [h1Hasta, m1Hasta] = franja1.hasta.split(':').map(Number);
+          const [h2Desde, m2Desde] = franja2.desde.split(':').map(Number);
+          const [h2Hasta, m2Hasta] = franja2.hasta.split(':').map(Number);
+
+          const minutos1Desde = h1Desde * 60 + m1Desde;
+          const minutos1Hasta = h1Hasta * 60 + m1Hasta;
+          const minutos2Desde = h2Desde * 60 + m2Desde;
+          const minutos2Hasta = h2Hasta * 60 + m2Hasta;
+
+          // Verificar si los horarios se solapan
+          const haySolapamiento =
+            (minutos1Desde < minutos2Hasta && minutos1Hasta > minutos2Desde);
+
+          if (haySolapamiento) {
+            const diasTexto = diasEnComun.join(', ');
+            return `Las franjas ${i + 1} y ${j + 1} tienen días y horarios que se solapan (${diasTexto}). Por favor, corrija los horarios.`;
+          }
+        }
+      }
+    }
+    return null;
+  };
+
   const handleSave = async () => {
     // Validaciones
     if (formData.franjas.length === 0) {
@@ -111,6 +147,13 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
 
     if (franjasValidas.length === 0) {
       setError("Debe configurar al menos una franja horaria con días y horarios válidos");
+      return;
+    }
+
+    // Validar que no haya franjas duplicadas o con solapamiento
+    const errorDuplicados = validarFranjasDuplicadas(franjasValidas);
+    if (errorDuplicados) {
+      setError(errorDuplicados);
       return;
     }
 

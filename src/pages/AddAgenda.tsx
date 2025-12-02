@@ -198,6 +198,42 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
     );
   };
 
+  // Función para validar que no haya días y horarios duplicados
+  const validarBloquesDuplicados = (bloques: BloqueHorario[]): string | null => {
+    for (let i = 0; i < bloques.length; i++) {
+      for (let j = i + 1; j < bloques.length; j++) {
+        const bloque1 = bloques[i];
+        const bloque2 = bloques[j];
+
+        // Verificar si hay días en común
+        const diasEnComun = bloque1.dias.filter(dia => bloque2.dias.includes(dia));
+
+        if (diasEnComun.length > 0) {
+          // Convertir horarios a minutos para comparar
+          const [h1Desde, m1Desde] = bloque1.desde.split(':').map(Number);
+          const [h1Hasta, m1Hasta] = bloque1.hasta.split(':').map(Number);
+          const [h2Desde, m2Desde] = bloque2.desde.split(':').map(Number);
+          const [h2Hasta, m2Hasta] = bloque2.hasta.split(':').map(Number);
+
+          const minutos1Desde = h1Desde * 60 + m1Desde;
+          const minutos1Hasta = h1Hasta * 60 + m1Hasta;
+          const minutos2Desde = h2Desde * 60 + m2Desde;
+          const minutos2Hasta = h2Hasta * 60 + m2Hasta;
+
+          // Verificar si los horarios se solapan
+          const haySolapamiento =
+            (minutos1Desde < minutos2Hasta && minutos1Hasta > minutos2Desde);
+
+          if (haySolapamiento) {
+            const diasTexto = diasEnComun.join(', ');
+            return `Los bloques ${i + 1} y ${j + 1} tienen días y horarios que se solapan (${diasTexto}). Por favor, corrija los horarios.`;
+          }
+        }
+      }
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -223,6 +259,13 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
 
     if (bloquesValidos.length === 0) {
       setError("Debe configurar al menos un bloque horario con días y horarios válidos.");
+      return;
+    }
+
+    // Validar que no haya bloques duplicados o con solapamiento
+    const errorDuplicados = validarBloquesDuplicados(bloquesValidos);
+    if (errorDuplicados) {
+      setError(errorDuplicados);
       return;
     }
 
