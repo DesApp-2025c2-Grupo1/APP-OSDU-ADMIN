@@ -340,6 +340,27 @@ export function AddAffiliate() {
   };
 
 
+  const buildFormData = () => {
+    const familyGroup = familiares.map(f => ({
+      full_name: `${f.nombre.trim()} ${f.apellido.trim()}`,
+      relationship: f.parentesco,
+      document_number: f.nroDocumento,
+    }));
+
+    const fd = new FormData();
+    fd.append('document_number', formData.nroDocumento);
+    fd.append('first_name', formData.nombre);
+    fd.append('last_name', formData.apellido);
+    fd.append('document_type', formData.tipoDocumento);
+    fd.append('birth_date', formData.fechaNacimiento);
+    fd.append('plan_id', formData.planMedico);
+    fd.append('email', formData.email.trim());
+    fd.append('phone', formData.telefono.trim());
+    if (formData.direccion?.trim()) fd.append('address', formData.direccion.trim());
+    if (familyGroup.length > 0) fd.append('family_group', JSON.stringify(familyGroup));
+    return fd;
+  };
+
   const handleProgramarAlta = async (fechaAltaISO: string) => {
     if (!validate()) {
       setShowAltaPopup(false);
@@ -351,94 +372,16 @@ export function AddAffiliate() {
     setShowAltaPopup(false);
 
     try {
-      // Construir emails del titular
-      const emails = [];
-      if (formData.email?.trim()) emails.push({ email: formData.email.trim() });
-      if (formData.email2?.trim()) emails.push({ email: formData.email2.trim() });
-
-      // Construir teléfonos del titular
-      const telefonos = [];
-      if (formData.telefono?.trim()) telefonos.push({ telefono: formData.telefono.trim() });
-      if (formData.telefono2?.trim()) telefonos.push({ telefono: formData.telefono2.trim() });
-
-      // Construir situaciones del titular con IDs de la BD
-      const situacionesPayload = situaciones
-        .filter(s => s.idSituacion)
-        .map(s => ({
-          id: s.idSituacion,
-          fecha_inicio: new Date().toISOString().split('T')[0],
-          fecha_fin: s.fechaFinalizacion || null,
-        }));
-
-      // Construir familiares
-      const familiaresPayload = familiares.map(f => {
-        const emailsFam = [];
-        if (f.usaContactoTitular && formData.email) {
-          emailsFam.push({ email: formData.email });
-        } else if (f.email?.trim()) {
-          emailsFam.push({ email: f.email.trim() });
-        }
-
-        const telefonosFam = [];
-        if (f.usaContactoTitular && formData.telefono) {
-          telefonosFam.push({ telefono: formData.telefono });
-        } else if (f.telefono?.trim()) {
-          telefonosFam.push({ telefono: f.telefono.trim() });
-        }
-
-        const situacionesFam = (f.situaciones || [])
-          .filter(s => s.idSituacion)
-          .map(s => ({
-            id: s.idSituacion,
-            fecha_inicio: new Date().toISOString().split('T')[0],
-            fecha_fin: s.fechaFinalizacion || null,
-          }));
-
-        return {
-          dni: f.nroDocumento,
-          nombre: f.nombre,
-          apellido: f.apellido,
-          parentesco: f.parentesco,
-          direccion: f.usaDireccionTitular ? formData.direccion : (f.direccion || ""),
-          tipoDocumento: f.tipoDocumento,
-          fecha_nacimiento: f.fechaNacimiento,
-          emails: emailsFam,
-          telefonos: telefonosFam,
-          situaciones: situacionesFam,
-        };
-      });
-
-      // Construir payload completo con fecha_alta programada
-      const payload = {
-        dni: formData.nroDocumento,
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        direccion: formData.direccion,
-        tipoDocumento: formData.tipoDocumento,
-        fecha_nacimiento: formData.fechaNacimiento,
-        fecha_alta: fechaAltaISO, // Fecha programada
-        plan: parseInt(formData.planMedico),
-        emails: emails,
-        telefonos: telefonos,
-        situaciones: situacionesPayload,
-        familiares: familiaresPayload,
-      };
-
-      // Hacer la petición al API
       const response = await fetch(`${API_BASE_URL}/affiliates`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        credentials: "include",
+        body: buildFormData(),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
-
-      const result = await response.json();
 
       setLoading(false);
       setSuccess("Afiliado programado exitosamente para alta futura");
@@ -460,93 +403,16 @@ export function AddAffiliate() {
     setSuccess(null);
 
     try {
-      // Construir emails del titular
-      const emails = [];
-      if (formData.email?.trim()) emails.push({ email: formData.email.trim() });
-      if (formData.email2?.trim()) emails.push({ email: formData.email2.trim() });
-
-      // Construir teléfonos del titular
-      const telefonos = [];
-      if (formData.telefono?.trim()) telefonos.push({ telefono: formData.telefono.trim() });
-      if (formData.telefono2?.trim()) telefonos.push({ telefono: formData.telefono2.trim() });
-
-      // Construir situaciones del titular con IDs de la BD
-      const situacionesPayload = situaciones
-        .filter(s => s.idSituacion)
-        .map(s => ({
-          id: s.idSituacion,
-          fecha_inicio: new Date().toISOString().split('T')[0],
-          fecha_fin: s.fechaFinalizacion || null,
-        }));
-
-      // Construir familiares
-      const familiaresPayload = familiares.map(f => {
-        const emailsFam = [];
-        if (f.usaContactoTitular && formData.email) {
-          emailsFam.push({ email: formData.email });
-        } else if (f.email?.trim()) {
-          emailsFam.push({ email: f.email.trim() });
-        }
-
-        const telefonosFam = [];
-        if (f.usaContactoTitular && formData.telefono) {
-          telefonosFam.push({ telefono: formData.telefono });
-        } else if (f.telefono?.trim()) {
-          telefonosFam.push({ telefono: f.telefono.trim() });
-        }
-
-        const situacionesFam = (f.situaciones || [])
-          .filter(s => s.idSituacion)
-          .map(s => ({
-            id: s.idSituacion,
-            fecha_inicio: new Date().toISOString().split('T')[0],
-            fecha_fin: s.fechaFinalizacion || null,
-          }));
-
-        return {
-          dni: f.nroDocumento,
-          nombre: f.nombre,
-          apellido: f.apellido,
-          parentesco: f.parentesco,
-          direccion: f.usaDireccionTitular ? formData.direccion : (f.direccion || ""),
-          tipoDocumento: f.tipoDocumento,
-          fecha_nacimiento: f.fechaNacimiento,
-          emails: emailsFam,
-          telefonos: telefonosFam,
-          situaciones: situacionesFam,
-        };
-      });
-
-      // Construir payload completo
-      const payload = {
-        dni: formData.nroDocumento,
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        direccion: formData.direccion,
-        tipoDocumento: formData.tipoDocumento,
-        fecha_nacimiento: formData.fechaNacimiento,
-        plan: parseInt(formData.planMedico),
-        emails: emails,
-        telefonos: telefonos,
-        situaciones: situacionesPayload,
-        familiares: familiaresPayload,
-      };
-
-      // Hacer la petición al API
       const response = await fetch(`${API_BASE_URL}/affiliates`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        credentials: "include",
+        body: buildFormData(),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
-
-      const result = await response.json();
 
       setLoading(false);
       setSuccess("Afiliado y familiares creados con éxito");
@@ -605,10 +471,6 @@ export function AddAffiliate() {
                 className="p-2 border border-gray-300 rounded"
               >
                 <option value="DNI">DNI</option>
-                <option value="CUIL">CUIL</option>
-                <option value="CUIT">CUIT</option>
-                <option value="DOCUMENTO EXTRANJERO">DOCUMENTO EXTRANJERO</option>
-                <option value="CDI">CDI</option>
                 <option value="Pasaporte">Pasaporte</option>
               </select>
             </div>
@@ -902,10 +764,6 @@ export function AddAffiliate() {
                     className="p-2 border border-gray-300 rounded"
                   >
                     <option value="DNI">DNI</option>
-                    <option value="CUIL">CUIL</option>
-                    <option value="CUIT">CUIT</option>
-                    <option value="DOCUMENTO EXTRANJERO">DOCUMENTO EXTRANJERO</option>
-                    <option value="CDI">CDI</option>
                     <option value="Pasaporte">Pasaporte</option>
                   </select>
                 </div>
