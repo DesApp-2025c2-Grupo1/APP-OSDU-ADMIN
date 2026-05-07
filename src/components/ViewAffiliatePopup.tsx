@@ -45,15 +45,21 @@ interface AffiliateType {
   telefonos?: Telefono[];
   email?: string | Email[];
   direccion?: string;
+  status?: boolean | number;
+  dni_document_path?: string;
+  payslip_document_path?: string;
+  id?: number;
 }
 
 interface ViewAffiliatePopupProps {
   affiliate: AffiliateType;
   onClose: () => void;
+  onStatusChanged?: () => void;
 }
 
-export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupProps) {
+export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: ViewAffiliatePopupProps) {
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [fullAffiliate, setFullAffiliate] = useState<AffiliateType | null>(null);
 
   // Cargar datos completos del afiliado
@@ -62,10 +68,12 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
       try {
         setLoading(true);
 
-        const dniToFetch = affiliate.dni || affiliate.nroDocumento;
-
+        if (!affiliate.id) throw new Error("ID de afiliado no proporcionado");
+        
         const response = await fetch(
-          `${API_BASE_URL}/affiliates/affiliate/${dniToFetch}`
+          `${API_BASE_URL}/affiliates/${affiliate.id}`, {
+            credentials: "include"
+          }
         );
 
         if (!response.ok) throw new Error("Error al cargar datos del afiliado");
@@ -148,9 +156,37 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
   }
 
   const displayAffiliate = fullAffiliate || affiliate;
+
+  const handleStatusChange = async (action: 'activate' | 'deactivate') => {
+    if (!displayAffiliate.id) return;
+    try {
+        setActionLoading(true);
+        const response = await fetch(`${API_BASE_URL}/affiliates/${displayAffiliate.id}/${action}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include"
+        });
+        if (!response.ok) throw new Error(`Error al ${action} el afiliado`);
+        alert(`Afiliado ${action === 'activate' ? 'aprobado' : 'rechazado'} con éxito.`);
+        if (onStatusChanged) onStatusChanged();
+        onClose();
+    } catch (err) {
+        alert(`Ocurrió un error al intentar cambiar el estado.`);
+    } finally {
+        setActionLoading(false);
+    }
+  };
+
   const emails = obtenerEmails(displayAffiliate);
   const telefonos = obtenerTelefonos(displayAffiliate);
-  const fechaNac = displayAffiliate.fechaNacimiento || displayAffiliate.fecha_nacimiento;
+  const rawDate = displayAffiliate.fechaNacimiento || displayAffiliate.fecha_nacimiento;
+  let fechaNac = rawDate;
+  if (rawDate && rawDate.includes("-")) {
+    const d = new Date(rawDate);
+    if (!isNaN(d.getTime())) {
+      fechaNac = d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 overflow-y-auto p-4">
@@ -256,6 +292,39 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
           </div>
         )}
 
+        {/* Documentos */}
+        {(displayAffiliate.dni_document_path || displayAffiliate.payslip_document_path) && (
+          <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+            <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+              Documentación Adjunta
+            </h2>
+            <div className="flex gap-4">
+              {displayAffiliate.dni_document_path && (
+                <a 
+                    href={`${API_BASE_URL.replace('/api', '')}${displayAffiliate.dni_document_path}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex-1 p-4 border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 transition"
+                >
+                    <span className="font-semibold text-gray-700">Ver DNI</span>
+                    <span className="text-blue-500 underline text-sm">Abrir documento</span>
+                </a>
+              )}
+              {displayAffiliate.payslip_document_path && (
+                <a 
+                    href={`${API_BASE_URL.replace('/api', '')}${displayAffiliate.payslip_document_path}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex-1 p-4 border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 transition"
+                >
+                    <span className="font-semibold text-gray-700">Ver Recibo de Sueldo</span>
+                    <span className="text-blue-500 underline text-sm">Abrir documento</span>
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Situaciones Terapéuticas */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
@@ -311,14 +380,33 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
           )}
         </div>
 
-        {/* Botón de cierre */}
-        <div className="flex justify-center mt-4 sm:mt-6">
+        {/* Botón de cierre o Acciones de Aprobación */}
+        <div className="flex justify-between mt-4 sm:mt-6 border-t pt-4">
           <button
             onClick={onClose}
             className="bg-gray-500 text-white px-6 sm:px-8 py-2 sm:py-3 rounded font-semibold shadow hover:bg-gray-600 transition w-full sm:w-auto"
           >
             Cerrar
           </button>
+
+          {(!displayAffiliate.status) && displayAffiliate.id && (
+            <div className="flex gap-4">
+              <button
+                onClick={() => handleStatusChange('deactivate')}
+                disabled={actionLoading}
+                className="bg-red-500 text-white px-6 py-2 rounded font-semibold shadow hover:bg-red-600 transition disabled:opacity-50"
+              >
+                Rechazar
+              </button>
+              <button
+                onClick={() => handleStatusChange('activate')}
+                disabled={actionLoading}
+                className="bg-green-500 text-white px-6 py-2 rounded font-semibold shadow hover:bg-green-600 transition disabled:opacity-50"
+              >
+                Aprobar Alta
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

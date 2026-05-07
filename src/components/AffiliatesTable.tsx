@@ -222,13 +222,13 @@ export function AffiliatesTable({
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {currentAffiliates.map((a, idx) => (
-                <tr key={a.credencial} className={idx % 2 === 0 ? "bg-gray-50" : ""}>
+                <tr key={a.credencial || a.dni || idx} className={idx % 2 === 0 ? "bg-gray-50" : ""}>
                   <td className="px-4 py-2 text-sm">{a.credencial}</td>
                   <td className="px-4 py-2 text-sm">{a.dni}</td>
                   <td className="px-4 py-2 text-sm">{a.nombre}</td>
                   <td className="px-4 py-2 text-sm">{a.apellido}</td>
                   <td className="px-4 py-2 text-sm">{a.fecha_nacimiento}</td>
-                  <td className="px-4 py-2 text-sm">{a.plan.nombre}</td>
+                  <td className="px-4 py-2 text-sm">{a.plan?.nombre || (a as any).plan_type || '-'}</td>
                   <td className="px-4 py-2 text-sm">{a.direccion}</td>
                   <td className="px-2 py-2 text-right w-10">
                     <OptionsMenu
@@ -260,7 +260,7 @@ export function AffiliatesTable({
 
           <div className="flex flex-col gap-3">
             {currentAffiliates.map((a) => (
-              <div key={a.credencial} className="border border-gray-200 rounded-lg shadow-sm p-4 bg-white">
+              <div key={a.credencial || a.dni} className="border border-gray-200 rounded-lg shadow-sm p-4 bg-white">
                 <div className="mb-3">
                   <div className="text-xs text-gray-500 uppercase">Credencial</div>
                   <div className="font-semibold break-all">{a.credencial}</div>
@@ -285,7 +285,7 @@ export function AffiliatesTable({
                   </div>
                   <div className="col-span-2">
                     <div className="text-xs text-gray-500 uppercase">Plan</div>
-                    <div className="text-sm">{a.plan.nombre}</div>
+                    <div className="text-sm">{a.plan?.nombre || (a as any).plan_type || '-'}</div>
                   </div>
                   <div className="col-span-2">
                     <div className="text-xs text-gray-500 uppercase">Dirección</div>

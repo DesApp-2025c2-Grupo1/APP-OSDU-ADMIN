@@ -56,15 +56,37 @@ export function Home() {
   const fetchAffiliates = async (pending: boolean) => {
     try {
       setLoading(true);
-      const endpoint = pending ? `${API_BASE_URL}/affiliates/pending` : `${API_BASE_URL}/affiliates`;
-      const response = await fetch(endpoint);
+      const endpoint = pending ? `${API_BASE_URL}/affiliates?status=false` : `${API_BASE_URL}/affiliates`;
+      const response = await fetch(endpoint, {
+        credentials: "include"
+      });
       if (!response.ok) throw new Error("Error en la respuesta del servidor");
 
       const data = await response.json();
       const affiliatesData = Array.isArray(data) ? data : data.affiliates;
       if (!affiliatesData) throw new Error("No se encontraron afiliados");
 
-      setAffiliates(affiliatesData);
+      const normalized = affiliatesData.map((a: any) => {
+        let formattedDate = a.fecha_nacimiento || a.birth_date || "";
+        if (formattedDate && formattedDate.includes('-')) {
+          const d = new Date(formattedDate);
+          if (!isNaN(d.getTime())) {
+             formattedDate = d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+          }
+        }
+        
+        return {
+          ...a,
+          nombre: a.nombre || a.first_name || "",
+          apellido: a.apellido || a.last_name || "",
+          dni: a.dni || a.document_number || "",
+          credencial: a.credencial || a.credential || `PENDING-${a.document_number || a.id}`,
+          fecha_nacimiento: formattedDate,
+          direccion: a.direccion || a.address || "",
+        };
+      });
+
+      setAffiliates(normalized);
     } catch (error) {
     } finally {
       setLoading(false);
@@ -80,7 +102,7 @@ export function Home() {
     nombre: (a) => a.nombre,
     apellido: (a) => a.apellido,
     credencial: (a) => a.credencial,
-    plan: (a) => a.plan?.nombre || "",
+    plan: (a) => a.plan?.nombre || (a as any).plan_type || "",
   };
 
   const filtered = useMemo(() => {
@@ -119,6 +141,7 @@ export function Home() {
       // Si tu API borra por DNI (como en tu ejemplo actual):
       const res = await fetch(`${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`, {
         method: "DELETE",
+        credentials: "include"
       });
 
       if (!res.ok && res.status !== 204) throw new Error("Error al eliminar afiliado");
@@ -157,6 +180,7 @@ export function Home() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fecha: fechaISO }),
+          credentials: "include"
         }
       );
       showToast(`Baja programada para ${selectedAffiliate.nombre}`);
@@ -175,12 +199,15 @@ export function Home() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedAffiliate),
+        credentials: "include"
       });
 
       if (!response.ok) throw new Error("Error al actualizar afiliado");
 
       // Recargar datos completos del afiliado
-      const updatedResponse = await fetch(`${API_BASE_URL}/affiliates/affiliate/${updatedAffiliate.dni}`);
+      const updatedResponse = await fetch(`${API_BASE_URL}/affiliates/affiliate/${updatedAffiliate.dni}`, {
+        credentials: "include"
+      });
       if (updatedResponse.ok) {
         const updatedData = await updatedResponse.json();
 

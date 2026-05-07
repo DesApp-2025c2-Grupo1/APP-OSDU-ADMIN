@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, Outlet } from "react-router-dom";
 import "./App.css";
 import { Home } from "./pages/Home";
 import { Agenda } from "./pages/Agenda";
@@ -17,46 +17,75 @@ import { PrestadoresSinAgendas } from "./pages/Consulta_PrestadoresNoAgenda";
 import { PrestadoresPorEspecialidad } from "./pages/Consulta_PrestadoresEspecialidad";
 import { SituacionesPorAfiliado } from "./pages/Consulta_AfiliadosSituaciones";
 import { SituacionesPorGrupo } from "./pages/Consulta_GrupoFamiliarSituaciones";
+import LoginPage from "./pages/LoginPage";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
-function App() {
+function ProtectedLayout() {
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <div className="flex flex-1">
         <Sidebar />
         <main className="p-6 flex-1">
-          <Routes>
-            {/* Redirect root to home */}
-            <Route path="/" element={<Navigate to="/home" replace />} />
-
-            {/* Main routes */}
-            <Route path="/home" element={<Home />} />
-            <Route path="/agenda" element={<Agenda />} />
-            <Route path="/prestadores" element={<Prestadores />} />
-            <Route path="/consultas" element={<Consultas />} />
-
-            {/* Affiliate routes */}
-            <Route path="/home/agregarAfiliado" element={<AddAffiliate />} />
-            <Route path="/home/grupoFamiliar/:dni" element={<GrupoFamiliar />} />
-
-            {/* Provider routes */}
-            <Route path="/prestadores/agregarPrestador" element={<AddProvider />} />
-
-            {/* Agenda routes */}
-            <Route path="/agenda/nueva" element={<AddAgendaPage />} />
-
-            {/* Query/Report routes */}
-            <Route path="/consultas/altas-afiliados" element={<AltasAfiliadosPeriodo />} />
-            <Route path="/consultas/altas-prestadores" element={<AltasPrestadoresPeriodo />} />
-            <Route path="/consultas/prestadores-por-especialidad" element={<PrestadoresPorEspecialidad />} />
-            <Route path="/consultas/prestadores-por-cp" element={<PrestadoresPorCodigoPostal />} />
-            <Route path="/consultas/situaciones-por-afiliado" element={<SituacionesPorAfiliado />} />
-            <Route path="/consultas/situaciones-por-grupo" element={<SituacionesPorGrupo />} />
-            <Route path="/consultas/prestadores-sin-agendas" element={<PrestadoresSinAgendas />} />
-          </Routes>
+          <Outlet />
         </main>
       </div>
     </div>
+  );
+}
+
+function AppContent() {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/home" replace />} />
+      
+      {/* Protected Routes directly under ProtectedLayout */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/agenda" element={<Agenda />} />
+        <Route path="/prestadores" element={<Prestadores />} />
+        <Route path="/consultas" element={<Consultas />} />
+
+        {/* Affiliate routes */}
+        <Route path="/home/agregarAfiliado" element={<AddAffiliate />} />
+        <Route path="/home/grupoFamiliar/:dni" element={<GrupoFamiliar />} />
+
+        {/* Provider routes */}
+        <Route path="/prestadores/agregarPrestador" element={<AddProvider />} />
+
+        {/* Agenda routes */}
+        <Route path="/agenda/nueva" element={<AddAgendaPage />} />
+
+        {/* Query/Report routes */}
+        <Route path="/consultas/altas-afiliados" element={<AltasAfiliadosPeriodo />} />
+        <Route path="/consultas/altas-prestadores" element={<AltasPrestadoresPeriodo />} />
+        <Route path="/consultas/prestadores-por-especialidad" element={<PrestadoresPorEspecialidad />} />
+        <Route path="/consultas/prestadores-por-cp" element={<PrestadoresPorCodigoPostal />} />
+        <Route path="/consultas/situaciones-por-afiliado" element={<SituacionesPorAfiliado />} />
+        <Route path="/consultas/situaciones-por-grupo" element={<SituacionesPorGrupo />} />
+        <Route path="/consultas/prestadores-sin-agendas" element={<PrestadoresSinAgendas />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to={isAuthenticated ? "/home" : "/login"} replace />} />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

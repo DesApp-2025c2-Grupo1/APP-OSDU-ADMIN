@@ -129,7 +129,7 @@ export function AddProvider() {
         // El backend puede devolver { especialidades: [...] } o array directo
         const especialidadesArray = dataEsp.especialidades || dataEsp || [];
         setEspecialidadesDisponibles(especialidadesArray.map((e: any) => ({
-          id: e.idEspecialidad,
+          id: e.idEspecialidad || e.id,
           nombre: e.nombre
         })));
       } catch (err) {

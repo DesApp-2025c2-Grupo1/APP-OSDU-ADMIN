@@ -71,9 +71,11 @@ export function AddAffiliate() {
         const responseSit = await fetch(`${API_BASE_URL}/therapeutic`);
 
         if (!responseSit.ok) throw new Error("Error al cargar situaciones terapéuticas");
-
         const dataSit = await responseSit.json();
-        setSituacionesDisponibles(dataSit.situaciones || []);
+        
+        // Backend now securely returns Array of {idSituacion, nombre}
+        setSituacionesDisponibles(Array.isArray(dataSit) ? dataSit : []);
+        setErrors(prev => ({ ...prev, situaciones: "" }));
       } catch (error) {
         setErrors(prev => ({ ...prev, situaciones: "No se pudieron cargar las situaciones terapéuticas" }));
       } finally {
