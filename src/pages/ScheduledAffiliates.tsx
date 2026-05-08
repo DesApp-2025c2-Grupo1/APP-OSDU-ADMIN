@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 interface ScheduledAffiliate {
     dni: string;
@@ -22,7 +22,7 @@ export default function ScheduledAffiliates() {
     const fetchScheduledAffiliates = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_BASE_URL}/affiliates/scheduled`);
+            const response = await apiFetch(`${API_BASE_URL}/affiliates/scheduled`);
 
             if (!response.ok) {
                 throw new Error('Error al cargar afiliados programados');

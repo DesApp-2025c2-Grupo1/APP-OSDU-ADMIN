@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 
 interface SituacionTerapeutica {
@@ -70,10 +70,8 @@ export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: View
 
         if (!affiliate.id) throw new Error("ID de afiliado no proporcionado");
         
-        const response = await fetch(
-          `${API_BASE_URL}/affiliates/${affiliate.id}`, {
-            credentials: "include"
-          }
+        const response = await apiFetch(
+          `${API_BASE_URL}/affiliates/${affiliate.id}`
         );
 
         if (!response.ok) throw new Error("Error al cargar datos del afiliado");
@@ -161,10 +159,9 @@ export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: View
     if (!displayAffiliate.id) return;
     try {
         setActionLoading(true);
-        const response = await fetch(`${API_BASE_URL}/affiliates/${displayAffiliate.id}/${action}`, {
+        const response = await apiFetch(`${API_BASE_URL}/affiliates/${displayAffiliate.id}/${action}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            credentials: "include"
         });
         if (!response.ok) throw new Error(`Error al ${action} el afiliado`);
         alert(`Afiliado ${action === 'activate' ? 'aprobado' : 'rechazado'} con éxito.`);

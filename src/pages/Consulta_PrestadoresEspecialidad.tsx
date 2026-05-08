@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { SPECIALTIES, loadSpecialties } from "../data/specialties";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 import { PDFDownloadButton } from "../util/ReportPDFExporter";
 
 
@@ -47,7 +47,7 @@ export function PrestadoresPorEspecialidad() {
       setPage(1);
 
       // CAMBIAR SI O SI POR LA RUTA DEL BACK-END PARA ESTE REPORTE
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/reports/prestadores-por-especialidad?specialtyId=${selectedSpecialtyId}`
       );
 

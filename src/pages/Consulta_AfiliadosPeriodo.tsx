@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { useNavigate } from "react-router-dom";
 import { PDFDownloadButton } from "../util/ReportPDFExporter";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 function isSameDay(a: Date, b: Date) {
     return (
@@ -130,7 +130,7 @@ export function AltasAfiliadosPeriodo() {
             setResults([]);
             setPage(1);
 
-            const res = await fetch(
+            const res = await apiFetch(
                 `${API_BASE_URL}/reports/altas-afiliados?from=${from}&to=${to}`
             );
 

@@ -6,7 +6,7 @@ import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import ScheduledSuccessPopup from "./BajaExitosaPopup";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 export type Affiliate = {
   grupoFamiliar: number;
@@ -102,7 +102,7 @@ export function AffiliatesTable({
   const handleSaveAffiliate = async (data: any) => {
     try {
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate?.dni}`,
         {
           method: "PUT",
@@ -120,7 +120,7 @@ export function AffiliatesTable({
 
 
       // Recargar el afiliado actualizado
-      const updatedResponse = await fetch(
+      const updatedResponse = await apiFetch(
         `${API_BASE_URL}/affiliates/affiliate/${selectedAffiliate?.dni}`
       );
 
@@ -146,7 +146,7 @@ export function AffiliatesTable({
     setIsDeleting(true);
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`,
         {
           method: "DELETE",
@@ -178,7 +178,7 @@ export function AffiliatesTable({
     if (!selectedAffiliate) return;
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}/schedule-delete`,
         {
           method: "POST",

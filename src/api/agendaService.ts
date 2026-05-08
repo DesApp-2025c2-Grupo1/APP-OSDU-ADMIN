@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 export interface AgendaPayload {
   cuitCuil: string;
@@ -57,7 +57,7 @@ export const fetchAgendas = async (filters?: {
     if (filters?.idEspecialidad) params.append('idEspecialidad', filters.idEspecialidad.toString());
 
     const url = params.toString() ? `/agendas?${params.toString()}` : '/agendas';
-    const response = await fetch(`${API_BASE_URL}${url}`);
+    const response = await apiFetch(`${API_BASE_URL}${url}`);
 
     if (!response.ok) {
       throw new Error(`Error al obtener agendas: ${response.status}`);
@@ -75,7 +75,7 @@ export const fetchAgendas = async (filters?: {
  */
 export const fetchAgendaById = async (id: string): Promise<AgendaResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/agendas/${id}`);
+    const response = await apiFetch(`${API_BASE_URL}/agendas/${id}`);
 
     if (!response.ok) {
       throw new Error(`Agenda no encontrada: ${id}`);
@@ -92,7 +92,7 @@ export const fetchAgendaById = async (id: string): Promise<AgendaResponse> => {
  */
 export const createAgenda = async (payload: AgendaPayload): Promise<AgendaResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/agendas`, {
+    const response = await apiFetch(`${API_BASE_URL}/agendas`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -118,7 +118,7 @@ export const updateAgenda = async (
   updates: Partial<AgendaPayload>
 ): Promise<AgendaResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/agendas/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/agendas/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
@@ -141,7 +141,7 @@ export const updateAgenda = async (
  */
 export const deleteAgenda = async (id: string): Promise<{ message: string }> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/agendas/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/agendas/${id}`, {
       method: 'DELETE',
     });
 

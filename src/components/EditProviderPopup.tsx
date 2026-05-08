@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Prestador, LugarAtencion, Especialidad } from "../model/Provider.model";
 import { updateProvider } from "../api/providerService";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 import { checkProviderSpecialtyAgendas, checkProviderPlaceAgendas } from "../api/providerService";
 import { ConfirmSpecialtyChangeDialog } from "./ConfirmSpecialtyChangeDialog";
 import { ConfirmPlaceChangeDialog } from "./ConfirmPlaceChangeDialog";
@@ -50,13 +50,13 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
     const cargarDatos = async () => {
       try {
         // Cargar centros médicos
-        const resCentros = await fetch(`${API_BASE_URL}/providers/`);
+        const resCentros = await apiFetch(`${API_BASE_URL}/providers/`);
         const dataCentros = await resCentros.json();
         const centros = dataCentros.filter((p: any) => p.tipoPrestador === "centro_medico");
         setCentrosMedicos(centros);
 
         // Cargar especialidades desde API
-        const resEsp = await fetch(`${API_BASE_URL}/specialties`);
+        const resEsp = await apiFetch(`${API_BASE_URL}/specialties`);
         const dataEsp = await resEsp.json();
         const especialidadesArray = dataEsp.especialidades || dataEsp || [];
         setEspecialidadesDisponibles(especialidadesArray.map((e: any) => ({

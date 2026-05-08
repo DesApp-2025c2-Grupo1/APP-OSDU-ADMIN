@@ -7,7 +7,7 @@ import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
 import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup";
 import { EditAffiliatePopup } from "../components/EditAffiliatePopup";
 import SearchDropdown from "../components/SearchDropdown";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 // 🔹 Pequeño Toast (notificación visual sin alert)
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => (
@@ -57,7 +57,7 @@ export function Home() {
     try {
       setLoading(true);
       const endpoint = pending ? `${API_BASE_URL}/affiliates?status=false` : `${API_BASE_URL}/affiliates`;
-      const response = await fetch(endpoint, {
+      const response = await apiFetch(endpoint, {
         credentials: "include"
       });
       if (!response.ok) throw new Error("Error en la respuesta del servidor");
@@ -139,7 +139,7 @@ export function Home() {
     setIsDeleting(true);
     try {
       // Si tu API borra por DNI (como en tu ejemplo actual):
-      const res = await fetch(`${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`, {
+      const res = await apiFetch(`${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -174,7 +174,7 @@ export function Home() {
   const handleScheduleDelete = async (fechaISO: string) => {
     if (!selectedAffiliate) return;
     try {
-      await fetch(
+      await apiFetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}/schedule-delete`,
         {
           method: "POST",
@@ -195,7 +195,7 @@ export function Home() {
   // 🟦 Guardar edición
   const handleSaveEdit = async (updatedAffiliate: Affiliate) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/affiliates/${updatedAffiliate.dni}`, {
+      const response = await apiFetch(`${API_BASE_URL}/affiliates/${updatedAffiliate.dni}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedAffiliate),
@@ -205,7 +205,7 @@ export function Home() {
       if (!response.ok) throw new Error("Error al actualizar afiliado");
 
       // Recargar datos completos del afiliado
-      const updatedResponse = await fetch(`${API_BASE_URL}/affiliates/affiliate/${updatedAffiliate.dni}`, {
+      const updatedResponse = await apiFetch(`${API_BASE_URL}/affiliates/affiliate/${updatedAffiliate.dni}`, {
         credentials: "include"
       });
       if (updatedResponse.ok) {

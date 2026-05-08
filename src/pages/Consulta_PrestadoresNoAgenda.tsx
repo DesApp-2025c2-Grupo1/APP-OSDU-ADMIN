@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { PDFDownloadButton } from "../util/ReportPDFExporter";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 type PrestadorSinAgendaRow = {
   cuitCuil: string;
@@ -34,7 +34,7 @@ export function PrestadoresSinAgendas() {
       setResults([]);
       setPage(1);
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/reports/prestadores-sin-agendas`
       );
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 import { fetchPlans, type Plan } from "../api/planService";
 import AltaProgramadaPopup from "../components/AltaProgramadaPopup";
 
@@ -68,7 +68,7 @@ export function AddAffiliate() {
       try {
         // Cargar situaciones terapéuticas
         setLoadingSituaciones(true);
-        const responseSit = await fetch(`${API_BASE_URL}/therapeutic`);
+        const responseSit = await apiFetch(`${API_BASE_URL}/therapeutic`);
 
         if (!responseSit.ok) throw new Error("Error al cargar situaciones terapéuticas");
         const dataSit = await responseSit.json();
@@ -372,9 +372,8 @@ export function AddAffiliate() {
     setShowAltaPopup(false);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/affiliates`, {
+      const response = await apiFetch(`${API_BASE_URL}/affiliates`, {
         method: "POST",
-        credentials: "include",
         body: buildFormData(),
       });
 
@@ -403,9 +402,8 @@ export function AddAffiliate() {
     setSuccess(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/affiliates`, {
+      const response = await apiFetch(`${API_BASE_URL}/affiliates`, {
         method: "POST",
-        credentials: "include",
         body: buildFormData(),
       });
 

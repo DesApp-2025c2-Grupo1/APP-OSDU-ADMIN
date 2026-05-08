@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { Prestador, PrestadorTipo, LugarAtencion, DiaSemana } from "../model/Provider.model";
 import { ButtonVolver } from "../util/ButtonVolver";
 import Toast from "../components/Toast";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 type BloqueHorario = { dias: DiaSemana[]; desde: string; hasta: string };
 
@@ -116,14 +116,14 @@ export function AddProvider() {
     const cargarDatos = async () => {
       try {
         // Cargar centros médicos
-        const resCentros = await fetch(`${API_BASE_URL}/providers/`);
+        const resCentros = await apiFetch(`${API_BASE_URL}/providers/`);
         const dataCentros = await resCentros.json();
         const centrosMedicos = dataCentros.filter((p: any) => p.tipoPrestador === "centro_medico");
         setCentros(centrosMedicos);
 
         // Cargar especialidades desde API
         setLoadingEspecialidades(true);
-        const resEsp = await fetch(`${API_BASE_URL}/specialties`);
+        const resEsp = await apiFetch(`${API_BASE_URL}/specialties`);
         const dataEsp = await resEsp.json();
 
         // El backend puede devolver { especialidades: [...] } o array directo
@@ -291,7 +291,7 @@ export function AddProvider() {
         ...(tipo === "profesional" && integraCentro && { centroMedicoId: integraCentro })
       };
 
-      const res = await fetch(`${API_BASE_URL}/providers/`, {
+      const res = await apiFetch(`${API_BASE_URL}/providers/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

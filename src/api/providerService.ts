@@ -1,12 +1,12 @@
 import type { Prestador } from "../model/Provider.model";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 /**
  * Obtiene la lista completa de proveedores desde el back-end
  */
 export const fetchProviders = async (): Promise<Prestador[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/providers`);
+    const response = await apiFetch(`${API_BASE_URL}/providers`);
 
     if (!response.ok) {
       throw new Error(`Error al obtener proveedores: ${response.status}`);
@@ -28,7 +28,7 @@ export async function checkProviderSpecialtyAgendas(
   specialtyId: number
 ): Promise<{ agendas: any[]; count: number }> {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${API_BASE_URL}/providers/${cuitCuil}/agendas-by-specialty?specialtyId=${specialtyId}`
     );
 
@@ -46,7 +46,7 @@ export async function checkProviderPlaceAgendas(
   cuitCuil: string
 ): Promise<{ agendas: any[]; count: number }> {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${API_BASE_URL}/providers/${cuitCuil}/agendas-by-places`
     );
 
@@ -66,7 +66,7 @@ export async function checkProviderPlaceAgendas(
  */
 export const fetchProviderByCuit = async (cuitCuil: string): Promise<Prestador> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/providers/${cuitCuil}`);
+    const response = await apiFetch(`${API_BASE_URL}/providers/${cuitCuil}`);
 
     if (!response.ok) {
       throw new Error(`Proveedor no encontrado: ${cuitCuil}`);
@@ -84,7 +84,7 @@ export const fetchProviderByCuit = async (cuitCuil: string): Promise<Prestador> 
  */
 export const createProvider = async (provider: Omit<Prestador, "lugarAtencion"> & { lugarAtencion?: any }): Promise<Prestador> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/providers`, {
+    const response = await apiFetch(`${API_BASE_URL}/providers`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(provider),
@@ -108,7 +108,7 @@ export const createProvider = async (provider: Omit<Prestador, "lugarAtencion"> 
 export const updateProvider = async (cuitCuil: string, updates: Partial<Prestador>): Promise<Prestador> => {
   try {
 
-    const response = await fetch(`${API_BASE_URL}/providers/${cuitCuil}`, {
+    const response = await apiFetch(`${API_BASE_URL}/providers/${cuitCuil}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
@@ -139,7 +139,7 @@ export const updateProvider = async (cuitCuil: string, updates: Partial<Prestado
  */
 export const deleteProvider = async (cuitCuil: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/providers/${cuitCuil}`, {
+    const response = await apiFetch(`${API_BASE_URL}/providers/${cuitCuil}`, {
       method: "DELETE",
     });
 
