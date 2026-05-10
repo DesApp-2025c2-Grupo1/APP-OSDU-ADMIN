@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config/api";
 import { fetchPlans, type Plan } from "../api/planService";
@@ -590,7 +590,7 @@ export function AddAffiliate() {
       <div className="mx-auto w-full max-w-4xl space-y-8">
         {/* DATOS DE AFILIADO (Titular) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
             Datos de Afiliado (Titular)
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -699,7 +699,7 @@ export function AddAffiliate() {
 
         {/* DATOS DE CONTACTO */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
             Datos de Contacto
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -804,7 +804,7 @@ export function AddAffiliate() {
 
         {/* SITUACIONES TERAPÉUTICAS (Titular) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
             Situaciones Terapéuticas
           </h2>
 
@@ -849,7 +849,7 @@ export function AddAffiliate() {
                   <button
                     type="button"
                     onClick={() => removeSituacion(idx)}
-                    className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                    className="text-sm px-4 py-2 border-2 border-[#14B8A6] text-[#14B8A6] rounded font-semibold hover:bg-[#14B8A6] hover:text-white transition"
                   >
                     Eliminar
                   </button>
@@ -860,7 +860,7 @@ export function AddAffiliate() {
             <button
               type="button"
               onClick={addSituacion}
-              className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+              className="text-sm px-4 py-2 border-2 border-[#14B8A6] text-[#14B8A6] rounded font-semibold hover:bg-[#14B8A6] hover:text-white transition"
               disabled={loadingSituaciones || situacionesDisponibles.length === 0}
             >
               + Agregar
@@ -870,7 +870,7 @@ export function AddAffiliate() {
 
         {/* FAMILIARES A CARGO */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
             Familiares a Cargo
           </h2>
 
@@ -1083,7 +1083,7 @@ export function AddAffiliate() {
                         <button
                           type="button"
                           onClick={() => removeSituacionFamiliar(i, idx)}
-                          className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                          className="text-sm px-4 py-2 border-2 border-[#14B8A6] text-[#14B8A6] rounded font-semibold hover:bg-[#14B8A6] hover:text-white transition"
                         >
                           Eliminar
                         </button>
@@ -1094,7 +1094,7 @@ export function AddAffiliate() {
                   <button
                     type="button"
                     onClick={() => addSituacionFamiliar(i)}
-                    className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                    className="text-sm px-4 py-2 border-2 border-[#14B8A6] text-[#14B8A6] rounded font-semibold hover:bg-[#14B8A6] hover:text-white transition"
                     disabled={loadingSituaciones || situacionesDisponibles.length === 0}
                   >
                     + Agregar
@@ -1107,7 +1107,7 @@ export function AddAffiliate() {
           <button
             type="button"
             onClick={agregarFamiliar}
-            className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+            className="text-sm px-4 py-2 border-2 border-[#14B8A6] text-[#14B8A6] rounded font-semibold hover:bg-[#14B8A6] hover:text-white transition"
           >
             + Agregar Familiar
           </button>
@@ -1119,7 +1119,7 @@ export function AddAffiliate() {
         <button
           type="submit"
           onClick={handleSubmit}
-          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition w-full sm:w-auto"
+          className="bg-[#14B8A6] text-white px-6 py-3 rounded font-semibold shadow hover:bg-teal-700 transition w-full sm:w-auto"
           disabled={loading}
         >
           {loading ? "Guardando..." : "Crear Afiliado"}
@@ -1134,7 +1134,7 @@ export function AddAffiliate() {
         <button
           type="button"
           onClick={() => setShowAltaPopup(true)}
-          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition w-full sm:w-auto"
+          className="bg-[#14B8A6] text-white px-6 py-3 rounded font-semibold shadow hover:bg-teal-700 transition w-full sm:w-auto"
           disabled={loading}
         >
           Programar Alta
@@ -1147,8 +1147,8 @@ export function AddAffiliate() {
         </div>
       )}
       {success && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded text-center">
-          <p className="text-green-600 font-semibold">{success}</p>
+        <div className="mt-4 p-4 bg-teal-50 border border-teal-200 rounded text-center">
+          <p className="text-teal-600 font-semibold">{success}</p>
         </div>
       )}
 

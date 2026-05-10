@@ -312,7 +312,7 @@ export function AddProvider() {
     }
   }; return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
-      <h1 className="text-2xl font-bold text-[#5FA92C] mb-4">Agregar Prestador</h1>
+      <h1 className="text-2xl font-bold text-[#14B8A6] mb-4">Agregar Prestador</h1>
       <div className="flex items-center gap-2 ">
         <ButtonVolver text="Volver" onClick={() => navigate("/prestadores")} />
       </div>
@@ -410,7 +410,7 @@ export function AddProvider() {
             <button
               type="button"
               onClick={handleAgregarEspecialidad}
-              className="text-[#5FA92C] text-sm font-semibold hover:underline"
+              className="text-[#14B8A6] text-sm font-semibold hover:underline"
               disabled={especialidades.length >= especialidadesDisponibles.length}
             >
               + Agregar otra especialidad
@@ -476,7 +476,7 @@ export function AddProvider() {
               <button
                 type="button"
                 onClick={handleAgregarTelefono}
-                className="text-[#5FA92C] text-sm font-semibold"
+                className="text-[#14B8A6] text-sm font-semibold"
               >
                 + Agregar otro teléfono
               </button>
@@ -521,7 +521,7 @@ export function AddProvider() {
               <button
                 type="button"
                 onClick={handleAgregarEmail}
-                className="text-[#5FA92C] text-sm font-semibold"
+                className="text-[#14B8A6] text-sm font-semibold"
               >
                 + Agregar otro email
               </button>
@@ -574,7 +574,7 @@ export function AddProvider() {
             <button
               type="button"
               onClick={handleAgregarLugar}
-              className="text-[#5FA92C] text-sm font-semibold"
+              className="text-[#14B8A6] text-sm font-semibold"
             >
               + Agregar otro lugar
             </button>
@@ -595,7 +595,7 @@ export function AddProvider() {
             <button
               onClick={handleGuardar}
               disabled={loading}
-              className="bg-[#5FA92C] text-white px-4 py-2 rounded-md font-medium hover:bg-[#4a8926] transition disabled:opacity-50"
+              className="bg-[#14B8A6] text-white px-4 py-2 rounded-md font-medium hover:bg-[#14B8A6] transition disabled:opacity-50"
             >
               {loading ? "Guardando..." : "Guardar"}
             </button>

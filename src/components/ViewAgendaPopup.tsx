@@ -40,7 +40,7 @@ export function ViewAgendaPopup({ agenda, onClose }: ViewAgendaPopupProps) {
 
         {/* DATOS DEL PRESTADOR */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
             Datos del Prestador
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -73,7 +73,7 @@ export function ViewAgendaPopup({ agenda, onClose }: ViewAgendaPopupProps) {
 
         {/* DEFINICIÓN DE TURNOS */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
             Definición de Turnos
           </h2>
 

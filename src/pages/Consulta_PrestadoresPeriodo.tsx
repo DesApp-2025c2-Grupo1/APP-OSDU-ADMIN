@@ -182,7 +182,7 @@ export function AltasPrestadoresPeriodo() {
   return (
     <div className="w-full flex justify-center px-2">
       <div className="w-full max-w-4xl bg-white rounded-xl shadow-md border border-gray-200 p-6">
-        <h1 className="text-2xl font-bold mb-2 text-[#5FA92C]">
+        <h1 className="text-2xl font-bold mb-2 text-[#14B8A6]">
           Alta de prestadores por periodo
         </h1>
 
@@ -275,7 +275,7 @@ export function AltasPrestadoresPeriodo() {
                       "w-8 h-8 flex items-center justify-center text-sm rounded cursor-pointer ";
 
                     if (isStart || isEnd) {
-                      classes += "bg-[#5FA92C] text-white font-semibold";
+                      classes += "bg-[#14B8A6] text-white font-semibold";
                     } else if (inRange) {
                       classes += "bg-[#E1F3D0] text-[#2f5e11]";
                     } else {
@@ -308,7 +308,7 @@ export function AltasPrestadoresPeriodo() {
             className={`
               px-5 py-2 rounded-md text-white font-semibold
               ${hasValidRange && !loading
-                ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
+                ? "bg-[#14B8A6] hover:bg-[#4c8c23]"
                 : "bg-gray-300 cursor-not-allowed"
               }
             `}
@@ -355,7 +355,7 @@ export function AltasPrestadoresPeriodo() {
               {/* DESKTOP: tabla */}
               <div className="hidden md:block rounded-md shadow-sm border border-gray-200 bg-white">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-[#5FA92C] text-white">
+                  <thead className="bg-[#14B8A6] text-white">
                     <tr>
                       {["Nombre", "CUIL/CUIT", "Tipo de prestador", "Fecha de alta"].map((h) => (
                         <th

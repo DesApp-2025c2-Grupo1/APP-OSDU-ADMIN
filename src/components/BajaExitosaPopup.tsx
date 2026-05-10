@@ -86,7 +86,7 @@ export default function ScheduledSuccessPopup({
         {!invalid && (
           <button
             onClick={onClose}
-            className="mt-1 px-4 py-2 rounded-md bg-[#5FA92C] text-white hover:brightness-95 font-medium"
+            className="mt-1 px-4 py-2 rounded-md bg-[#14B8A6] text-white hover:brightness-95 font-medium"
           >
             Entendido
           </button>

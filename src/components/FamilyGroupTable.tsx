@@ -26,7 +26,7 @@ export function FamilyGroupTable({ members, onOptionClick }: FamilyGroupTablePro
       {/* DESKTOP */}
       <div className="hidden md:block">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-[#5FA92C] text-white">
+          <thead className="bg-[#14B8A6] text-white">
             <tr>
               {["Credencial","DNI","Nombre","Apellido","Fecha Nac.","Plan","Dirección",""].map((h) => (
                 <th
@@ -119,7 +119,7 @@ export function FamilyGroupTable({ members, onOptionClick }: FamilyGroupTablePro
                 </button>
                 <button
                   onClick={() => handleOptionClick("Editar", m)}
-                  className="px-3 py-2 text-sm border-2 rounded-md border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white font-semibold"
+                  className="px-3 py-2 text-sm border-2 rounded-md border-[#14B8A6] text-[#14B8A6] hover:bg-[#14B8A6] hover:text-white font-semibold"
                 >
                   Editar
                 </button>

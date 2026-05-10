@@ -17,15 +17,17 @@ import { PrestadoresSinAgendas } from "./pages/Consulta_PrestadoresNoAgenda";
 import { PrestadoresPorEspecialidad } from "./pages/Consulta_PrestadoresEspecialidad";
 import { SituacionesPorAfiliado } from "./pages/Consulta_AfiliadosSituaciones";
 import { SituacionesPorGrupo } from "./pages/Consulta_GrupoFamiliarSituaciones";
+import { FormStylePreview } from "./pages/FormStylePreview";
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
       <div className="flex flex-1">
         <Sidebar />
-        <main className="p-6 flex-1">
-          <Routes>
+        <main className="flex-1 overflow-auto">
+          <div className="md:p-8 p-4">
+            <Routes>
             {/* Redirect root to home */}
             <Route path="/" element={<Navigate to="/home" replace />} />
 
@@ -34,6 +36,7 @@ function App() {
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/prestadores" element={<Prestadores />} />
             <Route path="/consultas" element={<Consultas />} />
+            <Route path="/form-preview" element={<FormStylePreview />} />
 
             {/* Affiliate routes */}
             <Route path="/home/agregarAfiliado" element={<AddAffiliate />} />
@@ -53,7 +56,8 @@ function App() {
             <Route path="/consultas/situaciones-por-afiliado" element={<SituacionesPorAfiliado />} />
             <Route path="/consultas/situaciones-por-grupo" element={<SituacionesPorGrupo />} />
             <Route path="/consultas/prestadores-sin-agendas" element={<PrestadoresSinAgendas />} />
-          </Routes>
+            </Routes>
+          </div>
         </main>
       </div>
     </div>

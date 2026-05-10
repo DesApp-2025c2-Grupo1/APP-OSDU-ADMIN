@@ -303,7 +303,7 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
       {/* Header */}
-      <h1 className="text-2xl font-bold text-[#5FA92C] mb-4">Agregar Agenda</h1>
+      <h1 className="text-2xl font-bold text-[#14B8A6] mb-4">Agregar Agenda</h1>
       <div className="flex items-center gap-2">
         <ButtonVolver text="Volver" onClick={() => navigate("/agenda")} />
       </div>
@@ -337,7 +337,7 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
                   onChange={handleBusquedaPrestadorChange}
                   onFocus={handleFocusPrestador}
                   onBlur={handleBlurPrestador}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
                   placeholder="Buscar prestador..."
                   required
                 />
@@ -349,7 +349,7 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
                       <div
                         key={prestador.cuitCuil}
                         onClick={() => seleccionarPrestador(prestador.cuitCuil, prestador.nombreCompleto)}
-                        className={`p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0 ${formData.prestadorId === prestador.cuitCuil ? 'bg-green-50' : ''
+                        className={`p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0 ${formData.prestadorId === prestador.cuitCuil ? 'bg-teal-50' : ''
                           }`}
                       >
                         <div className="font-medium">{prestador.nombreCompleto}</div>
@@ -380,7 +380,7 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
           <select
             value={formData.especialidadId}
             onChange={(e) => handleChange("especialidadId", e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
             required
             disabled={!formData.prestadorId}
           >
@@ -405,7 +405,7 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
           <select
             value={formData.lugarAtencionId}
             onChange={(e) => handleChange("lugarAtencionId", e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
             required
             disabled={!formData.prestadorId}
           >
@@ -435,7 +435,7 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
             <select
               value={formData.duracionTurno}
               onChange={(e) => handleChange("duracionTurno", e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
               required
             >
               <option value="15">15 min</option>
@@ -464,7 +464,7 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
                           type="checkbox"
                           checked={bloque.dias.includes(dia.id)}
                           onChange={() => toggleDia(bloqueIndex, dia.id)}
-                          className="rounded border-gray-300 text-[#5FA92C] focus:ring-[#5FA92C]"
+                          className="rounded border-gray-300 text-[#14B8A6] focus:ring-[#14B8A6]"
                         />
                         <span>{dia.label}</span>
                       </label>
@@ -513,7 +513,7 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
             <button
               type="button"
               onClick={agregarBloqueHorario}
-              className="text-[#5FA92C] text-sm font-semibold hover:text-[#4c8c23]"
+              className="text-[#14B8A6] text-sm font-semibold hover:text-[#4c8c23]"
             >
               + Agregar otra franja horaria
             </button>
@@ -533,7 +533,7 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
           <button
             type="submit"
             disabled={loading}
-            className="bg-[#5FA92C] text-white px-4 py-2 rounded-md font-medium hover:bg-[#4a8926] transition disabled:opacity-50"
+            className="bg-[#14B8A6] text-white px-4 py-2 rounded-md font-medium hover:bg-[#4a8926] transition disabled:opacity-50"
           >
             {loading ? "Guardando..." : "Guardar"}
           </button>

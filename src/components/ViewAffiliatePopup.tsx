@@ -139,7 +139,7 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
       <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
         <div className="bg-white rounded-lg p-8">
           <div className="flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
+            <div className="w-10 h-10 border-4 border-[#14B8A6] border-t-transparent rounded-full animate-spin mb-3"></div>
             <p className="text-gray-600">Cargando datos del afiliado...</p>
           </div>
         </div>
@@ -166,7 +166,7 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
 
         {/* Datos de Afiliado */}
         <div className="mb-6 sm:mb-8 p-3 sm:p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-base sm:text-lg font-semibold mb-3 sm:mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-base sm:text-lg font-semibold mb-3 sm:mb-4 border-b-2 border-[#14B8A6] pb-1">
             Datos de Afiliado
           </h2>
 
@@ -217,7 +217,7 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
         {/* Datos de Contacto */}
         {(telefonos.length > 0 || emails.length > 0 || displayAffiliate.direccion) && (
           <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-            <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+            <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
               Datos de Contacto
             </h2>
 
@@ -258,7 +258,7 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
 
         {/* Situaciones Terapéuticas */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
             Situaciones Terapéuticas
           </h2>
 

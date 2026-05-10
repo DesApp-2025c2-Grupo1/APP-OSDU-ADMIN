@@ -82,7 +82,7 @@ export default function ScheduledAffiliates() {
             {!loading && !error && affiliates.length > 0 && (
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-gray-300">
-                        <thead className="bg-[#5FA92C] text-white">
+                        <thead className="bg-[#14B8A6] text-white">
                             <tr>
                                 <th className="border border-gray-300 px-4 py-2 text-left">DNI</th>
                                 <th className="border border-gray-300 px-4 py-2 text-left">Nombre</th>

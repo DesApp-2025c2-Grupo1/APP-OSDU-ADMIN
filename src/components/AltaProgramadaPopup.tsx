@@ -1,12 +1,16 @@
 import React from "react";
 
 type AltaProgramadaPopupProps = {
+  isOpen: boolean;
   onClose: () => void;
   onConfirm: (scheduledAtISO: string) => void;
+  onSimple?: () => void;
 };
 
-export default function AltaProgramadaPopup({ onClose, onConfirm }: AltaProgramadaPopupProps) {
+export default function AltaProgramadaPopup({ isOpen, onClose, onConfirm, onSimple }: AltaProgramadaPopupProps) {
   const [fechaHora, setFechaHora] = React.useState<string>("");
+
+  if (!isOpen) return null;
 
   const handleConfirm = () => {
     if (!fechaHora) return alert("Elegí una fecha y hora.");
@@ -45,7 +49,7 @@ export default function AltaProgramadaPopup({ onClose, onConfirm }: AltaPrograma
           </button>
           <button
             onClick={handleConfirm}
-            className="px-4 py-2 rounded-md bg-[#5FA92C] text-white hover:bg-[#4A8926]"
+            className="px-4 py-2 rounded-md bg-[#14B8A6] text-white hover:bg-[#4A8926]"
           >
             Programar
           </button>

@@ -296,7 +296,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
       <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
         <div className="bg-white rounded-lg p-8">
           <div className="flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
+            <div className="w-10 h-10 border-4 border-[#14B8A6] border-t-transparent rounded-full animate-spin mb-3"></div>
             <p className="text-gray-600">Cargando datos del afiliado...</p>
           </div>
         </div>
@@ -318,7 +318,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
 
         {/* DATOS BÁSICOS */}
         <div className="mb-6 sm:mb-8 p-3 sm:p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-base sm:text-lg font-semibold mb-3 sm:mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-base sm:text-lg font-semibold mb-3 sm:mb-4 border-b-2 border-[#14B8A6] pb-1">
             Datos Básicos
           </h2>
 
@@ -413,7 +413,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
 
         {/* DATOS DE CONTACTO */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
             Datos de Contacto
           </h2>
 
@@ -441,7 +441,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
             <button
               type="button"
               onClick={addTelefono}
-              className="text-sm text-[#5FA92C] font-semibold hover:underline"
+              className="text-sm text-[#14B8A6] font-semibold hover:underline"
             >
               + Agregar teléfono
             </button>
@@ -471,7 +471,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
             <button
               type="button"
               onClick={addEmail}
-              className="text-sm text-[#5FA92C] font-semibold hover:underline"
+              className="text-sm text-[#14B8A6] font-semibold hover:underline"
             >
               + Agregar email
             </button>
@@ -480,7 +480,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
 
         {/* SITUACIONES TERAPÉUTICAS */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
             Situaciones Terapéuticas
           </h2>
 
@@ -549,7 +549,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
           <button
             type="button"
             onClick={addSituacion}
-            className="mt-3 text-sm text-[#5FA92C] font-semibold hover:underline"
+            className="mt-3 text-sm text-[#14B8A6] font-semibold hover:underline"
             disabled={situacionesDisponibles.length === 0}
           >
             + Agregar situación terapéutica
@@ -560,7 +560,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-4 sm:mt-6">
           <button
             onClick={handleSave}
-            className="bg-[#5FA92C] text-white px-6 py-2 sm:py-3 rounded font-semibold shadow hover:bg-green-700 transition w-full sm:w-auto order-2 sm:order-1"
+            className="bg-[#14B8A6] text-white px-6 py-2 sm:py-3 rounded font-semibold shadow hover:bg-teal-700 transition w-full sm:w-auto order-2 sm:order-1"
           >
             Guardar Cambios
           </button>

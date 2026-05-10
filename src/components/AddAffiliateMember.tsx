@@ -177,7 +177,7 @@ export function AddFamiliarMember({
 
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
           <p className="text-blue-800 font-semibold">
-            Plan del grupo familiar: <span className="text-green-600">{planFijo}</span>
+            Plan del grupo familiar: <span className="text-teal-600">{planFijo}</span>
           </p>
           <p className="text-blue-600 text-sm">
             Todos los miembros del grupo familiar comparten el mismo plan médico.
@@ -372,7 +372,7 @@ export function AddFamiliarMember({
           </div>
 
           <div className="mt-6 p-4 border border-gray-200 rounded-lg">
-            <h3 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+            <h3 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
               Situaciones Terapéuticas
             </h3>
 
@@ -416,7 +416,7 @@ export function AddFamiliarMember({
                     <button
                       type="button"
                       onClick={() => eliminarSituacion(index)}
-                      className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                      className="text-sm px-4 py-2 border-2 border-[#14B8A6] text-[#14B8A6] rounded font-semibold hover:bg-[#14B8A6] hover:text-white transition"
                     >
                       Eliminar
                     </button>
@@ -428,7 +428,7 @@ export function AddFamiliarMember({
             <button
               type="button"
               onClick={agregarSituacion}
-              className="mt-3 text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+              className="mt-3 text-sm px-4 py-2 border-2 border-[#14B8A6] text-[#14B8A6] rounded font-semibold hover:bg-[#14B8A6] hover:text-white transition"
               disabled={loadingSituaciones || situacionesDisponibles.length === 0}
             >
               + Agregar Situación Terapéutica
@@ -438,7 +438,7 @@ export function AddFamiliarMember({
           <div className="flex justify-center gap-4 mt-6">
             <button
               type="submit"
-              className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
+              className="bg-[#14B8A6] text-white px-6 py-3 rounded font-semibold shadow hover:bg-teal-700 transition"
             >
               Guardar Familiar
             </button>
