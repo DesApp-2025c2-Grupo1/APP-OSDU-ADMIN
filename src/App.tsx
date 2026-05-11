@@ -21,7 +21,11 @@ import LoginPage from "./pages/LoginPage";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 function ProtectedLayout() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isCheckingSession } = useAuth();
+
+  if (isCheckingSession) {
+    return <SessionLoader />;
+  }
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -40,8 +44,20 @@ function ProtectedLayout() {
   );
 }
 
+function SessionLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-600">
+      <div className="text-sm font-medium">Verificando sesión...</div>
+    </div>
+  );
+}
+
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isCheckingSession } = useAuth();
+
+  if (isCheckingSession) {
+    return <SessionLoader />;
+  }
 
   return (
     <Routes>

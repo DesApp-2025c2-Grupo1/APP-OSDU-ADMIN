@@ -1,14 +1,17 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
+import { getSession, logout as logoutRequest } from "../services/PortalAdminService";
 
 interface AdminUser {
-  id: string;
+  id: string | number;
   email: string;
   role: string;
+  must_change_password?: boolean;
 }
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  isCheckingSession: boolean;
   usuario: AdminUser | null;
   setAuthUser: (user: AdminUser) => void;
   logout: () => void;
@@ -17,16 +20,40 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<AdminUser | null>(() => {
-    try {
-      const stored = localStorage.getItem("admin_auth_user");
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [usuario, setUsuario] = useState<AdminUser | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   const isAuthenticated = usuario !== null;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getSession()
+      .then((data) => {
+        if (!isMounted) return;
+
+        if (data.user?.role === "ADMIN") {
+          setUsuario(data.user);
+          localStorage.setItem("admin_auth_user", JSON.stringify(data.user));
+          return;
+        }
+
+        setUsuario(null);
+        localStorage.removeItem("admin_auth_user");
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setUsuario(null);
+        localStorage.removeItem("admin_auth_user");
+      })
+      .finally(() => {
+        if (isMounted) setIsCheckingSession(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const setAuthUser = useCallback((user: AdminUser) => {
     setUsuario(user);
@@ -34,12 +61,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    logoutRequest().catch(() => {
+      // Si el backend no responde, igual limpiamos la sesión local.
+    });
     setUsuario(null);
     localStorage.removeItem("admin_auth_user");
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, usuario, setAuthUser, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isCheckingSession, usuario, setAuthUser, logout }}>
       {children}
     </AuthContext.Provider>
   );
