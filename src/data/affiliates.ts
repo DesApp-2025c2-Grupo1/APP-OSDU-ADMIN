@@ -1,7 +1,5 @@
 // src/data/affiliates.ts
-import type { Affiliate } from "../components/AffiliatesTable";
-
-export const affiliates: Affiliate[] = [
+export const affiliates = [
   { credencial: "0000001-01", dni: "12345678", nombre: "Joaquin", apellido: "Mogno", fechaNacimiento: "16/12/2002", plan: "210", direccion: "Calle Falsa 123" },
   { credencial: "0000001-02", dni: "23456789", nombre: "Juan", apellido: "Perez", fechaNacimiento: "10/05/2019", plan: "210", direccion: "Av. Vergara 742" },
   { credencial: "0000001-03", dni: "34567891", nombre: "Maria", apellido: "Mogno", fechaNacimiento: "22/07/2005", plan: "210", direccion: "Calle Falsa 123" },

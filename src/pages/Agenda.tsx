@@ -200,7 +200,7 @@ export function Agenda() {
     setEditingAgenda(agenda);
   };
 
-  const handleSaveEditedAgenda = async (updatedAgenda: HorarioAgenda) => {
+  const handleSaveEditedAgenda = async (_updatedAgenda: HorarioAgenda) => {
     try {
       await loadData();
       setEditingAgenda(null);

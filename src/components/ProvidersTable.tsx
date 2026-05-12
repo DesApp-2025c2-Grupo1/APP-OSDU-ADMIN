@@ -6,6 +6,7 @@ type Props = {
   prestadores: Prestador[];
   onOptionClick: (option: string, prestador: Prestador) => void;
   pageSize?: number;
+  showPagination?: boolean;
 };
 
 
@@ -19,7 +20,7 @@ function firstSpecialtyLabel(especialidades: any[]) {
   return typeof first === "object" ? first.nombre : "-";
 }
 
-export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Props) {
+export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10, showPagination = true }: Props) {
   const [page, setPage] = useState(1);
 
   useEffect(() => { setPage(1); }, [prestadores, pageSize]);
@@ -41,7 +42,7 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Pr
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-[#5FA92C] text-white">
           <tr>
-            {["CUIL/CUIT", "NOMBRE COMPLETO", "ESPECIALIDAD", "TELÉFONO", "TIPO", ""].map((h) => (
+            {["CUIL/CUIT", "NOMBRE COMPLETO", "ESPECIALIDAD", "LOCALIDAD", "ESTADO", "TIPO", ""].map((h) => (
               <th key={h} scope="col" className="px-4 py-3 text-left text-sm font-medium uppercase tracking-wider">
                 {h}
               </th>
@@ -52,15 +53,21 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Pr
         <tbody className="bg-white divide-y divide-gray-200">
           {pageItems.map((p, idx) => {
             const especialidad = firstSpecialtyLabel(p.especialidades);
-            const telefono = p.telefonos?.[0] ?? "-";
+            const localidad = p.lugaresAtencion?.[0]?.localidad ?? "-";
             const tipoPrestador = p.tipoPrestador === "profesional" ? "Profesional" : "Centro Médico";
+            const estado = p.estado === "baja" ? "Baja" : p.estado === "suspendido" ? "Suspendido" : "Activo";
 
             return (
               <tr key={p.cuitCuil} className={idx % 2 === 0 ? "bg-gray-50" : ""}>
                 <td className="px-4 py-3 text-sm">{p.cuitCuil}</td>
                 <td className="px-4 py-3 text-sm">{p.nombreCompleto}</td>
                 <td className="px-4 py-3 text-sm">{especialidad}</td>
-                <td className="px-4 py-3 text-sm">{telefono}</td>
+                <td className="px-4 py-3 text-sm">{localidad}</td>
+                <td className="px-4 py-3 text-sm">
+                  <span className={`rounded-full px-2 py-1 text-xs font-semibold ${estado === "Activo" ? "bg-green-100 text-green-700" : estado === "Suspendido" ? "bg-amber-100 text-amber-700" : "bg-gray-200 text-gray-700"}`}>
+                    {estado}
+                  </span>
+                </td>
                 <td className="px-4 py-3 text-sm">{tipoPrestador}</td>
                 <td className="px-2 py-3 text-right w-10">
                   <OptionsMenu
@@ -70,7 +77,16 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Pr
                       nombre: p.nombreCompleto,
                       apellido: "",
                     }}
-                    options={["Editar", "Ver Detalles", "Dar de Baja"]}
+                    options={[
+                      "Editar",
+                      "Ver Detalles",
+                      ...(p.estado === "activo" || !p.estado ? ["Suspender", "Dar de Baja"] : []),
+                      ...(p.estado === "suspendido" ? ["Reactivar", "Dar de Baja"] : []),
+                      ...(p.estado === "baja" ? ["Reactivar"] : []),
+                      "Resetear contraseña",
+                      "Reenviar credenciales",
+                      "Forzar cambio de contraseña",
+                    ]}
                     onOptionClick={(opt) => onOptionClick(opt, p)}
                   />
                 </td>
@@ -88,8 +104,7 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Pr
         </tbody>
       </table>
 
-      {/* Paginado*/}
-      <div className="flex items-center justify-between px-4 py-3">
+      {showPagination && <div className="flex items-center justify-between px-4 py-3">
         <span className="text-sm text-gray-600">
           Mostrando {from} a {to} de {prestadores.length} prestadores
         </span>
@@ -121,7 +136,7 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Pr
             </button>
           </div>
         </div>
-      </div>
+      </div>}
 
     </div>
   );

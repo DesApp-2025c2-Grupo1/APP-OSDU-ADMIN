@@ -51,7 +51,6 @@ export function AddAffiliate() {
 
   const [showPhone2, setShowPhone2] = useState(false);
   const [showEmail2, setShowEmail2] = useState(false);
-  const [showAddress2, setShowAddress2] = useState(false);
   const [situaciones, setSituaciones] = useState<Situacion[]>([]);
   const [situacionesDisponibles, setSituacionesDisponibles] = useState<SituacionDisponible[]>([]);
   const [loadingSituaciones, setLoadingSituaciones] = useState(true);
@@ -361,7 +360,7 @@ export function AddAffiliate() {
     return fd;
   };
 
-  const handleProgramarAlta = async (fechaAltaISO: string) => {
+  const handleProgramarAlta = async (_fechaAltaISO: string) => {
     if (!validate()) {
       setShowAltaPopup(false);
       return;

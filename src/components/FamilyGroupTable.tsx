@@ -1,4 +1,3 @@
-import React from "react";
 import { OptionsMenu } from "./OptionsMenu";
 
 export type FamilyMember = {

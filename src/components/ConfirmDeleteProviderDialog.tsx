@@ -1,4 +1,3 @@
-import React from "react";
 import type { Prestador } from "../model/Provider.model";
 
 interface ConfirmDeleteProviderDialogProps {
@@ -16,7 +15,7 @@ export function ConfirmDeleteProviderDialog({
 }: ConfirmDeleteProviderDialogProps) {
   if (!open) return null;
 
-  const isCentro = provider.tipo === "centro";
+  const isCentro = provider.tipoPrestador === "centro_medico";
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]">
@@ -51,7 +50,7 @@ export function ConfirmDeleteProviderDialog({
             onClick={onConfirm}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition"
           >
-            Sí, eliminar
+            Sí, dar de baja
           </button>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { API_BASE_URL, apiFetch } from "../config/api";
 import { checkProviderSpecialtyAgendas, checkProviderPlaceAgendas } from "../api/providerService";
 import { ConfirmSpecialtyChangeDialog } from "./ConfirmSpecialtyChangeDialog";
 import { ConfirmPlaceChangeDialog } from "./ConfirmPlaceChangeDialog";
+import { firstProviderValidationMessage, validateProviderPayload } from "../utils/providerValidation";
 
 interface EditProviderPopupProps {
   provider: Prestador;
@@ -42,6 +43,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
   const [showPlaceWarning, setShowPlaceWarning] = useState(false);
   const [placeAgendas, setPlaceAgendas] = useState<any[]>([]);
   const [pendingSave, setPendingSave] = useState(false);
+  const [agendaImpactConfirmed, setAgendaImpactConfirmed] = useState(false);
   const [originalPlaces, setOriginalPlaces] = useState<LugarAtencion[]>([]);
 
 
@@ -194,6 +196,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
       ),
     }));
 
+    setAgendaImpactConfirmed(true);
     setShowSpecialtyWarning(false);
     setPendingSpecialtyToRemove(null);
   };
@@ -221,58 +224,35 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
 
   const handleSaveClick = async () => {
-    // Validar teléfonos y emails
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const validationErrors = validateProviderPayload({
+      cuitCuil: formData.cuitCuil,
+      nombreCompleto: formData.nombreCompleto,
+      tipoPrestador: formData.tipoPrestador,
+      mails: formData.mails,
+      telefonos: formData.telefonos,
+      especialidades: formData.especialidades,
+      lugaresAtencion: formData.lugaresAtencion,
+    });
     const newTelefonoErrors: string[] = [];
     const newEmailErrors: string[] = [];
-    let hasErrors = false;
 
-    formData.telefonos.forEach((tel, idx) => {
-      if (tel.trim()) {
-        const digitsOnly = tel.replace(/\D/g, '');
-        if (!/^[0-9]{7,15}$/.test(digitsOnly)) {
-          newTelefonoErrors[idx] = "El teléfono debe tener entre 7 y 15 dígitos";
-          hasErrors = true;
-        } else {
-          newTelefonoErrors[idx] = "";
-        }
-      } else {
-        newTelefonoErrors[idx] = "";
-      }
+    formData.telefonos.forEach((_, idx) => {
+      newTelefonoErrors[idx] = validationErrors.some((err) => err.field === `telefonos.${idx}`)
+        ? "El teléfono debe tener entre 7 y 15 dígitos"
+        : "";
     });
 
-    formData.mails.forEach((email, idx) => {
-      if (email.trim()) {
-        if (!emailRegex.test(email)) {
-          newEmailErrors[idx] = "Formato de email inválido";
-          hasErrors = true;
-        } else {
-          newEmailErrors[idx] = "";
-        }
-      } else {
-        newEmailErrors[idx] = "";
-      }
+    formData.mails.forEach((_, idx) => {
+      newEmailErrors[idx] = validationErrors.some((err) => err.field === `mails.${idx}`)
+        ? "Formato de email inválido"
+        : "";
     });
 
     setTelefonoErrors(newTelefonoErrors);
     setEmailErrors(newEmailErrors);
 
-    if (hasErrors) {
-      setError("Corrija los errores en teléfonos y emails antes de continuar.");
-      return;
-    }
-
-    // Validar que haya al menos un teléfono válido
-    const telefonosValidos = formData.telefonos.filter(t => t.trim() !== "");
-    if (telefonosValidos.length === 0) {
-      setError("Debe ingresar al menos un teléfono.");
-      return;
-    }
-
-    // Validar que haya al menos un email válido
-    const emailsValidos = formData.mails.filter(e => e.trim() !== "");
-    if (emailsValidos.length === 0) {
-      setError("Debe ingresar al menos un email.");
+    if (validationErrors.length > 0) {
+      setError(firstProviderValidationMessage(validationErrors));
       return;
     }
 
@@ -287,9 +267,9 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
         setCheckingAgendas(true);
         const result = await checkProviderPlaceAgendas(formData.cuitCuil);
 
-        if (result.count > 0) {
-          setPlaceAgendas(result.agendas);
-          setShowPlaceWarning(true);
+      if (result.count > 0) {
+        setPlaceAgendas(result.agendas);
+        setShowPlaceWarning(true);
           setCheckingAgendas(false);
           return; // No continuar con el guardado
         } else {
@@ -308,6 +288,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
     setError(null);
 
     try {
+      const placesChanged = JSON.stringify(originalPlaces) !== JSON.stringify(formData.lugaresAtencion);
       // Enviar solo los IDs de especialidades, no los objetos completos
       const updated = {
         cuitCuil: formData.cuitCuil,
@@ -316,8 +297,12 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
         especialidades: formData.especialidades.map(e => (e as any).id), // Extraer solo IDs
         telefonos: formData.telefonos.filter(t => t.trim()),
         mails: formData.mails.filter(m => m.trim()),
-        lugaresAtencion: formData.lugaresAtencion
+        confirmAgendaImpact: pendingSave || agendaImpactConfirmed
       };
+
+      if (placesChanged) {
+        (updated as any).lugaresAtencion = formData.lugaresAtencion;
+      }
 
       // Agregar centroMedicoId si es profesional
       if (formData.tipoPrestador === "profesional") {
@@ -342,6 +327,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
   const confirmPlaceChange = () => {
     setShowPlaceWarning(false);
     setPendingSave(true);
+    setAgendaImpactConfirmed(true);
     // Llamar performSave inmediatamente después de confirmar
     setTimeout(() => performSave(), 0);
   };
@@ -550,7 +536,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           {formData.lugaresAtencion.length > 0 && (
             <div className="mb-4">
               <div className="flex gap-2 flex-wrap">
-                {formData.lugaresAtencion.map((lugar, idx) => (
+                {formData.lugaresAtencion.map((_, idx) => (
                   <button
                     key={idx}
                     type="button"

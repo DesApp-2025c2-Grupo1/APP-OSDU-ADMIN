@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import type { HorarioAgenda } from "../pages/Agenda";
 import { updateAgenda } from "../api/agendaService";
 

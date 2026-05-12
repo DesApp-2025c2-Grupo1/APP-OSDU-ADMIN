@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
-import { SPECIALTIES, loadSpecialties } from "../data/specialties";
+import { SPECIALTIES } from "../data/specialties";
 import { API_BASE_URL, apiFetch } from "../config/api";
 import { PDFDownloadButton } from "../util/ReportPDFExporter";
 

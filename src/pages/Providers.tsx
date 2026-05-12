@@ -3,13 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import SearchDropdown from "../components/SearchDropdown";
 import { ProvidersTable } from "../components/ProvidersTable";
-import type { Prestador } from "../model/Provider.model";
+import type { Prestador, ProviderFilters } from "../model/Provider.model";
 import { EditProviderPopup } from "../components/EditProviderPopup";
 import { ViewProviderPopup } from "../components/ViewProviderPopup";
 import { ConfirmDeleteProviderDialog } from "../components/ConfirmDeleteProviderDialog";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
-import { fetchProviders, deleteProvider } from "../api/providerService";
+import {
+  deleteProvider,
+  fetchProviderByCuit,
+  fetchProvidersPage,
+  forceProviderPasswordChange,
+  reactivateProvider,
+  resendProviderCredentials,
+  resetProviderPassword,
+  suspendProvider,
+} from "../api/providerService";
 
 type ProviderField = keyof Pick<Prestador, "cuitCuil" | "nombreCompleto">;
 
@@ -33,6 +42,14 @@ export function Prestadores() {
   const [field, setField] = useState<ProviderField>("cuitCuil");
   const [query, setQuery] = useState("");
   const [tipoFiltro, setTipoFiltro] = useState<"todos" | "profesional" | "centro_medico">("todos");
+  const [especialidadFiltro, setEspecialidadFiltro] = useState("");
+  const [localidadFiltro, setLocalidadFiltro] = useState("");
+  const [estadoFiltro, setEstadoFiltro] = useState<"todos" | "activo" | "suspendido" | "baja">("activo");
+  const [centroFiltro, setCentroFiltro] = useState("");
+  const [serverPage, setServerPage] = useState(1);
+  const [serverTotal, setServerTotal] = useState(0);
+  const [serverTotalPages, setServerTotalPages] = useState(1);
+  const serverPageSize = 10;
 
   // Popups
   const [editingProvider, setEditingProvider] = useState<Prestador | null>(null);
@@ -42,6 +59,26 @@ export function Prestadores() {
   const [deletingProvider, setDeletingProvider] = useState<Prestador | null>(null);
   const [openDeletePopup, setOpenDeletePopup] = useState(false);
 
+  const providerFilters = useMemo<ProviderFilters>(() => {
+    const filters: ProviderFilters = {
+      tipoPrestador: tipoFiltro,
+      especialidad: especialidadFiltro.trim(),
+      localidad: localidadFiltro.trim(),
+      estado: estadoFiltro,
+      centroMedicoId: centroFiltro.trim(),
+      page: serverPage,
+      limit: serverPageSize,
+    };
+
+    const trimmedQuery = query.trim();
+    if (trimmedQuery) {
+      if (field === "cuitCuil") filters.cuitCuil = trimmedQuery;
+      else filters.nombre = trimmedQuery;
+    }
+
+    return filters;
+  }, [tipoFiltro, especialidadFiltro, localidadFiltro, estadoFiltro, centroFiltro, field, query, serverPage]);
+
   // 🟩 Función para mostrar mensaje visual (toast)
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -49,12 +86,14 @@ export function Prestadores() {
   };
 
   // 🔹 Carga de proveedores desde API
-  const loadProviders = async () => {
+  const loadProviders = async (filters = providerFilters) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchProviders();
-      setPrestadores(data);
+      const pageData = await fetchProvidersPage(filters);
+      setPrestadores(pageData.data);
+      setServerTotal(pageData.total);
+      setServerTotalPages(pageData.totalPages);
     } catch (err) {
       setError("No se pudieron cargar los proveedores");
     } finally {
@@ -64,8 +103,8 @@ export function Prestadores() {
 
   // 🔹 Cargar proveedores al montar el componente
   useEffect(() => {
-    loadProviders();
-  }, []);
+    loadProviders(providerFilters);
+  }, [providerFilters]);
 
   // Buscador
   const handleSearch = (f: string, q: string) => {
@@ -78,21 +117,11 @@ export function Prestadores() {
     setTipoFiltro((prev) => (prev === valor ? "todos" : valor));
   };
 
-  // Filtrado
+  // Filtrado local de respaldo para una respuesta ya filtrada por backend.
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
     let result = prestadores;
-
-    if (tipoFiltro !== "todos") {
-      result = result.filter((p) => p.tipoPrestador === tipoFiltro);
-    }
-
-    if (q) {
-      result = result.filter((p) => String(p[field] ?? "").toLowerCase().includes(q));
-    }
-
     return result;
-  }, [prestadores, field, query, tipoFiltro]);
+  }, [prestadores]);
 
   // Paginación para MOBILE (5 por página)
   const [page, setPage] = useState(1);
@@ -106,19 +135,69 @@ export function Prestadores() {
 
   useEffect(() => {
     setPage(1);
-  }, [field, query, tipoFiltro]);
+  }, [field, query, tipoFiltro, especialidadFiltro, localidadFiltro, estadoFiltro, centroFiltro]);
+
+  useEffect(() => {
+    setServerPage(1);
+  }, [field, query, tipoFiltro, especialidadFiltro, localidadFiltro, estadoFiltro, centroFiltro]);
 
   // Opciones por item
-  const handleOptionClick = (option: string, prestador: Prestador) => {
+  const handleOptionClick = async (option: string, prestador: Prestador) => {
     if (option === "Editar") {
       setEditingProvider(prestador);
       setOpenEditPopup(true);
     } else if (option === "Ver Detalles") {
-      setViewingProvider(prestador);
-      setOpenViewPopup(true);
+      try {
+        const providerDetail = await fetchProviderByCuit(prestador.cuitCuil);
+        setViewingProvider(providerDetail);
+        setOpenViewPopup(true);
+      } catch {
+        setViewingProvider(prestador);
+        setOpenViewPopup(true);
+      }
     } else if (option === "Dar de Baja") {
       setDeletingProvider(prestador);
       setOpenDeletePopup(true);
+    } else if (option === "Suspender") {
+      try {
+        await suspendProvider(prestador.cuitCuil);
+        await loadProviders();
+        showToast(`Prestador ${prestador.nombreCompleto} suspendido`);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Error al suspender prestador");
+      }
+    } else if (option === "Reactivar") {
+      try {
+        await reactivateProvider(prestador.cuitCuil);
+        await loadProviders();
+        showToast(`Prestador ${prestador.nombreCompleto} reactivado`);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Error al reactivar prestador");
+      }
+    } else if (option === "Resetear contraseña") {
+      try {
+        const result = await resetProviderPassword(prestador.cuitCuil);
+        await loadProviders();
+        showToast(result.temporaryPassword ? `Contraseña temporal: ${result.temporaryPassword}` : result.message);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Error al resetear contraseña");
+      }
+    } else if (option === "Reenviar credenciales") {
+      try {
+        const result = await resendProviderCredentials(prestador.cuitCuil);
+        await loadProviders();
+        showToast(result.message);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Error al reenviar credenciales");
+      }
+    } else if (option === "Forzar cambio de contraseña") {
+      try {
+        await forceProviderPasswordChange(prestador.cuitCuil);
+        await loadProviders();
+        showToast("Cambio de contraseña requerido en próximo ingreso");
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Error al forzar cambio de contraseña");
+      }
     }
   };
 
@@ -142,11 +221,11 @@ export function Prestadores() {
 
     try {
       await deleteProvider(deletingProvider.cuitCuil);
-      setPrestadores((prev) => prev.filter((p) => p.cuitCuil !== deletingProvider.cuitCuil));
+      await loadProviders();
       setOpenDeletePopup(false);
       setDeletingProvider(null);
       const deletedName = deletingProvider?.nombreCompleto ? ` ${deletingProvider.nombreCompleto}` : "";
-      showToast(`Proveedor${deletedName} eliminado correctamente`);
+      showToast(`Proveedor${deletedName} dado de baja correctamente`);
     } catch (err) {
       showToast("Error al eliminar el proveedor");
     }
@@ -204,6 +283,37 @@ export function Prestadores() {
         <ButtonAddAffiliate text="Agregar Prestador" onClick={handleAddProvider} />
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 rounded-md border border-gray-200 bg-white p-4 shadow-sm">
+        <input
+          value={especialidadFiltro}
+          onChange={(event) => setEspecialidadFiltro(event.target.value)}
+          placeholder="Especialidad"
+          className="h-10 rounded-md border border-gray-300 px-3 text-sm"
+        />
+        <input
+          value={localidadFiltro}
+          onChange={(event) => setLocalidadFiltro(event.target.value)}
+          placeholder="Localidad"
+          className="h-10 rounded-md border border-gray-300 px-3 text-sm"
+        />
+        <select
+          value={estadoFiltro}
+          onChange={(event) => setEstadoFiltro(event.target.value as "todos" | "activo" | "suspendido" | "baja")}
+          className="h-10 rounded-md border border-gray-300 px-3 text-sm"
+        >
+          <option value="todos">Todos los estados</option>
+          <option value="activo">Activos</option>
+          <option value="suspendido">Suspendidos</option>
+          <option value="baja">Dados de baja</option>
+        </select>
+        <input
+          value={centroFiltro}
+          onChange={(event) => setCentroFiltro(event.target.value)}
+          placeholder="CUIT centro médico"
+          className="h-10 rounded-md border border-gray-300 px-3 text-sm"
+        />
+      </div>
+
       {/* DESKTOP: tabla (igual que antes) */}
       {loading ? (
         <div className="flex justify-center items-center h-64">
@@ -222,8 +332,31 @@ export function Prestadores() {
             <ProvidersTable
               prestadores={filtered}
               onOptionClick={handleOptionClick}
-              pageSize={5}
+              pageSize={serverPageSize}
+              showPagination={false}
             />
+            <div className="flex items-center justify-between bg-white px-4 py-3 border-t border-gray-200">
+              <span className="text-sm text-gray-600">
+                Mostrando {prestadores.length} de {serverTotal} prestadores
+              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-700">Página {serverPage} de {serverTotalPages}</span>
+                <button
+                  onClick={() => setServerPage((p) => Math.max(1, p - 1))}
+                  disabled={serverPage <= 1}
+                  className="h-8 w-8 rounded border border-gray-300 disabled:opacity-50"
+                >
+                  ‹
+                </button>
+                <button
+                  onClick={() => setServerPage((p) => Math.min(serverTotalPages, p + 1))}
+                  disabled={serverPage >= serverTotalPages}
+                  className="h-8 w-8 rounded border border-gray-300 disabled:opacity-50"
+                >
+                  ›
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* MOBILE: cards + paginación */}

@@ -1,12 +1,21 @@
-import type { Prestador } from "../model/Provider.model";
+import type { Prestador, ProviderFilters, ProviderPage } from "../model/Provider.model";
 import { API_BASE_URL, apiFetch } from "../config/api";
+
+const buildProviderQuery = (filters: ProviderFilters = {}) => {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value && value !== "todos") params.set(key, String(value));
+  });
+  const query = params.toString();
+  return query ? `?${query}` : "";
+};
 
 /**
  * Obtiene la lista completa de proveedores desde el back-end
  */
-export const fetchProviders = async (): Promise<Prestador[]> => {
+export const fetchProviders = async (filters: ProviderFilters = {}): Promise<Prestador[]> => {
   try {
-    const response = await apiFetch(`${API_BASE_URL}/providers`);
+    const response = await apiFetch(`${API_BASE_URL}/providers${buildProviderQuery(filters)}`);
 
     if (!response.ok) {
       throw new Error(`Error al obtener proveedores: ${response.status}`);
@@ -21,6 +30,27 @@ export const fetchProviders = async (): Promise<Prestador[]> => {
   } catch (error) {
     throw error;
   }
+};
+
+export const fetchProvidersPage = async (filters: ProviderFilters = {}): Promise<ProviderPage> => {
+  const response = await apiFetch(`${API_BASE_URL}/providers${buildProviderQuery(filters)}`);
+
+  if (!response.ok) {
+    throw new Error(`Error al obtener proveedores: ${response.status}`);
+  }
+
+  const data = await response.json();
+  if (Array.isArray(data)) {
+    return {
+      data,
+      total: data.length,
+      page: Number(filters.page || 1),
+      limit: Number(filters.limit || data.length || 20),
+      totalPages: 1,
+    };
+  }
+
+  return data;
 };
 
 export async function checkProviderSpecialtyAgendas(
@@ -92,7 +122,10 @@ export const createProvider = async (provider: Omit<Prestador, "lugarAtencion"> 
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || `Error al crear proveedor`);
+      const details = Array.isArray(errorData.details)
+        ? `: ${errorData.details.map((d: any) => d.message).join(", ")}`
+        : "";
+      throw new Error(`${errorData.error || errorData.message || `Error al crear proveedor`}${details}`);
     }
 
     const data = await response.json();
@@ -150,3 +183,48 @@ export const deleteProvider = async (cuitCuil: string): Promise<void> => {
     throw error;
   }
 };
+
+async function providerAction(cuitCuil: string, action: string, body?: unknown) {
+  const response = await apiFetch(`${API_BASE_URL}/providers/${cuitCuil}/${action}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || `Error en acción de proveedor (${response.status})`);
+  }
+
+  return response.json();
+}
+
+async function providerPutAction(cuitCuil: string, action: string, body?: unknown): Promise<Prestador> {
+  const response = await apiFetch(`${API_BASE_URL}/providers/${cuitCuil}/${action}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || `Error en acción de proveedor (${response.status})`);
+  }
+
+  return response.json();
+}
+
+export const suspendProvider = (cuitCuil: string, motivo?: string): Promise<Prestador> =>
+  providerPutAction(cuitCuil, "suspend", { motivo });
+
+export const reactivateProvider = (cuitCuil: string): Promise<Prestador> =>
+  providerPutAction(cuitCuil, "reactivate");
+
+export const resetProviderPassword = (cuitCuil: string): Promise<{ message: string; temporaryPassword?: string }> =>
+  providerAction(cuitCuil, "reset-password");
+
+export const resendProviderCredentials = (cuitCuil: string): Promise<{ message: string }> =>
+  providerAction(cuitCuil, "resend-credentials");
+
+export const forceProviderPasswordChange = (cuitCuil: string): Promise<Prestador> =>
+  providerAction(cuitCuil, "force-password-change");

@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Prestador, PrestadorTipo, LugarAtencion, DiaSemana } from "../model/Provider.model";
+import type { PrestadorTipo, LugarAtencion, DiaSemana } from "../model/Provider.model";
 import { ButtonVolver } from "../util/ButtonVolver";
 import Toast from "../components/Toast";
 import { API_BASE_URL, apiFetch } from "../config/api";
+import { firstProviderValidationMessage, validateProviderPayload } from "../utils/providerValidation";
 
 type BloqueHorario = { dias: DiaSemana[]; desde: string; hasta: string };
 
@@ -141,126 +142,39 @@ export function AddProvider() {
     cargarDatos();
   }, []);
 
-  const diasSemana: { label: string; id: DiaSemana }[] = [
-    { id: "Lunes", label: "Lun" },
-    { id: "Martes", label: "Mar" },
-    { id: "Miércoles", label: "Mié" },
-    { id: "Jueves", label: "Jue" },
-    { id: "Viernes", label: "Vie" },
-    { id: "Sábado", label: "Sáb" },
-    { id: "Domingo", label: "Dom" },
-  ];
-
-  const addBloque = (lugarIdx: number) => {
-    const nuevas = [...lugaresAtencion];
-    (nuevas[lugarIdx].horarios as unknown as BloqueHorario[]).push({ dias: [], desde: "", hasta: "" });
-    setLugaresAtencion(nuevas);
-  };
-
-  const removeBloque = (lugarIdx: number, bloqueIdx: number) => {
-    const nuevas = [...lugaresAtencion];
-    const hs = nuevas[lugarIdx].horarios as unknown as BloqueHorario[];
-    hs.splice(bloqueIdx, 1);
-    if (hs.length === 0) hs.push({ dias: [], desde: "", hasta: "" });
-    setLugaresAtencion(nuevas);
-  };
-
-  const toggleDia = (lugarIdx: number, bloqueIdx: number, dia: DiaSemana) => {
-    const nuevas = [...lugaresAtencion];
-    const hs = nuevas[lugarIdx].horarios as unknown as BloqueHorario[];
-    const bloque = hs[bloqueIdx] || { dias: [], desde: "", hasta: "" };
-    const esta = bloque.dias.includes(dia);
-    bloque.dias = esta ? bloque.dias.filter((d) => d !== dia) : [...bloque.dias, dia];
-    hs[bloqueIdx] = bloque;
-    setLugaresAtencion(nuevas);
-  };
-
-  const setDesde = (lugarIdx: number, bloqueIdx: number, value: string) => {
-    const nuevas = [...lugaresAtencion];
-    const hs = nuevas[lugarIdx].horarios as unknown as BloqueHorario[];
-    hs[bloqueIdx] = hs[bloqueIdx] || { dias: [], desde: "", hasta: "" };
-    hs[bloqueIdx].desde = value;
-    setLugaresAtencion(nuevas);
-  };
-
-  const setHasta = (lugarIdx: number, bloqueIdx: number, value: string) => {
-    const nuevas = [...lugaresAtencion];
-    const hs = nuevas[lugarIdx].horarios as unknown as BloqueHorario[];
-    hs[bloqueIdx] = hs[bloqueIdx] || { dias: [], desde: "", hasta: "" };
-    hs[bloqueIdx].hasta = value;
-    setLugaresAtencion(nuevas);
-  };
-
   const handleGuardar = async () => {
-    if (!tipo) return setError("Debe seleccionar si es profesional o centro médico.");
-    if (!cuilCuit.trim() || !nombreCompleto.trim())
-      return setError("Complete el CUIL/CUIL y el nombre completo.");
-
-    // Validar formato CUIT/CUIL (XX-XXXXXXXX-X o similar)
-    const cuitRegex = /^[0-9]{1,2}-?[0-9]{6,8}-?[0-9]{1}$/;
-    if (!cuitRegex.test(cuilCuit)) {
-      return setError("Formato de CUIT/CUIL inválido. Ej: 20-31216123-0");
-    }
-
     const especialidadesValidas = especialidades.filter(id => id > 0);
-    if (especialidadesValidas.length === 0)
-      return setError("Debe seleccionar al menos una especialidad.");
-
-    if (lugaresAtencion.length === 0 || lugaresAtencion.some(l => !l.calle.trim() || !l.localidad?.trim() || !l.provincia?.trim() || !l.cp.trim()))
-      return setError("Complete todos los datos de los lugares de atención.");
-
-    // Validar teléfonos
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const newTelefonoErrors: string[] = [];
-    const newEmailErrors: string[] = [];
-    let hasErrors = false;
-
-    telefonos.forEach((tel, idx) => {
-      if (tel.trim()) {
-        const digitsOnly = tel.replace(/\D/g, '');
-        if (!/^[0-9]{7,15}$/.test(digitsOnly)) {
-          newTelefonoErrors[idx] = "El teléfono debe tener entre 7 y 15 dígitos";
-          hasErrors = true;
-        } else {
-          newTelefonoErrors[idx] = "";
-        }
-      } else {
-        newTelefonoErrors[idx] = "";
-      }
+    const telefonosValidos = telefonos.filter(t => t.trim() !== "");
+    const emailsValidos = mails.filter(e => e.trim() !== "");
+    const validationErrors = validateProviderPayload({
+      cuitCuil: cuilCuit,
+      nombreCompleto,
+      tipoPrestador: tipo,
+      especialidades: especialidadesValidas,
+      telefonos: telefonosValidos,
+      mails: emailsValidos,
+      lugaresAtencion,
     });
 
-    mails.forEach((email, idx) => {
-      if (email.trim()) {
-        if (!emailRegex.test(email)) {
-          newEmailErrors[idx] = "Formato de email inválido";
-          hasErrors = true;
-        } else {
-          newEmailErrors[idx] = "";
-        }
-      } else {
-        newEmailErrors[idx] = "";
-      }
+    const newTelefonoErrors: string[] = [];
+    const newEmailErrors: string[] = [];
+    telefonos.forEach((_, idx) => {
+      newTelefonoErrors[idx] = validationErrors.some((err) => err.field === `telefonos.${idx}`)
+        ? "El teléfono debe tener entre 7 y 15 dígitos"
+        : "";
+    });
+
+    mails.forEach((_, idx) => {
+      newEmailErrors[idx] = validationErrors.some((err) => err.field === `mails.${idx}`)
+        ? "Formato de email inválido"
+        : "";
     });
 
     setTelefonoErrors(newTelefonoErrors);
     setEmailErrors(newEmailErrors);
 
-    if (hasErrors) {
-      setError("Corrija los errores en teléfonos y emails antes de continuar.");
-      return;
-    }
-
-    // Validar que haya al menos un teléfono válido
-    const telefonosValidos = telefonos.filter(t => t.trim() !== "");
-    if (telefonosValidos.length === 0) {
-      setError("Debe ingresar al menos un teléfono.");
-      return;
-    }
-
-    // Validar que haya al menos un email válido
-    const emailsValidos = mails.filter(e => e.trim() !== "");
-    if (emailsValidos.length === 0) {
-      setError("Debe ingresar al menos un email.");
+    if (validationErrors.length > 0) {
+      setError(firstProviderValidationMessage(validationErrors));
       return;
     }
 

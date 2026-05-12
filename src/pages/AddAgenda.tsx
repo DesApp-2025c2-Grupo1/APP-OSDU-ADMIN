@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { fetchProviders } from "../api/providerService";
-import { fetchSpecialties } from "../api/specialtyService";
 import { createAgenda } from "../api/agendaService";
 
 type DiaSemana = "Lunes" | "Martes" | "Miercoles" | "Jueves" | "Viernes" | "Sabado" | "Domingo";
@@ -20,7 +19,6 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [prestadores, setPrestadores] = useState<any[]>([]);
-  const [especialidades, setEspecialidades] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     prestadorId: "",
@@ -49,13 +47,8 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
   useEffect(() => {
     const cargarDatos = async () => {
       try {
-        const [prestadoresData, especialidadesData] = await Promise.all([
-          fetchProviders(),
-          fetchSpecialties()
-        ]);
-
+        const prestadoresData = await fetchProviders();
         setPrestadores(prestadoresData);
-        setEspecialidades(especialidadesData);
       } catch (err) {
         setError("No se pudieron cargar los datos iniciales");
       }

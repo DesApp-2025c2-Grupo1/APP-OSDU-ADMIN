@@ -199,7 +199,7 @@ export function GrupoFamiliar() {
         throw new Error(errorData.message || "Error al agregar familiar");
       }
 
-      const result = await response.json();
+      await response.json();
 
       await fetchFamilyGroup();
       setShowAddFamiliarPopup(false);
@@ -671,7 +671,7 @@ interface Situacion {
   fechaFinalizacion: string;
 }
 
-function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, titular, onClose, onSave }: AddFamiliarPopupProps) {
+function AddFamiliarPopup({ planFijo, titular, onClose, onSave }: AddFamiliarPopupProps) {
   const [formData, setFormData] = useState({
     tipoDocumento: "DNI",
     nroDocumento: "",
