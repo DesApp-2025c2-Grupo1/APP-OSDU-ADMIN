@@ -117,7 +117,7 @@ export function AddProvider() {
     const cargarDatos = async () => {
       try {
         // Cargar centros médicos
-        const resCentros = await apiFetch(`${API_BASE_URL}/providers/`);
+        const resCentros = await apiFetch(`${API_BASE_URL}/prestadores/`);
         const dataCentros = await resCentros.json();
         const centrosMedicos = dataCentros.filter((p: any) => p.tipoPrestador === "centro_medico");
         setCentros(centrosMedicos);
@@ -205,7 +205,7 @@ export function AddProvider() {
         ...(tipo === "profesional" && integraCentro && { centroMedicoId: integraCentro })
       };
 
-      const res = await apiFetch(`${API_BASE_URL}/providers/`, {
+      const res = await apiFetch(`${API_BASE_URL}/prestadores/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

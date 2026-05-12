@@ -11,14 +11,14 @@ const buildProviderQuery = (filters: ProviderFilters = {}) => {
 };
 
 /**
- * Obtiene la lista completa de proveedores desde el back-end
+ * Obtiene la lista completa de prestadores desde el back-end
  */
 export const fetchProviders = async (filters: ProviderFilters = {}): Promise<Prestador[]> => {
   try {
-    const response = await apiFetch(`${API_BASE_URL}/providers${buildProviderQuery(filters)}`);
+    const response = await apiFetch(`${API_BASE_URL}/prestadores${buildProviderQuery(filters)}`);
 
     if (!response.ok) {
-      throw new Error(`Error al obtener proveedores: ${response.status}`);
+      throw new Error(`Error al obtener prestadores: ${response.status}`);
     }
 
     const data = await response.json();
@@ -33,10 +33,10 @@ export const fetchProviders = async (filters: ProviderFilters = {}): Promise<Pre
 };
 
 export const fetchProvidersPage = async (filters: ProviderFilters = {}): Promise<ProviderPage> => {
-  const response = await apiFetch(`${API_BASE_URL}/providers${buildProviderQuery(filters)}`);
+  const response = await apiFetch(`${API_BASE_URL}/prestadores${buildProviderQuery(filters)}`);
 
   if (!response.ok) {
-    throw new Error(`Error al obtener proveedores: ${response.status}`);
+    throw new Error(`Error al obtener prestadores: ${response.status}`);
   }
 
   const data = await response.json();
@@ -59,7 +59,7 @@ export async function checkProviderSpecialtyAgendas(
 ): Promise<{ agendas: any[]; count: number }> {
   try {
     const response = await apiFetch(
-      `${API_BASE_URL}/providers/${cuitCuil}/agendas-by-specialty?specialtyId=${specialtyId}`
+      `${API_BASE_URL}/prestadores/${cuitCuil}/agendas-by-specialty?specialtyId=${specialtyId}`
     );
 
     if (!response.ok) {
@@ -77,7 +77,7 @@ export async function checkProviderPlaceAgendas(
 ): Promise<{ agendas: any[]; count: number }> {
   try {
     const response = await apiFetch(
-      `${API_BASE_URL}/providers/${cuitCuil}/agendas-by-places`
+      `${API_BASE_URL}/prestadores/${cuitCuil}/agendas-by-places`
     );
 
     if (!response.ok) {
@@ -92,14 +92,14 @@ export async function checkProviderPlaceAgendas(
 
 
 /**
- * Obtiene un proveedor específico por CUIT/CUIL
+ * Obtiene un prestador específico por CUIT/CUIL
  */
 export const fetchProviderByCuit = async (cuitCuil: string): Promise<Prestador> => {
   try {
-    const response = await apiFetch(`${API_BASE_URL}/providers/${cuitCuil}`);
+    const response = await apiFetch(`${API_BASE_URL}/prestadores/${cuitCuil}`);
 
     if (!response.ok) {
-      throw new Error(`Proveedor no encontrado: ${cuitCuil}`);
+      throw new Error(`Prestador no encontrado: ${cuitCuil}`);
     }
 
     const data = await response.json();
@@ -110,11 +110,11 @@ export const fetchProviderByCuit = async (cuitCuil: string): Promise<Prestador> 
 };
 
 /**
- * Crea un nuevo proveedor
+ * Crea un nuevo prestador
  */
 export const createProvider = async (provider: Omit<Prestador, "lugarAtencion"> & { lugarAtencion?: any }): Promise<Prestador> => {
   try {
-    const response = await apiFetch(`${API_BASE_URL}/providers`, {
+    const response = await apiFetch(`${API_BASE_URL}/prestadores`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(provider),
@@ -125,7 +125,7 @@ export const createProvider = async (provider: Omit<Prestador, "lugarAtencion"> 
       const details = Array.isArray(errorData.details)
         ? `: ${errorData.details.map((d: any) => d.message).join(", ")}`
         : "";
-      throw new Error(`${errorData.error || errorData.message || `Error al crear proveedor`}${details}`);
+      throw new Error(`${errorData.error || errorData.message || `Error al crear prestador`}${details}`);
     }
 
     const data = await response.json();
@@ -136,12 +136,12 @@ export const createProvider = async (provider: Omit<Prestador, "lugarAtencion"> 
 };
 
 /**
- * Actualiza un proveedor existente
+ * Actualiza un prestador existente
  */
 export const updateProvider = async (cuitCuil: string, updates: Partial<Prestador>): Promise<Prestador> => {
   try {
 
-    const response = await apiFetch(`${API_BASE_URL}/providers/${cuitCuil}`, {
+    const response = await apiFetch(`${API_BASE_URL}/prestadores/${cuitCuil}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
@@ -157,7 +157,7 @@ export const updateProvider = async (cuitCuil: string, updates: Partial<Prestado
         throw new Error(`Error de validación: ${errorMessages}`);
       }
 
-      throw new Error(errorData.error || errorData.message || `Error al actualizar proveedor (${response.status})`);
+      throw new Error(errorData.error || errorData.message || `Error al actualizar prestador (${response.status})`);
     }
 
     const data = await response.json();
@@ -168,16 +168,19 @@ export const updateProvider = async (cuitCuil: string, updates: Partial<Prestado
 };
 
 /**
- * Elimina un proveedor
+ * Da de baja un prestador
  */
-export const deleteProvider = async (cuitCuil: string): Promise<void> => {
+export const deleteProvider = async (cuitCuil: string, motivo: string): Promise<void> => {
   try {
-    const response = await apiFetch(`${API_BASE_URL}/providers/${cuitCuil}`, {
+    const response = await apiFetch(`${API_BASE_URL}/prestadores/${cuitCuil}`, {
       method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ motivo }),
     });
 
     if (!response.ok && response.status !== 204) {
-      throw new Error(`Error al eliminar proveedor: ${cuitCuil}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || errorData.message || `Error al dar de baja prestador: ${cuitCuil}`);
     }
   } catch (error) {
     throw error;
@@ -185,7 +188,7 @@ export const deleteProvider = async (cuitCuil: string): Promise<void> => {
 };
 
 async function providerAction(cuitCuil: string, action: string, body?: unknown) {
-  const response = await apiFetch(`${API_BASE_URL}/providers/${cuitCuil}/${action}`, {
+  const response = await apiFetch(`${API_BASE_URL}/prestadores/${cuitCuil}/${action}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
@@ -193,14 +196,14 @@ async function providerAction(cuitCuil: string, action: string, body?: unknown) 
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || errorData.message || `Error en acción de proveedor (${response.status})`);
+    throw new Error(errorData.error || errorData.message || `Error en acción de prestador (${response.status})`);
   }
 
   return response.json();
 }
 
 async function providerPutAction(cuitCuil: string, action: string, body?: unknown): Promise<Prestador> {
-  const response = await apiFetch(`${API_BASE_URL}/providers/${cuitCuil}/${action}`, {
+  const response = await apiFetch(`${API_BASE_URL}/prestadores/${cuitCuil}/${action}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
@@ -208,7 +211,7 @@ async function providerPutAction(cuitCuil: string, action: string, body?: unknow
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || errorData.message || `Error en acción de proveedor (${response.status})`);
+    throw new Error(errorData.error || errorData.message || `Error en acción de prestador (${response.status})`);
   }
 
   return response.json();

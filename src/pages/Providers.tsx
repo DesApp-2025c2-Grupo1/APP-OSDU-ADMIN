@@ -58,6 +58,8 @@ export function Prestadores() {
   const [openViewPopup, setOpenViewPopup] = useState(false);
   const [deletingProvider, setDeletingProvider] = useState<Prestador | null>(null);
   const [openDeletePopup, setOpenDeletePopup] = useState(false);
+  const [suspendingProvider, setSuspendingProvider] = useState<Prestador | null>(null);
+  const [openSuspendPopup, setOpenSuspendPopup] = useState(false);
 
   const providerFilters = useMemo<ProviderFilters>(() => {
     const filters: ProviderFilters = {
@@ -85,7 +87,7 @@ export function Prestadores() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // 🔹 Carga de proveedores desde API
+  // Carga de prestadores desde API
   const loadProviders = async (filters = providerFilters) => {
     try {
       setLoading(true);
@@ -95,13 +97,13 @@ export function Prestadores() {
       setServerTotal(pageData.total);
       setServerTotalPages(pageData.totalPages);
     } catch (err) {
-      setError("No se pudieron cargar los proveedores");
+      setError("No se pudieron cargar los prestadores");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 Cargar proveedores al montar el componente
+  // Cargar prestadores al montar el componente
   useEffect(() => {
     loadProviders(providerFilters);
   }, [providerFilters]);
@@ -159,13 +161,8 @@ export function Prestadores() {
       setDeletingProvider(prestador);
       setOpenDeletePopup(true);
     } else if (option === "Suspender") {
-      try {
-        await suspendProvider(prestador.cuitCuil);
-        await loadProviders();
-        showToast(`Prestador ${prestador.nombreCompleto} suspendido`);
-      } catch (err) {
-        showToast(err instanceof Error ? err.message : "Error al suspender prestador");
-      }
+      setSuspendingProvider(prestador);
+      setOpenSuspendPopup(true);
     } else if (option === "Reactivar") {
       try {
         await reactivateProvider(prestador.cuitCuil);
@@ -207,27 +204,41 @@ export function Prestadores() {
       setOpenEditPopup(false);
       setEditingProvider(null);
 
-      // Recargar la lista de proveedores desde el API
+      // Recargar la lista de prestadores desde el API
       await loadProviders();
       const updatedName = updated?.nombreCompleto ? ` ${updated.nombreCompleto}` : "";
-      showToast(`Proveedor${updatedName} actualizado correctamente`);
+      showToast(`Prestador${updatedName} actualizado correctamente`);
     } catch (err) {
-      showToast("Error al actualizar el proveedor");
+      showToast("Error al actualizar el prestador");
     }
   };
 
-  const handleDeleteProvider = async () => {
+  const handleDeleteProvider = async (motivo: string) => {
     if (!deletingProvider) return;
 
     try {
-      await deleteProvider(deletingProvider.cuitCuil);
+      await deleteProvider(deletingProvider.cuitCuil, motivo);
       await loadProviders();
       setOpenDeletePopup(false);
       setDeletingProvider(null);
       const deletedName = deletingProvider?.nombreCompleto ? ` ${deletingProvider.nombreCompleto}` : "";
-      showToast(`Proveedor${deletedName} dado de baja correctamente`);
+      showToast(`Prestador${deletedName} dado de baja correctamente`);
     } catch (err) {
-      showToast("Error al eliminar el proveedor");
+      showToast(err instanceof Error ? err.message : "Error al dar de baja el prestador");
+    }
+  };
+
+  const handleSuspendProvider = async (motivo: string) => {
+    if (!suspendingProvider) return;
+
+    try {
+      await suspendProvider(suspendingProvider.cuitCuil, motivo);
+      await loadProviders();
+      setOpenSuspendPopup(false);
+      setSuspendingProvider(null);
+      showToast(`Prestador ${suspendingProvider.nombreCompleto} suspendido`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Error al suspender prestador");
     }
   };
 
@@ -319,7 +330,7 @@ export function Prestadores() {
         <div className="flex justify-center items-center h-64">
           <div className="flex flex-col items-center">
             <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
-            <p className="text-gray-600 text-sm font-medium">Cargando proveedores...</p>
+            <p className="text-gray-600 text-sm font-medium">Cargando prestadores...</p>
           </div>
         </div>
       ) : error ? (
@@ -466,6 +477,16 @@ export function Prestadores() {
               provider={deletingProvider}
               onClose={() => setOpenDeletePopup(false)}
               onConfirm={handleDeleteProvider}
+            />
+          )}
+
+          {openSuspendPopup && suspendingProvider && (
+            <ConfirmDeleteProviderDialog
+              open={openSuspendPopup}
+              provider={suspendingProvider}
+              action="suspension"
+              onClose={() => setOpenSuspendPopup(false)}
+              onConfirm={handleSuspendProvider}
             />
           )}
 

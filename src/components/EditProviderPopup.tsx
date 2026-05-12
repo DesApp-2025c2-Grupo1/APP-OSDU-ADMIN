@@ -52,7 +52,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
     const cargarDatos = async () => {
       try {
         // Cargar centros médicos
-        const resCentros = await apiFetch(`${API_BASE_URL}/providers/`);
+        const resCentros = await apiFetch(`${API_BASE_URL}/prestadores/`);
         const dataCentros = await resCentros.json();
         const centros = dataCentros.filter((p: any) => p.tipoPrestador === "centro_medico");
         setCentrosMedicos(centros);

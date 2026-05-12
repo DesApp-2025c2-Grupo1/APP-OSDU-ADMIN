@@ -15,7 +15,7 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
     const cargarCentros = async () => {
       try {
         if (!provider.centroMedico?.nombreCompleto && provider.tipoPrestador === "profesional" && provider.centroMedicoId) {
-          const response = await apiFetch(`${API_BASE_URL}/providers`);
+          const response = await apiFetch(`${API_BASE_URL}/prestadores`);
           const data = await response.json();
           const centros = Array.isArray(data) ? data : (data.data || []);
 
