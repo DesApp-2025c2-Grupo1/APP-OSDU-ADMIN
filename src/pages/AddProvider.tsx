@@ -129,7 +129,7 @@ export function AddProvider() {
         // El backend puede devolver { especialidades: [...] } o array directo
         const especialidadesArray = dataEsp.especialidades || dataEsp || [];
         setEspecialidadesDisponibles(especialidadesArray.map((e: any) => ({
-          id: e.idEspecialidad,
+          id: e.id,
           nombre: e.nombre
         })));
       } catch (err) {
@@ -311,14 +311,14 @@ export function AddProvider() {
       setLoading(false);
     }
   }; return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
-      <h1 className="text-2xl font-bold text-[#14B8A6] mb-4">Agregar Prestador</h1>
-      <div className="flex items-center gap-2 ">
-        <ButtonVolver text="Volver" onClick={() => navigate("/prestadores")} />
+    <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm max-w-5xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-700 text-slate-800 mb-2">Agregar Prestador</h1>
+        <p className="text-sm text-slate-400">Completa los datos del nuevo prestador</p>
       </div>
       {/* Selección tipo */}
       <div className="mb-6">
-        <label className="block mt-2 text-lg  text-gray-700 mb-2">Tipo de Prestador</label>
+        <label className="block text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">Tipo de Prestador</label>
         <div className="flex gap-6">
           <label className="flex items-center gap-2">
             <input
@@ -327,8 +327,9 @@ export function AddProvider() {
               value="profesional"
               checked={tipo === "profesional"}
               onChange={() => setTipo("profesional")}
+              className="w-4 h-4"
             />
-            Profesional
+            <span className="text-sm text-slate-700">Profesional</span>
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -337,8 +338,9 @@ export function AddProvider() {
               value="centro_medico"
               checked={tipo === "centro_medico"}
               onChange={() => setTipo("centro_medico")}
+              className="w-4 h-4"
             />
-            Centro Médico
+            <span className="text-sm text-slate-700">Centro Médico</span>
           </label>
         </div>
       </div>
@@ -346,49 +348,51 @@ export function AddProvider() {
       {tipo && (
         <>
           {/* Campos generales */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">CUIL / CUIT</label>
-              <input
-                type="text"
-                value={cuilCuit}
-                onChange={(e) => setCuilCuit(formatCuil(e.target.value))}
-                placeholder="20-12345678-3"
-                className="border border-gray-300 rounded-lg px-3 py-2 w-full"
-              />
-            </div>
+          <div className="mb-6">
+            <h2 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">Datos principales</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-600 text-slate-600 mb-2">CUIL / CUIT</label>
+                <input
+                  type="text"
+                  value={cuilCuit}
+                  onChange={(e) => setCuilCuit(formatCuil(e.target.value))}
+                  placeholder="20-12345678-3"
+                  className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
-              <input
-                type="text"
-                value={nombreCompleto}
-                onChange={(e) => setNombreCompleto(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 w-full"
-              />
+              <div>
+                <label className="block text-xs font-600 text-slate-600 mb-2">Nombre Completo</label>
+                <input
+                  type="text"
+                  value={nombreCompleto}
+                  onChange={(e) => setNombreCompleto(e.target.value)}
+                  className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
+                />
+              </div>
             </div>
           </div>
 
           {/* Especialidades */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Especialidades</label>
+            <h2 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">Especialidades</h2>
             {especialidades.map((esp, i) => (
-              <div key={i} className="flex gap-2 mb-2">
+              <div key={i} className="flex gap-2 mb-3">
                 <select
-                  value={esp}
+                  value={String(esp)}
                   onChange={(e) => handleEspecialidadChange(i, parseInt(e.target.value))}
-                  className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                  className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700"
                   disabled={loadingEspecialidades}
                 >
-                  <option value={0}>-- Seleccionar --</option>
+                  <option value="">-- Seleccionar --</option>
                   {especialidadesDisponibles.map((s) => {
                     const yaSeleccionada = especialidades.some((e, idx) => idx !== i && e === s.id);
                     return (
                       <option
                         key={s.id}
-                        value={s.id}
+                        value={String(s.id)}
                         disabled={yaSeleccionada}
-                        style={{ color: yaSeleccionada ? '#ccc' : 'inherit' }}
                       >
                         {s.nombre} {yaSeleccionada ? '(ya seleccionada)' : ''}
                       </option>
@@ -400,7 +404,7 @@ export function AddProvider() {
                   <button
                     type="button"
                     onClick={() => handleEliminarEspecialidad(i)}
-                    className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
+                    className="px-3 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors text-sm font-600"
                   >
                     X
                   </button>
@@ -410,22 +414,22 @@ export function AddProvider() {
             <button
               type="button"
               onClick={handleAgregarEspecialidad}
-              className="text-[#14B8A6] text-sm font-semibold hover:underline"
+              className="flex items-center gap-1.5 text-teal-600 text-sm font-600 hover:text-teal-700 transition-colors"
               disabled={especialidades.length >= especialidadesDisponibles.length}
             >
-              + Agregar otra especialidad
+              + Agregar especialidad
             </button>
           </div>
           {/* Centro médico (solo profesionales) */}
           {tipo === "profesional" && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-600 text-slate-600 mb-2">
                 ¿Pertenece a un centro médico?
               </label>
               <select
                 value={integraCentro}
                 onChange={(e) => setIntegraCentro(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700"
               >
                 <option value="">No pertenece</option>
                 {centros.map((c) => (
@@ -436,127 +440,130 @@ export function AddProvider() {
           )}
 
           {/* Teléfonos y Emails */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfonos</label>
-              {telefonos.map((t, i) => (
-                <div key={i} className="flex flex-col gap-1 mb-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={t}
-                      onChange={(e) => {
-                        const arr = [...telefonos];
-                        arr[i] = e.target.value;
-                        setTelefonos(arr);
-                        // Limpiar error al cambiar
-                        const errors = [...telefonoErrors];
-                        errors[i] = "";
-                        setTelefonoErrors(errors);
-                      }}
-                      placeholder="Ej: 011 4444-5555 o 1234567890"
-                      className={`border rounded-lg px-3 py-2 w-full ${telefonoErrors[i] ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                    />
-                    {telefonos.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleEliminarTelefono(i)}
-                        className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
-                      >
-                        X
-                      </button>
+          <div className="mb-6">
+            <h2 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">Contacto</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs font-600 text-slate-600 mb-2">Teléfonos</label>
+                {telefonos.map((t, i) => (
+                  <div key={i} className="flex flex-col gap-2 mb-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={t}
+                        onChange={(e) => {
+                          const arr = [...telefonos];
+                          arr[i] = e.target.value;
+                          setTelefonos(arr);
+                          // Limpiar error al cambiar
+                          const errors = [...telefonoErrors];
+                          errors[i] = "";
+                          setTelefonoErrors(errors);
+                        }}
+                        placeholder="Ej: 011 4444-5555 o 1234567890"
+                        className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400 ${telefonoErrors[i] ? 'border-red-500' : 'border-slate-200'
+                          }`}
+                      />
+                      {telefonos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleEliminarTelefono(i)}
+                          className="px-3 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors text-sm font-600"
+                        >
+                          X
+                        </button>
+                      )}
+                    </div>
+                    {telefonoErrors[i] && (
+                      <p className="text-red-500 text-xs">{telefonoErrors[i]}</p>
                     )}
                   </div>
-                  {telefonoErrors[i] && (
-                    <p className="text-red-500 text-xs">{telefonoErrors[i]}</p>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={handleAgregarTelefono}
-                className="text-[#14B8A6] text-sm font-semibold"
-              >
-                + Agregar otro teléfono
-              </button>
-            </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAgregarTelefono}
+                  className="flex items-center gap-1.5 text-teal-600 text-sm font-600 hover:text-teal-700 transition-colors"
+                >
+                  + Agregar teléfono
+                </button>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Emails</label>
-              {mails.map((em, i) => (
-                <div key={i} className="flex flex-col gap-1 mb-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      value={em}
-                      onChange={(e) => {
-                        const arr = [...mails];
-                        arr[i] = e.target.value;
-                        setMails(arr);
-                        // Limpiar error al cambiar
-                        const errors = [...emailErrors];
-                        errors[i] = "";
-                        setEmailErrors(errors);
-                      }}
-                      placeholder="ejemplo@correo.com"
-                      className={`border rounded-lg px-3 py-2 w-full ${emailErrors[i] ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                    />
-                    {mails.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleEliminarEmail(i)}
-                        className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
-                      >
-                        X
-                      </button>
+              <div>
+                <label className="block text-xs font-600 text-slate-600 mb-2">Emails</label>
+                {mails.map((em, i) => (
+                  <div key={i} className="flex flex-col gap-2 mb-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={em}
+                        onChange={(e) => {
+                          const arr = [...mails];
+                          arr[i] = e.target.value;
+                          setMails(arr);
+                          // Limpiar error al cambiar
+                          const errors = [...emailErrors];
+                          errors[i] = "";
+                          setEmailErrors(errors);
+                        }}
+                        placeholder="ejemplo@correo.com"
+                        className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400 ${emailErrors[i] ? 'border-red-500' : 'border-slate-200'
+                          }`}
+                      />
+                      {mails.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleEliminarEmail(i)}
+                          className="px-3 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors text-sm font-600"
+                        >
+                          X
+                        </button>
+                      )}
+                    </div>
+                    {emailErrors[i] && (
+                      <p className="text-red-500 text-xs">{emailErrors[i]}</p>
                     )}
                   </div>
-                  {emailErrors[i] && (
-                    <p className="text-red-500 text-xs">{emailErrors[i]}</p>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={handleAgregarEmail}
-                className="text-[#14B8A6] text-sm font-semibold"
-              >
-                + Agregar otro email
-              </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAgregarEmail}
+                  className="flex items-center gap-1.5 text-teal-600 text-sm font-600 hover:text-teal-700 transition-colors"
+                >
+                  + Agregar email
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Lugares de Atención */}
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3 text-gray-700">Lugares de Atención</h2>
+            <h2 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">Lugares de Atención</h2>
             {lugaresAtencion.map((lugar, idx) => (
-              <div key={idx} className="border rounded-lg p-4 mb-4 bg-gray-50">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div key={idx} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
                   <input
                     placeholder="Calle"
                     value={lugar.calle}
                     onChange={(e) => handleLugarChange(idx, "calle", e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                    className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                   />
                   <input
                     placeholder="Localidad"
                     value={lugar.localidad || ""}
                     onChange={(e) => handleLugarChange(idx, "localidad", e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                    className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                   />
                   <input
                     placeholder="Provincia"
                     value={lugar.provincia || ""}
                     onChange={(e) => handleLugarChange(idx, "provincia", e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                    className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                   />
                   <input
                     placeholder="Código Postal"
                     value={lugar.cp}
                     onChange={(e) => handleLugarChange(idx, "cp", e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                    className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                   />
                 </div>
 
@@ -564,7 +571,7 @@ export function AddProvider() {
                   <button
                     type="button"
                     onClick={() => handleEliminarLugar(idx)}
-                    className="mt-2 text-red-500 font-semibold text-sm"
+                    className="text-red-600 font-semibold text-sm hover:text-red-700 transition-colors"
                   >
                     Eliminar lugar
                   </button>
@@ -574,9 +581,9 @@ export function AddProvider() {
             <button
               type="button"
               onClick={handleAgregarLugar}
-              className="text-[#14B8A6] text-sm font-semibold"
+              className="flex items-center gap-1.5 text-teal-600 text-sm font-600 hover:text-teal-700 transition-colors"
             >
-              + Agregar otro lugar
+              + Agregar lugar
             </button>
           </div>
 
@@ -584,18 +591,18 @@ export function AddProvider() {
           {error && <div className="text-red-600 font-medium mb-4">{error}</div>}
 
           {/* Botones */}
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-end gap-3">
             <button
               onClick={() => navigate("/prestadores")}
               disabled={loading}
-              className="bg-gray-300 text-black px-4 py-2 rounded-md font-medium hover:bg-gray-400 transition disabled:opacity-50"
+              className="px-6 py-2.5 rounded-lg border border-slate-200 text-sm font-600 text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               onClick={handleGuardar}
               disabled={loading}
-              className="bg-[#14B8A6] text-white px-4 py-2 rounded-md font-medium hover:bg-[#14B8A6] transition disabled:opacity-50"
+              className="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-600 px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
             >
               {loading ? "Guardando..." : "Guardar"}
             </button>

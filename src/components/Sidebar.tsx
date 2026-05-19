@@ -77,7 +77,7 @@ export function Sidebar() {
               className="w-9 h-9 object-contain flex-shrink-0"
             />
             <div>
-              <p className="text-sm font-bold text-slate-800 leading-tight">MediUnahur</p>
+              <p className="text-sm font-bold text-slate-800 leading-tight">OSDU</p>
               <p className="text-xs text-slate-400 leading-tight">Administración</p>
             </div>
           </div>

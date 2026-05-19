@@ -301,31 +301,31 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
+    <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm max-w-5xl mx-auto">
       {/* Header */}
-      <h1 className="text-2xl font-bold text-[#14B8A6] mb-4">Agregar Agenda</h1>
-      <div className="flex items-center gap-2">
-        <ButtonVolver text="Volver" onClick={() => navigate("/agenda")} />
+      <div className="mb-8">
+        <h1 className="text-2xl font-700 text-slate-800 mb-2">Agregar Agenda</h1>
+        <p className="text-sm text-slate-400">Define horarios de atención para el prestador</p>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
           {error}
         </div>
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Datos del prestador */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          <h3 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">
             Datos del prestador
           </h3>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-600 text-slate-600 mb-2">
                 Nombre
               </label>
 
@@ -337,23 +337,23 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
                   onChange={handleBusquedaPrestadorChange}
                   onFocus={handleFocusPrestador}
                   onBlur={handleBlurPrestador}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
+                  className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                   placeholder="Buscar prestador..."
                   required
                 />
 
                 {/* Dropdown de resultados */}
                 {mostrarDropdown && prestadoresFiltrados.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-sm max-h-60 overflow-y-auto">
                     {prestadoresFiltrados.map((prestador) => (
                       <div
                         key={prestador.cuitCuil}
                         onClick={() => seleccionarPrestador(prestador.cuitCuil, prestador.nombreCompleto)}
-                        className={`p-3 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0 ${formData.prestadorId === prestador.cuitCuil ? 'bg-teal-50' : ''
+                        className={`p-3 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-b-0 ${formData.prestadorId === prestador.cuitCuil ? 'bg-teal-50' : ''
                           }`}
                       >
                         <div className="font-medium">{prestador.nombreCompleto}</div>
-                        <div className="text-sm text-gray-600 capitalize">({prestador.tipoPrestador})</div>
+                        <div className="text-sm text-slate-600 capitalize">({prestador.tipoPrestador})</div>
                       </div>
                     ))}
                   </div>
@@ -361,8 +361,8 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
 
                 {/* Mensaje cuando no hay resultados */}
                 {mostrarDropdown && busquedaPrestador && prestadoresFiltrados.length === 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-                    <div className="p-3 text-gray-500 text-center">
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-sm">
+                    <div className="p-3 text-slate-500 text-center text-sm">
                       No se encontraron prestadores
                     </div>
                   </div>
@@ -374,13 +374,13 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
 
         {/* Especialidad */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          <h3 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">
             Especialidad
           </h3>
           <select
             value={formData.especialidadId}
             onChange={(e) => handleChange("especialidadId", e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
+            className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700"
             required
             disabled={!formData.prestadorId}
           >
@@ -399,13 +399,13 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
 
         {/* Lugar de atención */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          <h3 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">
             Lugar de atención
           </h3>
           <select
             value={formData.lugarAtencionId}
             onChange={(e) => handleChange("lugarAtencionId", e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
+            className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700"
             required
             disabled={!formData.prestadorId}
           >
@@ -422,20 +422,20 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
           </select>
         </div>
 
-        <div className="border-t border-gray-200 pt-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <div className="pt-6">
+          <h3 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">
             Definición de turnos
           </h3>
 
           {/* Duración del turno */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-600 text-slate-600 mb-2">
               Duración del turno (min)
             </label>
             <select
               value={formData.duracionTurno}
               onChange={(e) => handleChange("duracionTurno", e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
+              className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700"
               required
             >
               <option value="15">15 min</option>
@@ -448,23 +448,23 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
 
           {/* Bloques horarios */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-xs font-600 text-slate-600 mb-3">
               Días y horarios de atención
             </label>
 
             {bloquesHorarios.map((bloque, bloqueIndex) => (
-              <div key={bloqueIndex} className="border rounded-lg p-4 mb-4 bg-gray-50">
+              <div key={bloqueIndex} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50">
                 {/* Días de la semana */}
                 <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-2">Días:</p>
+                  <p className="text-xs font-600 text-slate-600 mb-2">Días:</p>
                   <div className="flex gap-4 flex-wrap">
                     {diasSemana.map((dia) => (
-                      <label key={dia.id} className="flex items-center gap-2 text-sm">
+                      <label key={dia.id} className="flex items-center gap-2 text-sm text-slate-700">
                         <input
                           type="checkbox"
                           checked={bloque.dias.includes(dia.id)}
                           onChange={() => toggleDia(bloqueIndex, dia.id)}
-                          className="rounded border-gray-300 text-[#14B8A6] focus:ring-[#14B8A6]"
+                          className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                         />
                         <span>{dia.label}</span>
                       </label>
@@ -473,24 +473,24 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
                 </div>
 
                 {/* Horarios */}
-                <div className="flex gap-4 items-center">
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Desde:</label>
+                <div className="flex gap-4 items-end">
+                  <div className="flex-1">
+                    <label className="block text-xs font-600 text-slate-600 mb-2">Desde:</label>
                     <input
                       type="time"
                       value={bloque.desde}
                       onChange={(e) => cambiarHorarioDesde(bloqueIndex, e.target.value)}
-                      className="border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Hasta:</label>
+                  <div className="flex-1">
+                    <label className="block text-xs font-600 text-slate-600 mb-2">Hasta:</label>
                     <input
                       type="time"
                       value={bloque.hasta}
                       onChange={(e) => cambiarHorarioHasta(bloqueIndex, e.target.value)}
-                      className="border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700"
                       required
                     />
                   </div>
@@ -501,9 +501,9 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
                   <button
                     type="button"
                     onClick={() => eliminarBloqueHorario(bloqueIndex)}
-                    className="mt-3 text-red-500 text-sm font-semibold hover:text-red-700"
+                    className="mt-3 text-red-600 font-semibold text-sm hover:text-red-700 transition-colors"
                   >
-                    Eliminar franja horaria
+                    Eliminar franja
                   </button>
                 )}
               </div>
@@ -513,27 +513,27 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
             <button
               type="button"
               onClick={agregarBloqueHorario}
-              className="text-[#14B8A6] text-sm font-semibold hover:text-[#4c8c23]"
+              className="flex items-center gap-1.5 text-teal-600 text-sm font-600 hover:text-teal-700 transition-colors"
             >
-              + Agregar otra franja horaria
+              + Agregar franja
             </button>
           </div>
         </div>
 
         {/* Botones */}
-        <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+        <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
           <button
             type="button"
             onClick={handleCancel}
             disabled={loading}
-            className="bg-gray-300 text-black px-4 py-2 rounded-md font-medium hover:bg-gray-400 transition disabled:opacity-50"
+            className="px-6 py-2.5 rounded-lg border border-slate-200 text-sm font-600 text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="bg-[#14B8A6] text-white px-4 py-2 rounded-md font-medium hover:bg-[#4a8926] transition disabled:opacity-50"
+            className="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-600 px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
           >
             {loading ? "Guardando..." : "Guardar"}
           </button>
