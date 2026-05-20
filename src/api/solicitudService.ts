@@ -5,7 +5,7 @@ const BASE = `${API_BASE_URL}/prestadores`;
 
 export const fetchSolicitudes = async (filters: SolicitudFilters = {}): Promise<SolicitudesPageResponse> => {
   const params = new URLSearchParams();
-  if (filters.status) params.set("status", filters.status);
+  if (filters.estado) params.set("estado", filters.estado);
   if (filters.page)   params.set("page",   String(filters.page));
   if (filters.limit)  params.set("limit",  String(filters.limit));
 

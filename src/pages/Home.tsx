@@ -65,7 +65,7 @@ export function Home() {
       if (!affiliatesData) throw new Error("No se encontraron afiliados");
 
       const normalized = affiliatesData.map((a: any) => {
-        let formattedDate = a.fecha_nacimiento || a.birth_date || "";
+        let formattedDate = a.fecha_nacimiento || a.fechaNacimiento || "";
         if (formattedDate && formattedDate.includes('-')) {
           const d = new Date(formattedDate);
           if (!isNaN(d.getTime())) {
@@ -75,12 +75,13 @@ export function Home() {
         
         return {
           ...a,
-          nombre: a.nombre || a.first_name || "",
-          apellido: a.apellido || a.last_name || "",
-          dni: a.dni || a.document_number || "",
-          credencial: a.credencial || a.credential || `PENDING-${a.document_number || a.id}`,
+          nombre: a.nombre || "",
+          apellido: a.apellido || "",
+          dni: a.dni || a.nroDocumento || "",
+          credencial: a.credencial || `PENDING-${a.nroDocumento || a.id}`,
           fecha_nacimiento: formattedDate,
-          direccion: a.direccion || a.address || "",
+          direccion: a.direccion || "",
+          activo: a.activo,
         };
       });
 
@@ -100,7 +101,7 @@ export function Home() {
     nombre: (a) => a.nombre,
     apellido: (a) => a.apellido,
     credencial: (a) => a.credencial,
-    plan: (a) => a.plan?.nombre || (a as any).plan_type || "",
+    plan: (a) => a.plan?.nombre || "",
   };
 
   const filtered = useMemo(() => {

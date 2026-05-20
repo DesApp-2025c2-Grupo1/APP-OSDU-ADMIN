@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { API_BASE_URL, apiFetch } from "../config/api";
 import { fetchPlans, type Plan } from "../api/planService";
 import AltaProgramadaPopup from "../components/AltaProgramadaPopup";
+import { fetchGeorefLocalities, fetchGeorefProvinces, type GeorefLocality, type GeorefProvince } from "../api/georefService";
+import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
 
 interface Situacion {
   idSituacion: number;
@@ -47,6 +49,8 @@ export function AddAffiliate() {
     email2: "",
     direccion: "",
     direccion2: "",
+    provincia: "",
+    localidad: "",
   });
 
   const [showPhone2, setShowPhone2] = useState(false);
@@ -56,6 +60,10 @@ export function AddAffiliate() {
   const [loadingSituaciones, setLoadingSituaciones] = useState(true);
   const [planesDisponibles, setPlanesDisponibles] = useState<Plan[]>([]);
   const [loadingPlanes, setLoadingPlanes] = useState(true);
+  const [provincias, setProvincias] = useState<GeorefProvince[]>([]);
+  const [localidadesPorProvincia, setLocalidadesPorProvincia] = useState<Record<string, GeorefLocality[]>>({});
+  const [loadingGeoref, setLoadingGeoref] = useState(false);
+  const [loadingLocalidades, setLoadingLocalidades] = useState<Record<string, boolean>>({});
   const [familiares, setFamiliares] = useState<Familiar[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -67,13 +75,8 @@ export function AddAffiliate() {
       try {
         // Cargar situaciones terapéuticas
         setLoadingSituaciones(true);
-        const responseSit = await apiFetch(`${API_BASE_URL}/therapeutic`);
-
-        if (!responseSit.ok) throw new Error("Error al cargar situaciones terapéuticas");
-        const dataSit = await responseSit.json();
-        
-        // Backend now securely returns Array of {idSituacion, nombre}
-        setSituacionesDisponibles(Array.isArray(dataSit) ? dataSit : []);
+        const situacionesData = await fetchTherapeuticSituationTypes();
+        setSituacionesDisponibles(situacionesData);
         setErrors(prev => ({ ...prev, situaciones: "" }));
       } catch (error) {
         setErrors(prev => ({ ...prev, situaciones: "No se pudieron cargar las situaciones terapéuticas" }));
@@ -91,10 +94,62 @@ export function AddAffiliate() {
       } finally {
         setLoadingPlanes(false);
       }
+
+      try {
+        setLoadingGeoref(true);
+        const provinciasData = await fetchGeorefProvinces();
+        setProvincias(provinciasData);
+      } catch (error) {
+        setErrors(prev => ({ ...prev, georef: "No se pudieron cargar las provincias" }));
+      } finally {
+        setLoadingGeoref(false);
+      }
     };
 
     fetchData();
   }, []);
+
+  const normalizeGeorefName = (value?: string) =>
+    (value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLocaleLowerCase("es-AR");
+
+  const getProvinciaId = (provinciaNombre?: string) =>
+    provincias.find((provincia) => {
+      const provinceName = normalizeGeorefName(provincia.nombre);
+      const selectedName = normalizeGeorefName(provinciaNombre);
+
+      return provinceName === selectedName
+        || (provincia.id === "02" && ["caba", "ciudad de buenos aires", "capital federal"].includes(selectedName));
+    })?.id || "";
+
+  const cargarLocalidades = async (provinciaId: string) => {
+    if (!provinciaId || localidadesPorProvincia[provinciaId] || loadingLocalidades[provinciaId]) return;
+
+    setLoadingLocalidades((prev) => ({ ...prev, [provinciaId]: true }));
+    try {
+      const localidades = await fetchGeorefLocalities(provinciaId);
+      setLocalidadesPorProvincia((prev) => ({ ...prev, [provinciaId]: localidades }));
+      setErrors((prev) => ({ ...prev, georef: "" }));
+    } catch {
+      setErrors((prev) => ({ ...prev, georef: "No se pudieron cargar las localidades" }));
+    } finally {
+      setLoadingLocalidades((prev) => ({ ...prev, [provinciaId]: false }));
+    }
+  };
+
+  const handleProvinciaChange = (provinciaId: string) => {
+    const provincia = provincias.find((item) => item.id === provinciaId);
+    setFormData((prev) => ({
+      ...prev,
+      provincia: provincia?.nombre || "",
+      localidad: "",
+    }));
+    void cargarLocalidades(provinciaId);
+    setErrors((prev) => ({ ...prev, provincia: "", localidad: "" }));
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -341,22 +396,48 @@ export function AddAffiliate() {
 
   const buildFormData = () => {
     const familyGroup = familiares.map(f => ({
-      full_name: `${f.nombre.trim()} ${f.apellido.trim()}`,
-      relationship: f.parentesco,
-      document_number: f.nroDocumento,
+      nombreCompleto: `${f.nombre.trim()} ${f.apellido.trim()}`,
+      nombre: f.nombre.trim(),
+      apellido: f.apellido.trim(),
+      parentesco: f.parentesco,
+      nroDocumento: f.nroDocumento,
+      tipoDocumento: f.tipoDocumento,
+      fechaNacimiento: f.fechaNacimiento,
+      email: (f.usaContactoTitular ? formData.email : f.email)?.trim(),
+      telefono: (f.usaContactoTitular ? formData.telefono : f.telefono)?.trim(),
+      direccion: f.usaDireccionTitular ? formData.direccion.trim() : (f.direccion || "").trim(),
+      localidad: f.usaDireccionTitular ? formData.localidad.trim() : "",
+      provincia: f.usaDireccionTitular ? formData.provincia.trim() : "",
+      situaciones: (f.situaciones || [])
+        .filter(s => s.idSituacion)
+        .map(s => ({
+          id: s.idSituacion,
+          fechaInicio: new Date().toISOString().split("T")[0],
+          fechaFin: s.fechaFinalizacion || null,
+        })),
     }));
+    const titularSituations = situaciones
+      .filter(s => s.idSituacion)
+      .map(s => ({
+        id: s.idSituacion,
+        fechaInicio: new Date().toISOString().split("T")[0],
+        fechaFin: s.fechaFinalizacion || null,
+      }));
 
     const fd = new FormData();
-    fd.append('document_number', formData.nroDocumento);
-    fd.append('first_name', formData.nombre);
-    fd.append('last_name', formData.apellido);
-    fd.append('document_type', formData.tipoDocumento);
-    fd.append('birth_date', formData.fechaNacimiento);
-    fd.append('plan_id', formData.planMedico);
+    fd.append('nroDocumento', formData.nroDocumento);
+    fd.append('nombre', formData.nombre);
+    fd.append('apellido', formData.apellido);
+    fd.append('tipoDocumento', formData.tipoDocumento);
+    fd.append('fechaNacimiento', formData.fechaNacimiento);
+    fd.append('idPlan', formData.planMedico);
     fd.append('email', formData.email.trim());
-    fd.append('phone', formData.telefono.trim());
-    if (formData.direccion?.trim()) fd.append('address', formData.direccion.trim());
-    if (familyGroup.length > 0) fd.append('family_group', JSON.stringify(familyGroup));
+    fd.append('telefono', formData.telefono.trim());
+    if (formData.direccion?.trim()) fd.append('direccion', formData.direccion.trim());
+    if (formData.localidad?.trim()) fd.append('localidad', formData.localidad.trim());
+    if (formData.provincia?.trim()) fd.append('provincia', formData.provincia.trim());
+    if (familyGroup.length > 0) fd.append('grupoFamiliar', JSON.stringify(familyGroup));
+    if (titularSituations.length > 0) fd.append('situaciones', JSON.stringify(titularSituations));
     return fd;
   };
 
@@ -536,7 +617,7 @@ export function AddAffiliate() {
               )}
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-xs font-600 text-slate-600 mb-2">Dirección</label>
               <input
                 type="text"
@@ -547,7 +628,60 @@ export function AddAffiliate() {
                 className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
               />
             </div>
+
+            <div>
+              <label className="block text-xs font-600 text-slate-600 mb-2">Provincia</label>
+              <select
+                value={getProvinciaId(formData.provincia)}
+                onChange={(e) => handleProvinciaChange(e.target.value)}
+                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 bg-white disabled:bg-slate-100 disabled:text-slate-400"
+                disabled={loadingGeoref}
+              >
+                <option value="">{loadingGeoref ? "Cargando provincias..." : "Seleccionar provincia"}</option>
+                {provincias.map((provincia) => (
+                  <option key={provincia.id} value={provincia.id}>
+                    {provincia.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-600 text-slate-600 mb-2">Localidad</label>
+              <select
+                value={formData.localidad}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, localidad: e.target.value }));
+                  setErrors((prev) => ({ ...prev, localidad: "" }));
+                }}
+                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 bg-white disabled:bg-slate-100 disabled:text-slate-400"
+                disabled={!getProvinciaId(formData.provincia) || Boolean(loadingLocalidades[getProvinciaId(formData.provincia)])}
+              >
+                {(() => {
+                  const provinciaId = getProvinciaId(formData.provincia);
+                  const localidades = localidadesPorProvincia[provinciaId] || [];
+                  const cargando = Boolean(loadingLocalidades[provinciaId]);
+                  return (
+                    <>
+                      <option value="">
+                        {!provinciaId
+                          ? "Seleccione una provincia primero"
+                          : cargando
+                            ? "Cargando localidades..."
+                            : "Seleccionar localidad"}
+                      </option>
+                      {localidades.map((localidad) => (
+                        <option key={localidad.id} value={localidad.nombre}>
+                          {localidad.nombre}
+                        </option>
+                      ))}
+                    </>
+                  );
+                })()}
+              </select>
+            </div>
           </div>
+          {errors.georef && <p className="text-red-500 text-sm mt-2">{errors.georef}</p>}
         </div>
 
         {/* DATOS DE CONTACTO */}

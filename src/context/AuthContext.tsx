@@ -6,7 +6,7 @@ interface AdminUser {
   id: string | number;
   email: string;
   role: string;
-  must_change_password?: boolean;
+  debeCambiarPassword?: boolean;
 }
 
 interface AuthContextType {

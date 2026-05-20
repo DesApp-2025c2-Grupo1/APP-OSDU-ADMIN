@@ -26,7 +26,7 @@ export interface ReintegrosPageResponse {
 }
 
 export interface ReintegroFilters {
-  status?: string;
+  estado?: string;
   page?: number;
   limit?: number;
 }

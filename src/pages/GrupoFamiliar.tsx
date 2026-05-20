@@ -11,6 +11,7 @@ import { ButtonVolver } from "../util/ButtonVolver";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import { API_BASE_URL, apiFetch } from "../config/api";
+import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => (
   <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in z-50">
@@ -696,10 +697,8 @@ function AddFamiliarPopup({ planFijo, titular, onClose, onSave }: AddFamiliarPop
     const loadSituaciones = async () => {
       try {
         setLoadingSituaciones(true);
-        const response = await apiFetch(`${API_BASE_URL}/therapeutic`);
-        if (!response.ok) throw new Error("Error al cargar situaciones terapéuticas");
-        const data = await response.json();
-        setSituacionesDisponibles(data.situaciones || []);
+        const situacionesData = await fetchTherapeuticSituationTypes();
+        setSituacionesDisponibles(situacionesData);
       } catch (error) {
         setErrors(prev => ({ ...prev, situaciones: "No se pudieron cargar las situaciones terapéuticas" }));
       } finally {

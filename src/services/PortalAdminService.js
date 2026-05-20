@@ -4,10 +4,17 @@ import { API_PORTAL_URL } from "../config/api";
 const api = axios.create({
   baseURL: API_PORTAL_URL,
   withCredentials: true,
+  headers: {
+    'X-Session-Allowed-Roles': 'ADMIN',
+  },
 });
 
 function responseData(request) {
   return request.then((response) => response.data);
+}
+
+function normalizeAffiliate(affiliate) {
+  return affiliate;
 }
 
 export function login(email, password) {
@@ -22,9 +29,11 @@ export function logout() {
   return responseData(api.post("/auth/logout"));
 }
 
-export function getAffiliates(status) {
-  const params = status === "all" ? {} : { status };
-  return responseData(api.get("/admin/affiliates", { params }));
+export function getAffiliates(activo) {
+  const params = activo === "all" ? {} : { activo };
+  return responseData(api.get("/admin/affiliates", { params })).then((affiliates) =>
+    Array.isArray(affiliates) ? affiliates.map(normalizeAffiliate) : affiliates
+  );
 }
 
 export function activateAffiliate(id) {

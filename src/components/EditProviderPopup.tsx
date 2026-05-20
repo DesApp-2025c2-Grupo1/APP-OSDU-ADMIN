@@ -6,6 +6,7 @@ import { checkProviderSpecialtyAgendas, checkProviderPlaceAgendas } from "../api
 import { ConfirmSpecialtyChangeDialog } from "./ConfirmSpecialtyChangeDialog";
 import { ConfirmPlaceChangeDialog } from "./ConfirmPlaceChangeDialog";
 import { firstProviderValidationMessage, validateProviderPayload } from "../utils/providerValidation";
+import { fetchGeorefLocalities, fetchGeorefProvinces, type GeorefLocality, type GeorefProvince } from "../api/georefService";
 
 interface EditProviderPopupProps {
   provider: Prestador;
@@ -32,6 +33,10 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
   const [selectedLugarIndex, setSelectedLugarIndex] = useState<number>(0);
   const [centrosMedicos, setCentrosMedicos] = useState<any[]>([]);
   const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{ id: number, nombre: string }[]>([]);
+  const [provincias, setProvincias] = useState<GeorefProvince[]>([]);
+  const [localidadesPorProvincia, setLocalidadesPorProvincia] = useState<Record<string, GeorefLocality[]>>({});
+  const [loadingGeoref, setLoadingGeoref] = useState(false);
+  const [loadingLocalidades, setLoadingLocalidades] = useState<Record<string, boolean>>({});
 
   const [showSpecialtyWarning, setShowSpecialtyWarning] = useState(false);
   const [pendingSpecialtyToRemove, setPendingSpecialtyToRemove] = useState<{
@@ -65,7 +70,25 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           id: e.idEspecialidad,
           nombre: e.nombre
         })));
+
+        setLoadingGeoref(true);
+        const provinciasData = await fetchGeorefProvinces();
+        setProvincias(provinciasData);
+
+        const provinciaIds = Array.from(new Set(
+          (provider.lugaresAtencion || [])
+            .map((lugar) => provinciasData.find((provincia) => provincia.nombre === lugar.provincia)?.id)
+            .filter((id): id is string => Boolean(id))
+        ));
+
+        const localidadesEntries = await Promise.all(
+          provinciaIds.map(async (provinciaId) => [provinciaId, await fetchGeorefLocalities(provinciaId)] as const)
+        );
+        setLocalidadesPorProvincia(Object.fromEntries(localidadesEntries));
       } catch (err) {
+        setError("No se pudieron cargar todos los datos del formulario");
+      } finally {
+        setLoadingGeoref(false);
       }
     };
     cargarDatos();
@@ -87,6 +110,50 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
       nuevosLugares[index] = { ...nuevosLugares[index], [campo]: valor };
       return { ...prev, lugaresAtencion: nuevosLugares };
     });
+  };
+
+  const normalizeGeorefName = (value?: string) =>
+    (value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLocaleLowerCase("es-AR");
+
+  const getProvinciaId = (provinciaNombre?: string) =>
+    provincias.find((provincia) => {
+      const provinceName = normalizeGeorefName(provincia.nombre);
+      const selectedName = normalizeGeorefName(provinciaNombre);
+
+      return provinceName === selectedName
+        || (provincia.id === "02" && ["caba", "ciudad de buenos aires", "capital federal"].includes(selectedName));
+    })?.id || "";
+
+  const cargarLocalidades = async (provinciaId: string) => {
+    if (!provinciaId || localidadesPorProvincia[provinciaId] || loadingLocalidades[provinciaId]) return;
+
+    setLoadingLocalidades((prev) => ({ ...prev, [provinciaId]: true }));
+    try {
+      const localidades = await fetchGeorefLocalities(provinciaId);
+      setLocalidadesPorProvincia((prev) => ({ ...prev, [provinciaId]: localidades }));
+    } catch {
+      setError("No se pudieron cargar las localidades de Georef");
+    } finally {
+      setLoadingLocalidades((prev) => ({ ...prev, [provinciaId]: false }));
+    }
+  };
+
+  const handleProvinciaChange = (index: number, provinciaId: string) => {
+    const provincia = provincias.find((item) => item.id === provinciaId);
+    setFormData(prev => {
+      const nuevosLugares = [...prev.lugaresAtencion];
+      nuevosLugares[index] = {
+        ...nuevosLugares[index],
+        provincia: provincia?.nombre || "",
+        localidad: "",
+      };
+      return { ...prev, lugaresAtencion: nuevosLugares };
+    });
+    void cargarLocalidades(provinciaId);
   };
 
   const addLugar = () => {
@@ -569,23 +636,53 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                 </div>
                 <div className="flex flex-col">
                   <label className="font-semibold mb-1 text-sm">Localidad</label>
-                  <input
-                    type="text"
+                  <select
                     value={lugarActual.localidad || ""}
                     onChange={(e) => handleLugarChange(selectedLugarIndex, "localidad", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
-                    placeholder="Localidad"
-                  />
+                    disabled={!getProvinciaId(lugarActual.provincia) || Boolean(loadingLocalidades[getProvinciaId(lugarActual.provincia)])}
+                    className="p-2 border border-gray-300 rounded bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                  >
+                    {(() => {
+                      const provinciaId = getProvinciaId(lugarActual.provincia);
+                      const localidades = localidadesPorProvincia[provinciaId] || [];
+                      const cargando = Boolean(loadingLocalidades[provinciaId]);
+                      return (
+                        <>
+                          <option value="">
+                            {!provinciaId
+                              ? "Seleccione una provincia primero"
+                              : cargando
+                                ? "Cargando localidades..."
+                                : "Seleccionar localidad"}
+                          </option>
+                          {lugarActual.localidad && !localidades.some((localidad) => localidad.nombre === lugarActual.localidad) && (
+                            <option value={lugarActual.localidad}>{lugarActual.localidad}</option>
+                          )}
+                          {localidades.map((localidad) => (
+                            <option key={localidad.id} value={localidad.nombre}>
+                              {localidad.nombre}
+                            </option>
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </select>
                 </div>
                 <div className="flex flex-col">
                   <label className="font-semibold mb-1 text-sm">Provincia</label>
-                  <input
-                    type="text"
-                    value={lugarActual.provincia || ""}
-                    onChange={(e) => handleLugarChange(selectedLugarIndex, "provincia", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
-                    placeholder="Provincia"
-                  />
+                  <select
+                    value={getProvinciaId(lugarActual.provincia)}
+                    onChange={(e) => handleProvinciaChange(selectedLugarIndex, e.target.value)}
+                    disabled={loadingGeoref}
+                    className="p-2 border border-gray-300 rounded bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                  >
+                    <option value="">{loadingGeoref ? "Cargando provincias..." : "Seleccionar provincia"}</option>
+                    {provincias.map((provincia) => (
+                      <option key={provincia.id} value={provincia.id}>
+                        {provincia.nombre}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex flex-col">
                   <label className="font-semibold mb-1 text-sm">Código Postal (*)</label>

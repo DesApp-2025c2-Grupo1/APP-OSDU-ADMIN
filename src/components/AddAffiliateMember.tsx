@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { API_BASE_URL, apiFetch } from "../config/api";
+import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
 
 interface Situacion {
   idSituacion: number;
@@ -54,12 +54,8 @@ export function AddFamiliarMember({
     const fetchSituaciones = async () => {
       try {
         setLoadingSituaciones(true);
-        const response = await apiFetch(`${API_BASE_URL}/therapeutic`);
-
-        if (!response.ok) throw new Error("Error al cargar situaciones terapéuticas");
-
-        const data = await response.json();
-        setSituacionesDisponibles(data.situaciones || []);
+        const situacionesData = await fetchTherapeuticSituationTypes();
+        setSituacionesDisponibles(situacionesData);
       } catch (error) {
         setErrors(prev => ({
           ...prev,

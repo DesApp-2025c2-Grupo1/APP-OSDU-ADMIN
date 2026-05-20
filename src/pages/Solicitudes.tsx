@@ -39,7 +39,7 @@ export function Solicitudes() {
     setError(null);
     try {
       const result = await fetchSolicitudes({
-        status: t === "todos" ? undefined : t,
+        estado: t === "todos" ? undefined : t,
         page: p,
         limit: LIMIT,
       });

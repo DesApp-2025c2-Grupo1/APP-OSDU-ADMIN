@@ -30,7 +30,6 @@ export type Prestador = {
   nombreCompleto: string;             
   tipoPrestador: PrestadorTipo;
   estado?: PrestadorEstado;
-  status?: boolean;
   telefonos: string[];
   mails: string[];
   emailPrincipal?: string;

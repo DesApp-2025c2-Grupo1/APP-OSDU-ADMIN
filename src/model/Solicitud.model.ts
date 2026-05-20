@@ -22,7 +22,7 @@ export interface SolicitudesPageResponse {
 }
 
 export interface SolicitudFilters {
-  status?: string;
+  estado?: string;
   page?: number;
   limit?: number;
 }

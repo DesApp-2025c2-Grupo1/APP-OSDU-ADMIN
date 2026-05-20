@@ -11,5 +11,12 @@ export const API_PORTAL_URL = API_BASE_URL;
  * Wrapper de fetch que siempre envía la cookie JWT (credentials: 'include').
  * Usar en lugar de fetch() en todos los servicios.
  */
-export const apiFetch = (url: string, options: RequestInit = {}): Promise<Response> =>
-  fetch(url, { credentials: 'include', ...options });
+export const apiFetch = (url: string, options: RequestInit = {}): Promise<Response> => {
+  const headers = new Headers(options.headers);
+  headers.set('X-Session-Allowed-Roles', 'ADMIN');
+  return fetch(url, {
+    credentials: 'include',
+    ...options,
+    headers,
+  });
+};

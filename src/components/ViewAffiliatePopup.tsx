@@ -45,7 +45,7 @@ interface AffiliateType {
   telefonos?: Telefono[];
   email?: string | Email[];
   direccion?: string;
-  status?: boolean | number;
+  activo?: boolean | number;
   dni_document_path?: string;
   payslip_document_path?: string;
   id?: number;
@@ -386,7 +386,7 @@ export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: View
             Cerrar
           </button>
 
-          {(!displayAffiliate.status) && displayAffiliate.id && (
+          {(!displayAffiliate.activo) && displayAffiliate.id && (
             <div className="flex gap-4">
               <button
                 onClick={() => handleStatusChange('deactivate')}

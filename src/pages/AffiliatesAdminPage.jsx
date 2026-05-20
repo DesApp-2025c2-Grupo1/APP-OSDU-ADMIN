@@ -38,18 +38,18 @@ function formatDate(value) {
 }
 
 function fullName(affiliate) {
-  return `${affiliate.first_name || ""} ${affiliate.last_name || ""}`.trim() || "-";
+  return `${affiliate.nombre || ""} ${affiliate.apellido || ""}`.trim() || "-";
 }
 
-function AffiliateStatus({ status }) {
-  return status
+function AffiliateStatus({ activo }) {
+  return activo
     ? <Chip label="Activo" color="success" size="small" />
     : <Chip label="Pendiente" color="warning" size="small" />;
 }
 
 export function AffiliatesAdminPage() {
   const [affiliates, setAffiliates] = useState([]);
-  const [status, setStatus] = useState("all");
+  const [filtroActivo, setFiltroActivo] = useState("all");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
@@ -59,13 +59,13 @@ export function AffiliatesAdminPage() {
     setError("");
 
     try {
-      setAffiliates(await getAffiliates(status));
+      setAffiliates(await getAffiliates(filtroActivo));
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
       setIsLoading(false);
     }
-  }, [status]);
+  }, [filtroActivo]);
 
   useEffect(() => {
     fetchAffiliates();
@@ -73,8 +73,8 @@ export function AffiliatesAdminPage() {
 
   const totals = useMemo(() => ({
     all: affiliates.length,
-    active: affiliates.filter((affiliate) => !!affiliate.status).length,
-    inactive: affiliates.filter((affiliate) => !affiliate.status).length,
+    active: affiliates.filter((affiliate) => !!affiliate.activo).length,
+    inactive: affiliates.filter((affiliate) => !affiliate.activo).length,
   }), [affiliates]);
 
   const updateStatus = async (affiliate) => {
@@ -82,7 +82,7 @@ export function AffiliatesAdminPage() {
     setError("");
 
     try {
-      if (affiliate.status) {
+      if (affiliate.activo) {
         await deactivateAffiliate(affiliate.id);
       } else {
         await activateAffiliate(affiliate.id);
@@ -112,9 +112,9 @@ export function AffiliatesAdminPage() {
           <InputLabel id="status-filter-label">Estado</InputLabel>
           <Select
             labelId="status-filter-label"
-            value={status}
+            value={filtroActivo}
             label="Estado"
-            onChange={(event) => setStatus(event.target.value)}
+            onChange={(event) => setFiltroActivo(event.target.value)}
           >
             {STATUS_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
@@ -166,19 +166,19 @@ export function AffiliatesAdminPage() {
                       <Typography sx={{ fontWeight: 600 }}>{fullName(affiliate)}</Typography>
                       <Typography variant="body2" color="text.secondary">{affiliate.email}</Typography>
                     </TableCell>
-                    <TableCell>{affiliate.credencial_number}</TableCell>
-                    <TableCell>{affiliate.document_type} {affiliate.document_number}</TableCell>
-                    <TableCell>{affiliate.plan_type || affiliate.plan_code || "-"}</TableCell>
-                    <TableCell>{formatDate(affiliate.created_at)}</TableCell>
-                    <TableCell><AffiliateStatus status={affiliate.status} /></TableCell>
+                    <TableCell>{affiliate.credencial}</TableCell>
+                    <TableCell>{affiliate.tipoDocumento} {affiliate.nroDocumento || affiliate.dni}</TableCell>
+                    <TableCell>{affiliate.plan?.nombre || "-"}</TableCell>
+                    <TableCell>{formatDate(affiliate.fechaAlta)}</TableCell>
+                    <TableCell><AffiliateStatus activo={affiliate.activo} /></TableCell>
                     <TableCell align="right">
                       <Button
-                        variant={affiliate.status ? "outlined" : "contained"}
-                        color={affiliate.status ? "warning" : "success"}
+                        variant={affiliate.activo ? "outlined" : "contained"}
+                        color={affiliate.activo ? "warning" : "success"}
                         onClick={() => updateStatus(affiliate)}
                         disabled={updatingId === affiliate.id}
                       >
-                        {affiliate.status ? "Desactivar" : "Activar"}
+                        {affiliate.activo ? "Desactivar" : "Activar"}
                       </Button>
                     </TableCell>
                   </TableRow>
