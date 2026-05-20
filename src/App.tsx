@@ -21,6 +21,7 @@ import { SituacionesPorAfiliado } from "./pages/Consulta_AfiliadosSituaciones";
 import { SituacionesPorGrupo } from "./pages/Consulta_GrupoFamiliarSituaciones";
 import LoginPage from "./pages/LoginPage";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { FormStylePreview } from "./pages/FormStylePreview";
 
 function ProtectedLayout() {
   const { isAuthenticated, isCheckingSession } = useAuth();
@@ -34,12 +35,14 @@ function ProtectedLayout() {
   }
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
       <div className="flex flex-1">
         <Sidebar />
-        <main className="p-6 flex-1">
-          <Outlet />
+        <main className="flex-1 overflow-auto">
+          <div className="md:p-8 p-4">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
@@ -75,6 +78,7 @@ function AppContent() {
         <Route path="/consultas" element={<Consultas />} />
         <Route path="/solicitudes" element={<Solicitudes />} />
         <Route path="/reintegros" element={<Reintegros />} />
+        <Route path="/form-preview" element={<FormStylePreview />} />
 
         {/* Affiliate routes */}
         <Route path="/home/agregarAfiliado" element={<AddAffiliate />} />

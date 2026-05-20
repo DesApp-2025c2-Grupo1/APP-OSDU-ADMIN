@@ -40,7 +40,7 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10, show
   return (
     <div className="rounded-lg border border-gray-300 shadow-md">
       <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-[#5FA92C] text-white">
+        <thead className="bg-[#14B8A6] text-white">
           <tr>
             {["CUIL/CUIT", "NOMBRE COMPLETO", "ESPECIALIDAD", "LOCALIDAD", "ESTADO", "TIPO", ""].map((h) => (
               <th key={h} scope="col" className="px-4 py-3 text-left text-sm font-medium uppercase tracking-wider">

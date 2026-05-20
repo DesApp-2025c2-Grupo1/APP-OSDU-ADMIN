@@ -30,13 +30,13 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 20,
     borderBottomWidth: 2,
-    borderBottomColor: "#5FA92C",
+    borderBottomColor: "#14B8A6",
     paddingBottom: 10,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#5FA92C",
+    color: "#14B8A6",
     marginBottom: 5,
   },
   subtitle: {
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   tableHeader: {
     display: "flex",
     flexDirection: "row",
-    backgroundColor: "#5FA92C",
+    backgroundColor: "#14B8A6",
     color: "white",
     fontWeight: "bold",
     paddingVertical: 8,
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginTop: 15,
     borderWidth: 1,
-    borderColor: "#5FA92C",
+    borderColor: "#14B8A6",
   },
   summaryText: {
     fontSize: 12,

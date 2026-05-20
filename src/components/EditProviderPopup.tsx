@@ -347,7 +347,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
         {/* DATOS DEL PRESTADOR */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Datos del Prestador</h2>
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">Datos del Prestador</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">CUIT / CUIL (*)</label>
@@ -409,7 +409,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
         {/* ESPECIALIDADES (editable) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Especialidades</h2>
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">Especialidades</h2>
 
           {formData.especialidades.length > 0 ? (
             <div className="space-y-2 mb-4">
@@ -461,7 +461,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
         {/* CONTACTO */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Contacto</h2>
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">Contacto</h2>
 
           {/* Teléfonos */}
           <div className="mb-6">
@@ -490,7 +490,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                 )}
               </div>
             ))}
-            <button type="button" onClick={() => addArr("telefonos")} className="text-sm text-[#5FA92C] font-semibold hover:underline">
+            <button type="button" onClick={() => addArr("telefonos")} className="text-sm text-[#14B8A6] font-semibold hover:underline">
               + Agregar teléfono
             </button>
           </div>
@@ -522,7 +522,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                 )}
               </div>
             ))}
-            <button type="button" onClick={() => addArr("mails")} className="text-sm text-[#5FA92C] font-semibold hover:underline">
+            <button type="button" onClick={() => addArr("mails")} className="text-sm text-[#14B8A6] font-semibold hover:underline">
               + Agregar email
             </button>
           </div>
@@ -530,7 +530,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
         {/* LUGARES DE ATENCIÓN (MÚLTIPLES) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Lugares de Atención</h2>
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">Lugares de Atención</h2>
 
           {/* Selector de lugar */}
           {formData.lugaresAtencion.length > 0 && (
@@ -542,7 +542,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                     type="button"
                     onClick={() => setSelectedLugarIndex(idx)}
                     className={`px-4 py-2 rounded font-semibold transition ${selectedLugarIndex === idx
-                      ? 'bg-[#5FA92C] text-white'
+                      ? 'bg-[#14B8A6] text-white'
                       : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
                       }`}
                   >
@@ -618,7 +618,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           <button
             type="button"
             onClick={addLugar}
-            className="px-4 py-2 bg-[#5FA92C] text-white rounded font-semibold hover:bg-green-700"
+            className="px-4 py-2 bg-[#14B8A6] text-white rounded font-semibold hover:bg-teal-700"
           >
             + Agregar lugar de atención
           </button>
@@ -636,7 +636,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           <button
             onClick={handleSaveClick}
             disabled={loading}
-            className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[#14B8A6] text-white px-6 py-3 rounded font-semibold shadow hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Guardando..." : "Guardar Cambios"}
           </button>
