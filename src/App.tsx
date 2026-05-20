@@ -10,6 +10,8 @@ import { AddProvider } from "./pages/AddProvider";
 import { AddAgendaPage } from "./pages/AddAgenda";
 import { AddAffiliate } from "./pages/AddAffiliate";
 import { Consultas } from "./pages/Consulta";
+import { Reintegros } from "./pages/Reintegros";
+import { Solicitudes } from "./pages/Solicitudes";
 import { PrestadoresPorCodigoPostal } from "./pages/Consulta_PrestadoresCodPostal";
 import { AltasAfiliadosPeriodo } from "./pages/Consulta_AfiliadosPeriodo";
 import { AltasPrestadoresPeriodo } from "./pages/Consulta_PrestadoresPeriodo";
@@ -71,6 +73,8 @@ function AppContent() {
         <Route path="/agenda" element={<Agenda />} />
         <Route path="/prestadores" element={<Prestadores />} />
         <Route path="/consultas" element={<Consultas />} />
+        <Route path="/solicitudes" element={<Solicitudes />} />
+        <Route path="/reintegros" element={<Reintegros />} />
 
         {/* Affiliate routes */}
         <Route path="/home/agregarAfiliado" element={<AddAffiliate />} />

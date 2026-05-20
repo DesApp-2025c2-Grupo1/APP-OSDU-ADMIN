@@ -12,6 +12,8 @@ const LINKS = Object.freeze([
   { to: "/home", label: "Afiliados" },
   { to: "/prestadores", label: "Prestadores" },
   { to: "/agenda", label: "Agenda" },
+  { to: "/solicitudes", label: "Solicitudes" },
+  { to: "/reintegros", label: "Reintegros" },
   { to: "/consultas", label: "Consultas" },
 ]);
 
