@@ -45,24 +45,16 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L3N2Zz4=')]"></div>
       </div>
 
-      <div className="z-10 w-full max-w-sm bg-white/[0.04] backdrop-blur-2xl border border-white/[0.08] p-8 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] relative transition-all duration-500 hover:shadow-[0_8px_40px_0_rgba(0,0,0,0.5)] hover:bg-white/[0.06] hover:border-white/[0.12]">
+      <div className="z-10 w-full max-w-sm bg-[#FBFAEA] backdrop-blur-2xl border border-[#E8DCC8] p-8 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.1)] relative transition-all duration-500 hover:shadow-[0_8px_40px_0_rgba(0,0,0,0.15)] hover:bg-[#FDFCF3] hover:border-[#E0D4C0]">
         
         <div className="text-center mb-10 relative">
-          <div className="w-16 h-16 bg-gradient-to-tr from-[#5FA92C] to-blue-500 rounded-2xl mx-auto flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(95,169,44,0.4)]">
-            <svg
-              className="w-8 h-8 text-white drop-shadow-md"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
-            </svg>
+          <div className="w-56 h-56 mx-auto flex items-center justify-center mb-5">
+            <img
+              src="/logo.jpg"
+              alt="logo"
+              className="w-full h-full object-contain"
+            />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-wide">
-            Medi<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5FA92C] to-green-300">UNAHUR</span>
-          </h1>
-          <p className="text-slate-400 mt-2 text-sm font-medium">Portal de Administración</p>
         </div>
 
         {error && (

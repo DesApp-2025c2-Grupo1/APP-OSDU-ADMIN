@@ -92,7 +92,7 @@ export function Sidebar() {
         {!collapsed && (
           <div className="flex items-center gap-2.5">
             <img
-              src="/logo.png"
+              src="/logo.jpg"
               alt="mediunahur logo"
               className="w-9 h-9 object-contain flex-shrink-0"
             />
