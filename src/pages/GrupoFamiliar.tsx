@@ -364,7 +364,7 @@ export function GrupoFamiliar() {
       <div className="w-full p-6">
         <div className="flex justify-center items-center h-64">
           <div className="flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
+            <div className="w-10 h-10 border-4 border-[#14B8A6] border-t-transparent rounded-full animate-spin mb-3"></div>
             <p className="text-gray-600 text-sm font-medium">Cargando grupo familiar...</p>
           </div>
         </div>
@@ -380,7 +380,7 @@ export function GrupoFamiliar() {
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => navigate("/home")}
-            className="px-4 py-2 bg-[#5FA92C] text-white rounded hover:bg-green-700"
+            className="px-4 py-2 bg-[#14B8A6] text-white rounded hover:bg-teal-700"
           >
             Volver al inicio
           </button>
@@ -427,7 +427,7 @@ export function GrupoFamiliar() {
 
       {/* TITULAR (mobile) */}
       <div className="md:hidden mb-4 p-4 border rounded-lg bg-white shadow-sm">
-        <div className="inline-block text-xs font-semibold bg-[#5FA92C] text-white px-2 py-1 rounded mb-2">TITULAR</div>
+        <div className="inline-block text-xs font-semibold bg-[#14B8A6] text-white px-2 py-1 rounded mb-2">TITULAR</div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
           <div>
             <div className="text-xs text-gray-500 uppercase">Nombre</div>
@@ -459,7 +459,7 @@ export function GrupoFamiliar() {
       {/* TABLA (desktop) */}
       <div className="hidden md:block rounded-lg border border-gray-300 shadow-md bg-white mb-4">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-[#5FA92C] text-white">
+          <thead className="bg-[#14B8A6] text-white">
             <tr>
               {["Credencial", "DNI", "Nombre", "Apellido", "Fecha Nac.", "Dirección", "Parentesco", ""].map((h) => (
                 <th key={h} className="px-4 py-2 text-left text-sm font-medium uppercase tracking-wider">
@@ -543,7 +543,7 @@ export function GrupoFamiliar() {
                 </button>
                 <button
                   onClick={() => handleOptionClick("Editar", m)}
-                  className="px-3 py-2 text-sm border-2 rounded-md border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white font-semibold text-center"
+                  className="px-3 py-2 text-sm border-2 rounded-md border-[#14B8A6] text-[#14B8A6] hover:bg-[#14B8A6] hover:text-white font-semibold text-center"
                 >
                   Editar
                 </button>
@@ -1083,7 +1083,7 @@ function AddFamiliarPopup({ planFijo, titular, onClose, onSave }: AddFamiliarPop
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-6">
             <button
               type="submit"
-              className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition w-full sm:w-auto order-2 sm:order-1"
+              className="bg-[#14B8A6] text-white px-6 py-3 rounded font-semibold shadow hover:bg-teal-700 transition w-full sm:w-auto order-2 sm:order-1"
             >
               Guardar Familiar
             </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL, apiFetch } from "../config/api";
 import { fetchPlans, type Plan } from "../api/planService";
@@ -424,20 +424,10 @@ export function AddAffiliate() {
   };
 
   return (
-    <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto mt-4 sm:mt-6 shadow">
-      <div className="flex flex-col items-center sm:items-start mb-6 gap-4">
-        <h1 className="text-2xl font-semibold text-gray-800 text-center sm:text-left">
-          Crear nuevo afiliado
-        </h1>
-
-        <div className="flex flex-wrap justify-center sm:justify-start gap-3">
-          <button
-            onClick={() => navigate("/home")}
-            className="px-4 py-2 border rounded hover:bg-gray-50"
-          >
-            Volver
-          </button>
-        </div>
+    <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm max-w-5xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-700 text-slate-800 mb-2">Crear nuevo afiliado</h1>
+        <p className="text-sm text-slate-400">Completa los datos del afiliado titular</p>
       </div>
 
       {loadingSituaciones && (
@@ -454,83 +444,84 @@ export function AddAffiliate() {
 
       <div className="mx-auto w-full max-w-4xl space-y-8">
         {/* DATOS DE AFILIADO (Titular) */}
-        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-            Datos de Afiliado (Titular)
-          </h2>
+        <div>
+          <h2 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">Datos personales</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo Documento (*)</label>
+            <div>
+              <label className="block text-xs font-600 text-slate-600 mb-2">Tipo Documento</label>
               <select
                 name="tipoDocumento"
                 value={formData.tipoDocumento}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
+                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
               >
                 <option value="DNI">DNI</option>
                 <option value="Pasaporte">Pasaporte</option>
               </select>
             </div>
 
-            <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Nro Documento (*)</label>
+            <div>
+              <label className="block text-xs font-600 text-slate-600 mb-2">Nro Documento *</label>
               <input
                 type="text"
                 name="nroDocumento"
                 value={formData.nroDocumento}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
+                placeholder="12345678"
+                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
               />
               {errors.nroDocumento && (
                 <p className="text-red-500 text-sm mt-1">{errors.nroDocumento}</p>
               )}
             </div>
 
-            <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Nombres (*)</label>
+            <div>
+              <label className="block text-xs font-600 text-slate-600 mb-2">Nombres *</label>
               <input
                 type="text"
                 name="nombre"
                 value={formData.nombre}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
+                placeholder="Juan"
+                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
               />
               {errors.nombre && <p className="text-red-500 text-sm mt-1">{errors.nombre}</p>}
             </div>
 
-            <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Apellidos (*)</label>
+            <div>
+              <label className="block text-xs font-600 text-slate-600 mb-2">Apellidos *</label>
               <input
                 type="text"
                 name="apellido"
                 value={formData.apellido}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
+                placeholder="Pérez"
+                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
               />
               {errors.apellido && <p className="text-red-500 text-sm mt-1">{errors.apellido}</p>}
             </div>
 
-            <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Fecha nacimiento (*)</label>
+            <div>
+              <label className="block text-xs font-600 text-slate-600 mb-2">Fecha de nacimiento *</label>
               <input
                 type="date"
                 name="fechaNacimiento"
                 value={formData.fechaNacimiento}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
+                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
               />
               {errors.fechaNacimiento && (
                 <p className="text-red-500 text-sm mt-1">{errors.fechaNacimiento}</p>
               )}
             </div>
 
-            <div className="flex flex-col">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Plan Médico (*)</label>
+            <div>
+              <label className="block text-xs font-600 text-slate-600 mb-2">Plan Médico *</label>
               <select
                 name="planMedico"
                 value={formData.planMedico}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
+                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                 disabled={loadingPlanes}
               >
                 <option value="">-- Seleccionar --</option>
@@ -545,47 +536,46 @@ export function AddAffiliate() {
               )}
             </div>
 
-            <div className="flex flex-col md:col-span-2">
-              <label className="font-semibold mb-1 bg-gray-100 px-2">Dirección</label>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-600 text-slate-600 mb-2">Dirección</label>
               <input
                 type="text"
                 name="direccion"
                 value={formData.direccion}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
+                placeholder="Calle Principal 123"
+                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
               />
             </div>
           </div>
         </div>
 
         {/* DATOS DE CONTACTO */}
-        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-            Datos de Contacto
-          </h2>
+        <div>
+          <h2 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">Contacto</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex flex-col md:col-span-2">
-              <label className="font-semibold mb-1">Teléfono (*)</label>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-600 text-slate-600 mb-2">Teléfono *</label>
               <input
                 type="text"
                 name="telefono"
                 value={formData.telefono}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-                placeholder="Teléfono"
+                placeholder="1234567890"
+                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
               />
-              {errors.telefono && <p className="text-red-500 text-xs mt-1">{errors.telefono}</p>}
+              {errors.telefono && <p className="text-red-500 text-sm mt-1">{errors.telefono}</p>}
 
               {showPhone2 && (
-                <div className="mt-2 flex flex-col gap-2">
+                <div className="mt-3 flex flex-col gap-2">
                   <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
                       name="telefono2"
                       value={formData.telefono2}
                       onChange={handleInputChange}
-                      className="flex-1 p-2 border border-gray-300 rounded"
                       placeholder="Teléfono adicional"
+                      className="flex-1 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                     />
                     <button
                       type="button"
@@ -593,12 +583,12 @@ export function AddAffiliate() {
                         setFormData((prev) => ({ ...prev, telefono2: "" }));
                         setShowPhone2(false);
                       }}
-                      className="px-3 py-2 border rounded hover:bg-gray-50"
+                      className="px-4 py-2.5 border border-slate-200 text-sm font-600 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
                     >
                       Quitar
                     </button>
                   </div>
-                  {errors.telefono2 && <p className="text-red-500 text-xs mt-1">{errors.telefono2}</p>}
+                  {errors.telefono2 && <p className="text-red-500 text-sm mt-1">{errors.telefono2}</p>}
                 </div>
               )}
 
@@ -606,47 +596,48 @@ export function AddAffiliate() {
                 <button
                   type="button"
                   onClick={() => setShowPhone2(true)}
-                  className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
+                  className="mt-2 text-sm px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 font-500"
                 >
-                  + Agregar otro
+                  + Agregar teléfono
                 </button>
               )}
             </div>
 
-            <div className="flex flex-col md:col-span-2">
-              <label className="font-semibold mb-1">Email (*)</label>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-600 text-slate-600 mb-2">Email *</label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-                placeholder="Email"
+                placeholder="juan@example.com"
+                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
               />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
 
               {showEmail2 && (
-                <div className="mt-2 flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="email"
-                    name="email2"
-                    value={formData.email2}
-                    onChange={handleInputChange}
-                    className="flex-1 p-2 border border-gray-300 rounded"
-                    placeholder="Email adicional"
-                  />
-                  {errors.email2 && <p className="text-red-500 text-xs mt-1">{errors.email2}</p>}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({ ...prev, email2: "" }));
-                      setShowEmail2(false);
-                    }}
-                    className="px-3 py-2 border rounded hover:bg-gray-50"
-                  >
-                    Quitar
-                  </button>
+                <div className="mt-3 flex flex-col gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="email"
+                      name="email2"
+                      value={formData.email2}
+                      onChange={handleInputChange}
+                      placeholder="Email adicional"
+                      className="flex-1 px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, email2: "" }));
+                        setShowEmail2(false);
+                      }}
+                      className="px-4 py-2.5 border border-slate-200 text-sm font-600 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                  {errors.email2 && <p className="text-red-500 text-sm mt-1">{errors.email2}</p>}
                 </div>
               )}
 
@@ -654,9 +645,9 @@ export function AddAffiliate() {
                 <button
                   type="button"
                   onClick={() => setShowEmail2(true)}
-                  className="mt-2 text-sm px-3 py-1 border rounded hover:bg-gray-50 w-fit"
+                  className="mt-2 text-sm px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 font-500"
                 >
-                  + Agregar otro
+                  + Agregar email
                 </button>
               )}
             </div>
@@ -664,27 +655,25 @@ export function AddAffiliate() {
         </div>
 
         {/* SITUACIONES TERAPÉUTICAS (Titular) */}
-        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-            Situaciones Terapéuticas
-          </h2>
+        <div>
+          <h2 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">Situaciones terapéuticas</h2>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             {situaciones.length === 0 && (
-              <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
+              <p className="text-sm text-slate-500">No hay situaciones cargadas.</p>
             )}
 
             {situaciones.map((s, idx) => (
               <div
                 key={idx}
-                className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
+                className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end p-4 border border-slate-200 rounded-lg bg-slate-50"
               >
-                <div className="flex flex-col">
-                  <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
+                <div>
+                  <label className="block text-xs font-600 text-slate-600 mb-2">Situación terapéutica</label>
                   <select
                     value={s.idSituacion}
                     onChange={(e) => updateSituacion(idx, "idSituacion", parseInt(e.target.value))}
-                    className="p-2 border border-gray-300 rounded"
+                    className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                     disabled={loadingSituaciones}
                   >
                     <option value="">-- Seleccionar --</option>
@@ -696,21 +685,21 @@ export function AddAffiliate() {
                   </select>
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="text-sm font-semibold mb-1">Fecha de finalización (opcional)</label>
+                <div>
+                  <label className="block text-xs font-600 text-slate-600 mb-2">Fecha de finalización (opcional)</label>
                   <input
                     type="date"
                     value={s.fechaFinalizacion || ""}
                     onChange={(e) => updateSituacion(idx, "fechaFinalizacion", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
+                    className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                   />
                 </div>
 
-                <div className="justify-self-start md:justify-self-end">
+                <div>
                   <button
                     type="button"
                     onClick={() => removeSituacion(idx)}
-                    className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                    className="px-3 py-2.5 text-xs font-600 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                   >
                     Eliminar
                   </button>
@@ -721,108 +710,109 @@ export function AddAffiliate() {
             <button
               type="button"
               onClick={addSituacion}
-              className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+              className="px-4 py-2 text-xs font-600 text-teal-600 border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
               disabled={loadingSituaciones || situacionesDisponibles.length === 0}
             >
-              + Agregar
+              + Agregar situación
             </button>
           </div>
         </div>
 
         {/* FAMILIARES A CARGO */}
-        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
-            Familiares a Cargo
-          </h2>
+        <div>
+          <h2 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">Familiares a cargo</h2>
 
           {familiares.length === 0 && (
-            <p className="text-sm text-gray-500 mb-4">No hay familiares agregados.</p>
+            <p className="text-sm text-slate-500 mb-4">No hay familiares agregados.</p>
           )}
 
           {familiares.map((familiar, i) => (
-            <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-4">
-              <div className="flex flex-col sm:flex-row justify-between gap-2 items-start sm:items-center mb-3">
-                <h3 className="font-semibold text-gray-700">Familiar {i + 1}</h3>
+            <div key={i} className="bg-slate-50 border border-slate-200 rounded-lg p-6 mb-4">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-sm font-600 text-slate-800">Familiar {i + 1}</h3>
                 <button
                   type="button"
                   onClick={() => eliminarFamiliar(i)}
-                  className="text-red-600 hover:text-red-800 text-sm font-semibold"
+                  className="text-xs font-600 text-red-600 hover:text-red-800 transition-colors"
                 >
                   Eliminar
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                  <label className="font-semibold mb-1 text-sm">Tipo Documento</label>
+                <div>
+                  <label className="block text-xs font-600 text-slate-600 mb-2">Tipo Documento</label>
                   <select
                     value={familiar.tipoDocumento}
                     onChange={(e) => cambiarDatoFamiliar(i, "tipoDocumento", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
+                    className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700"
                   >
                     <option value="DNI">DNI</option>
                     <option value="Pasaporte">Pasaporte</option>
                   </select>
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="font-semibold mb-1 text-sm">Nro Documento</label>
+                <div>
+                  <label className="block text-xs font-600 text-slate-600 mb-2">Nro Documento *</label>
                   <input
                     type="text"
                     value={familiar.nroDocumento}
                     onChange={(e) => cambiarDatoFamiliar(i, "nroDocumento", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
+                    placeholder="12345678"
+                    className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                   />
                   {errors[`familiares[${i}].nroDocumento`] && (
                     <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].nroDocumento`]}</p>
                   )}
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="font-semibold mb-1 text-sm">Nombres</label>
+                <div>
+                  <label className="block text-xs font-600 text-slate-600 mb-2">Nombres *</label>
                   <input
                     type="text"
                     value={familiar.nombre}
                     onChange={(e) => cambiarDatoFamiliar(i, "nombre", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
+                    placeholder="Juan"
+                    className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                   />
                   {errors[`familiares[${i}].nombre`] && (
                     <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].nombre`]}</p>
                   )}
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="font-semibold mb-1 text-sm">Apellidos</label>
+                <div>
+                  <label className="block text-xs font-600 text-slate-600 mb-2">Apellidos *</label>
                   <input
                     type="text"
                     value={familiar.apellido}
                     onChange={(e) => cambiarDatoFamiliar(i, "apellido", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
+                    placeholder="Pérez"
+                    className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                   />
                   {errors[`familiares[${i}].apellido`] && (
                     <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].apellido`]}</p>
                   )}
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="font-semibold mb-1 text-sm">Fecha Nacimiento</label>
+                <div>
+                  <label className="block text-xs font-600 text-slate-600 mb-2">Fecha Nacimiento *</label>
                   <input
                     type="date"
                     value={familiar.fechaNacimiento}
                     onChange={(e) => cambiarDatoFamiliar(i, "fechaNacimiento", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
+                    className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700"
                   />
                   {errors[`familiares[${i}].fechaNacimiento`] && (
                     <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].fechaNacimiento`]}</p>
                   )}
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="font-semibold mb-1 text-sm">Parentesco</label>
+                <div>
+                  <label className="block text-xs font-600 text-slate-600 mb-2">Parentesco</label>
                   <select
                     value={familiar.parentesco}
                     onChange={(e) => cambiarDatoFamiliar(i, "parentesco", e.target.value)}
-                    className="p-2 border border-gray-300 rounded"
+                    className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700"
                   >
                     <option value="Cónyuge">Cónyuge</option>
                     <option value="Hijo">Hijo</option>
@@ -831,13 +821,13 @@ export function AddAffiliate() {
                   </select>
                 </div>
 
-                <div className="flex flex-col md:col-span-2">
-                  <label className="font-semibold mb-1 text-sm flex items-center gap-2">
+                <div className="md:col-span-2">
+                  <label className="flex items-center gap-2 text-xs font-600 text-slate-600 mb-3">
                     <input
                       type="checkbox"
                       checked={familiar.usaDireccionTitular}
                       onChange={(e) => cambiarDatoFamiliar(i, "usaDireccionTitular", e.target.checked)}
-                      className="w-4 h-4"
+                      className="w-4 h-4 rounded border-slate-300"
                     />
                     Usar dirección del titular
                   </label>
@@ -846,76 +836,63 @@ export function AddAffiliate() {
                       type="text"
                       value={familiar.direccion || ""}
                       onChange={(e) => cambiarDatoFamiliar(i, "direccion", e.target.value)}
-                      className="p-2 border border-gray-300 rounded mt-2"
                       placeholder="Dirección del familiar"
+                      className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                     />
                   )}
                 </div>
 
-                <div className="flex flex-col md:col-span-2">
-                  <label className="font-semibold mb-1 text-sm flex items-center gap-2">
+                <div className="md:col-span-2">
+                  <label className="flex items-center gap-2 text-xs font-600 text-slate-600 mb-3">
                     <input
                       type="checkbox"
                       checked={familiar.usaContactoTitular}
                       onChange={(e) => cambiarDatoFamiliar(i, "usaContactoTitular", e.target.checked)}
-                      className="w-4 h-4"
+                      className="w-4 h-4 rounded border-slate-300"
                     />
                     Usar contacto del titular
                   </label>
                   {!familiar.usaContactoTitular && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                      <div className="flex flex-col">
-                        <label className="text-sm mb-1">Teléfono (*)</label>
-                        <input
-                          type="text"
-                          value={familiar.telefono || ""}
-                          onChange={(e) => cambiarDatoFamiliar(i, "telefono", e.target.value)}
-                          className="p-2 border border-gray-300 rounded"
-                        />
-                        {errors[`familiares[${i}].telefono`] && (
-                          <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].telefono`]}</p>
-                        )}
-                      </div>
-                      <div className="flex flex-col">
-                        <label className="text-sm mb-1">Email (*)</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-600 text-slate-600 mb-2">Email *</label>
                         <input
                           type="email"
                           value={familiar.email || ""}
                           onChange={(e) => cambiarDatoFamiliar(i, "email", e.target.value)}
-                          className="p-2 border border-gray-300 rounded"
+                          placeholder="email@example.com"
+                          className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                         />
                         {errors[`familiares[${i}].email`] && (
                           <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].email`]}</p>
                         )}
                       </div>
+                      <div>
+                        <label className="block text-xs font-600 text-slate-600 mb-2">Teléfono *</label>
+                        <input
+                          type="tel"
+                          value={familiar.telefono || ""}
+                          onChange={(e) => cambiarDatoFamiliar(i, "telefono", e.target.value)}
+                          placeholder="1234567890"
+                          className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
+                        />
+                        {errors[`familiares[${i}].telefono`] && (
+                          <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].telefono`]}</p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
 
-              {/* Situaciones del familiar */}
-              <div className="mt-4 p-3 rounded-lg border border-dashed border-gray-300 bg-white">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-gray-700 text-sm">Situaciones del familiar</h4>
-                </div>
-
-                <div className="space-y-2">
-                  {(familiar.situaciones?.length || 0) === 0 && (
-                    <p className="text-sm text-gray-500">No hay situaciones cargadas.</p>
-                  )}
-
-                  {familiar.situaciones?.map((s, idx) => (
-                    <div
-                      key={idx}
-                      className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
-                    >
-                      <div className="flex flex-col">
-                        <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
+                {(familiar.situaciones && familiar.situaciones.length > 0) && (
+                  <div className="md:col-span-2">
+                    <h4 className="text-xs font-600 text-slate-600 mb-3">Situaciones terapéuticas del familiar</h4>
+                    {familiar.situaciones.map((s, sIdx) => (
+                      <div key={sIdx} className="mb-3 p-3 bg-white rounded border border-slate-200 flex items-end gap-2">
                         <select
                           value={s.idSituacion}
-                          onChange={(e) => updateSituacionFamiliar(i, idx, "idSituacion", e.target.value)}
-                          className="p-2 border border-gray-300 rounded"
-                          disabled={loadingSituaciones}
+                          onChange={(e) => updateSituacionFamiliar(i, sIdx, "idSituacion", parseInt(e.target.value))}
+                          className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
                         >
                           <option value="">-- Seleccionar --</option>
                           {situacionesDisponibles.map(sit => (
@@ -924,39 +901,30 @@ export function AddAffiliate() {
                             </option>
                           ))}
                         </select>
-                      </div>
-
-                      <div className="flex flex-col">
-                        <label className="text-sm font-semibold mb-1">Fecha de finalización (opcional)</label>
                         <input
                           type="date"
                           value={s.fechaFinalizacion || ""}
-                          onChange={(e) => updateSituacionFamiliar(i, idx, "fechaFinalizacion", e.target.value)}
-                          className="p-2 border border-gray-300 rounded"
+                          onChange={(e) => updateSituacionFamiliar(i, sIdx, "fechaFinalizacion", e.target.value)}
+                          className="px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
                         />
-                      </div>
-
-                      <div className="justify-self-start md:justify-self-end">
                         <button
                           type="button"
-                          onClick={() => removeSituacionFamiliar(i, idx)}
-                          className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                          onClick={() => removeSituacionFamiliar(i, sIdx)}
+                          className="px-2 py-2 text-xs font-600 text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors"
                         >
-                          Eliminar
+                          Quitar
                         </button>
                       </div>
-                    </div>
-                  ))}
-
-                  <button
-                    type="button"
-                    onClick={() => addSituacionFamiliar(i)}
-                    className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
-                    disabled={loadingSituaciones || situacionesDisponibles.length === 0}
-                  >
-                    + Agregar
-                  </button>
-                </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => addSituacionFamiliar(i)}
+                      className="text-xs text-teal-600 border border-teal-200 px-2 py-1.5 rounded hover:bg-teal-50 transition-colors"
+                    >
+                      + Agregar situación
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -964,34 +932,34 @@ export function AddAffiliate() {
           <button
             type="button"
             onClick={agregarFamiliar}
-            className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+            className="px-4 py-2 text-xs font-600 text-teal-600 border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
           >
-            + Agregar Familiar
+            + Agregar familiar
           </button>
         </div>
       </div>
 
       {/* BOTONES */}
-      <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-4">
-        <button
-          type="submit"
-          onClick={handleSubmit}
-          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition w-full sm:w-auto"
-          disabled={loading}
-        >
-          {loading ? "Guardando..." : "Crear Afiliado"}
-        </button>
+      <div className="flex gap-3 pt-6 border-t border-slate-100">
         <button
           type="button"
           onClick={() => navigate("/home")}
-          className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition w-full sm:w-auto"
+          className="px-6 py-2.5 rounded-lg border border-slate-200 text-sm font-600 text-slate-700 hover:bg-slate-50 transition-colors"
         >
           Cancelar
         </button>
         <button
+          type="submit"
+          onClick={handleSubmit}
+          className="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-600 px-4 py-2 rounded-xl transition-colors"
+          disabled={loading}
+        >
+          {loading ? "Guardando..." : "Guardar"}
+        </button>
+        <button
           type="button"
           onClick={() => setShowAltaPopup(true)}
-          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition w-full sm:w-auto"
+          className="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-600 px-4 py-2 rounded-xl transition-colors"
           disabled={loading}
         >
           Programar Alta
@@ -1004,13 +972,14 @@ export function AddAffiliate() {
         </div>
       )}
       {success && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded text-center">
-          <p className="text-green-600 font-semibold">{success}</p>
+        <div className="mt-4 p-4 bg-teal-50 border border-teal-200 rounded text-center">
+          <p className="text-teal-600 font-semibold">{success}</p>
         </div>
       )}
 
       {showAltaPopup && (
         <AltaProgramadaPopup
+          isOpen={showAltaPopup}
           onClose={() => setShowAltaPopup(false)}
           onConfirm={handleProgramarAlta}
         />

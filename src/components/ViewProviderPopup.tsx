@@ -50,7 +50,7 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
 
         {/* DATOS DEL PRESTADOR */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Datos del Prestador</h2>
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">Datos del Prestador</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">CUIL / CUIT</label>
@@ -93,7 +93,7 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
 
         {/* ESPECIALIDADES */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
             Especialidades
           </h2>
 
@@ -112,7 +112,7 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
 
         {/* CONTACTO */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Contacto</h2>
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">Contacto</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="font-semibold mb-1 bg-gray-100 px-2 block">Teléfonos</label>
@@ -161,7 +161,7 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
         {/* LUGARES DE ATENCIÓN */}
         {provider.lugaresAtencion && provider.lugaresAtencion.length > 0 && (
           <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-            <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+            <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
               Lugares de Atención ({provider.lugaresAtencion.length})
             </h2>
 
@@ -173,7 +173,7 @@ export function ViewProviderPopup({ provider, onClose }: ViewProviderPopupProps)
                     key={idx}
                     onClick={() => setSelectedLugarIndex(idx)}
                     className={`px-4 py-2 font-semibold transition ${selectedLugarIndex === idx
-                      ? "text-[#5FA92C] border-b-2 border-[#5FA92C]"
+                      ? "text-[#14B8A6] border-b-2 border-[#14B8A6]"
                       : "text-gray-600 hover:text-gray-800"
                       }`}
                   >
