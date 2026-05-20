@@ -5,7 +5,7 @@ const BASE = `${API_BASE_URL}/admin/affiliates`;
 
 export const fetchReintegros = async (filters: ReintegroFilters = {}): Promise<ReintegrosPageResponse> => {
   const params = new URLSearchParams();
-  if (filters.status) params.set("status", filters.status);
+  if (filters.estado) params.set("estado", filters.estado);
   if (filters.page)   params.set("page",   String(filters.page));
   if (filters.limit)  params.set("limit",  String(filters.limit));
 

@@ -47,7 +47,7 @@ export function Reintegros() {
     setError(null);
     try {
       const result = await fetchReintegros({
-        status: t === "todos" ? undefined : t,
+        estado: t === "todos" ? undefined : t,
         page: p,
         limit: LIMIT,
       });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { Affiliate as AffiliateType } from "./AffiliatesTable";
 import { API_BASE_URL, apiFetch } from "../config/api";
+import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
 
 interface Situacion {
   idSituacionAfiliado?: number;
@@ -58,18 +59,16 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
 
 
         // Cargar datos del afiliado
-        const [affiliateRes, situacionesRes, planesRes] = await Promise.all([
+        const [affiliateRes, situacionesData, planesRes] = await Promise.all([
           apiFetch(`${API_BASE_URL}/affiliates/affiliate/${affiliate.dni}`),
-          apiFetch(`${API_BASE_URL}/therapeutic`),
+          fetchTherapeuticSituationTypes(),
           apiFetch(`${API_BASE_URL}/plans`)
         ]);
 
         if (!affiliateRes.ok) throw new Error("Error al cargar datos del afiliado");
-        if (!situacionesRes.ok) throw new Error("Error al cargar situaciones");
         if (!planesRes.ok) throw new Error("Error al cargar planes");
 
         const affiliateData = await affiliateRes.json();
-        const situacionesData = await situacionesRes.json();
         const planesData = await planesRes.json();
 
         // El endpoint puede devolver el afiliado directamente o dentro de un objeto
@@ -114,7 +113,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         // ✅ Situaciones terapéuticas
         setSituaciones(aff.situaciones || []);
 
-        setSituacionesDisponibles(situacionesData.situaciones || []);
+        setSituacionesDisponibles(situacionesData);
         setPlanesDisponibles(planesData.plans || []);
 
       } catch (error) {
