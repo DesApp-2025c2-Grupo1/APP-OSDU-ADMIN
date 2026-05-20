@@ -7,7 +7,7 @@ import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
 import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup";
 import { EditAffiliatePopup } from "../components/EditAffiliatePopup";
 import SearchDropdown from "../components/SearchDropdown";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 // 🔹 Pequeño Toast (notificación visual sin alert)
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => (
@@ -42,6 +42,7 @@ export function Home() {
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showPending, setShowPending] = useState(false);
 
   const navigate = useNavigate();
 
@@ -52,34 +53,56 @@ export function Home() {
   };
 
   // 🔹 Carga de afiliados desde API
-  const fetchAffiliates = async () => {
+  const fetchAffiliates = async (pending: boolean) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/affiliates`);
+      const endpoint = pending ? `${API_BASE_URL}/affiliates?status=false` : `${API_BASE_URL}/affiliates`;
+      const response = await apiFetch(endpoint, {
+        credentials: "include"
+      });
       if (!response.ok) throw new Error("Error en la respuesta del servidor");
 
       const data = await response.json();
       const affiliatesData = Array.isArray(data) ? data : data.affiliates;
       if (!affiliatesData) throw new Error("No se encontraron afiliados");
 
-      setAffiliates(affiliatesData);
+      const normalized = affiliatesData.map((a: any) => {
+        let formattedDate = a.fecha_nacimiento || a.birth_date || "";
+        if (formattedDate && formattedDate.includes('-')) {
+          const d = new Date(formattedDate);
+          if (!isNaN(d.getTime())) {
+             formattedDate = d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+          }
+        }
+        
+        return {
+          ...a,
+          nombre: a.nombre || a.first_name || "",
+          apellido: a.apellido || a.last_name || "",
+          dni: a.dni || a.document_number || "",
+          credencial: a.credencial || a.credential || `PENDING-${a.document_number || a.id}`,
+          fecha_nacimiento: formattedDate,
+          direccion: a.direccion || a.address || "",
+        };
+      });
+
+      setAffiliates(normalized);
     } catch (error) {
-      console.error("Error al obtener afiliados:", error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAffiliates();
-  }, []);
+    fetchAffiliates(showPending);
+  }, [showPending]);
 
   const fieldMap: Record<string, (a: Affiliate) => string> = {
     dni: (a) => a.dni,
     nombre: (a) => a.nombre,
     apellido: (a) => a.apellido,
     credencial: (a) => a.credencial,
-    plan: (a) => a.plan?.nombre || "",
+    plan: (a) => a.plan?.nombre || (a as any).plan_type || "",
   };
 
   const filtered = useMemo(() => {
@@ -116,8 +139,9 @@ export function Home() {
     setIsDeleting(true);
     try {
       // Si tu API borra por DNI (como en tu ejemplo actual):
-      const res = await fetch(`${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`, {
+      const res = await apiFetch(`${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`, {
         method: "DELETE",
+        credentials: "include"
       });
 
       if (!res.ok && res.status !== 204) throw new Error("Error al eliminar afiliado");
@@ -138,7 +162,6 @@ export function Home() {
 
       showToast(`Afiliado ${selectedAffiliate.nombre} eliminado correctamente`);
     } catch (error) {
-      console.error("Error al eliminar afiliado:", error);
       showToast("Error al eliminar el afiliado");
     } finally {
       setIsDeleting(false);
@@ -151,17 +174,17 @@ export function Home() {
   const handleScheduleDelete = async (fechaISO: string) => {
     if (!selectedAffiliate) return;
     try {
-      await fetch(
+      await apiFetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}/schedule-delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fecha: fechaISO }),
+          credentials: "include"
         }
       );
       showToast(`Baja programada para ${selectedAffiliate.nombre}`);
     } catch (e) {
-      console.error(e);
       showToast("No se pudo programar la baja");
     } finally {
       setShowDeleteDialog(false);
@@ -172,16 +195,19 @@ export function Home() {
   // 🟦 Guardar edición
   const handleSaveEdit = async (updatedAffiliate: Affiliate) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/affiliates/${updatedAffiliate.dni}`, {
+      const response = await apiFetch(`${API_BASE_URL}/affiliates/${updatedAffiliate.dni}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedAffiliate),
+        credentials: "include"
       });
 
       if (!response.ok) throw new Error("Error al actualizar afiliado");
 
       // Recargar datos completos del afiliado
-      const updatedResponse = await fetch(`${API_BASE_URL}/affiliates/affiliate/${updatedAffiliate.dni}`);
+      const updatedResponse = await apiFetch(`${API_BASE_URL}/affiliates/affiliate/${updatedAffiliate.dni}`, {
+        credentials: "include"
+      });
       if (updatedResponse.ok) {
         const updatedData = await updatedResponse.json();
 
@@ -194,7 +220,6 @@ export function Home() {
       setSelectedAffiliate(null);
       showToast(`Afiliado ${updatedAffiliate.nombre} actualizado`);
     } catch (error) {
-      console.error("Error al actualizar afiliado:", error);
       showToast("Error al actualizar el afiliado");
     }
   };
@@ -214,7 +239,16 @@ export function Home() {
           className="w-full md:w-2/3"
         />
 
-        <div className="self-start md:self-auto">
+        <div className="self-start md:self-auto flex gap-2">
+          <button
+            onClick={() => setShowPending(!showPending)}
+            className={`px-4 py-2 rounded font-medium transition-colors ${showPending
+              ? "bg-blue-100 text-blue-800 border border-blue-300 hover:bg-blue-200"
+              : "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200"
+              }`}
+          >
+            {showPending ? "Ver Activos" : "Ver Pendientes"}
+          </button>
           <ButtonAddAffiliate
             text="Agregar Afiliado"
             onClick={() => navigate("/home/agregarAfiliado")}

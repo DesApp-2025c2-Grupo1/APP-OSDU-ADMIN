@@ -21,11 +21,8 @@ export function ButtonCreateAffiliate({ text, onClick }: ButtonCreateAffiliatePr
         focus:outline-none focus:ring-2 focus:ring-[#5FA92C]  focus:ring-offset-2
       "
     >
-    <PersonAddAlt1Icon fontSize="small"/>
+      <PersonAddAlt1Icon fontSize="small" />
       {text}
     </button>
   );
 }
-
-// Para usarlo    <ButtonCreateAffiliate text="Dar de alta Afiliado" onClick={() => console.log("click")} />
-// Deberiamos hacer que el onClick lo lleve a otra pantalla

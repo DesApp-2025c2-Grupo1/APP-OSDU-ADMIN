@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { API_BASE_URL, apiFetch } from "../config/api";
+
 
 interface SituacionTerapeutica {
   idSituacionAfiliado?: number;
@@ -43,15 +45,21 @@ interface AffiliateType {
   telefonos?: Telefono[];
   email?: string | Email[];
   direccion?: string;
+  status?: boolean | number;
+  dni_document_path?: string;
+  payslip_document_path?: string;
+  id?: number;
 }
 
 interface ViewAffiliatePopupProps {
   affiliate: AffiliateType;
   onClose: () => void;
+  onStatusChanged?: () => void;
 }
 
-export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupProps) {
+export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: ViewAffiliatePopupProps) {
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [fullAffiliate, setFullAffiliate] = useState<AffiliateType | null>(null);
 
   // Cargar datos completos del afiliado
@@ -59,23 +67,19 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
     const fetchAffiliateDetails = async () => {
       try {
         setLoading(true);
+
+        if (!affiliate.id) throw new Error("ID de afiliado no proporcionado");
         
-        const dniToFetch = affiliate.dni || affiliate.nroDocumento;
-        console.log("🔍 Cargando detalles para DNI:", dniToFetch);
-        
-        const response = await fetch(
-          `${API_BASE_URL}/affiliates/affiliate/${dniToFetch}`
+        const response = await apiFetch(
+          `${API_BASE_URL}/affiliates/${affiliate.id}`
         );
 
         if (!response.ok) throw new Error("Error al cargar datos del afiliado");
 
         const data = await response.json();
-        console.log("📦 Datos completos recibidos:", data);
-        console.log("🏥 Situaciones en los datos:", data.affiliates?.situaciones);
-        
+
         setFullAffiliate(data.affiliates);
       } catch (error) {
-        console.error("❌ Error al cargar datos:", error);
         setFullAffiliate(affiliate); // Usar datos básicos si falla
       } finally {
         setLoading(false);
@@ -105,11 +109,11 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
   const obtenerNombrePlan = (plan: Plan | string | number | undefined, planMedico?: string) => {
     if (planMedico) return planMedico;
     if (!plan) return "Sin plan";
-    
+
     if (typeof plan === 'object' && plan.nombre) {
       return plan.nombre;
     }
-    
+
     return String(plan);
   };
 
@@ -150,32 +154,56 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
   }
 
   const displayAffiliate = fullAffiliate || affiliate;
+
+  const handleStatusChange = async (action: 'activate' | 'deactivate') => {
+    if (!displayAffiliate.id) return;
+    try {
+        setActionLoading(true);
+        const response = await apiFetch(`${API_BASE_URL}/affiliates/${displayAffiliate.id}/${action}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+        });
+        if (!response.ok) throw new Error(`Error al ${action} el afiliado`);
+        alert(`Afiliado ${action === 'activate' ? 'aprobado' : 'rechazado'} con éxito.`);
+        if (onStatusChanged) onStatusChanged();
+        onClose();
+    } catch (err) {
+        alert(`Ocurrió un error al intentar cambiar el estado.`);
+    } finally {
+        setActionLoading(false);
+    }
+  };
+
   const emails = obtenerEmails(displayAffiliate);
   const telefonos = obtenerTelefonos(displayAffiliate);
-  const fechaNac = displayAffiliate.fechaNacimiento || displayAffiliate.fecha_nacimiento;
-  
-  console.log("👁️ Mostrando afiliado:", displayAffiliate);
-  console.log("🏥 Situaciones a mostrar:", displayAffiliate.situaciones);
+  const rawDate = displayAffiliate.fechaNacimiento || displayAffiliate.fecha_nacimiento;
+  let fechaNac = rawDate;
+  if (rawDate && rawDate.includes("-")) {
+    const d = new Date(rawDate);
+    if (!isNaN(d.getTime())) {
+      fechaNac = d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+  }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 overflow-y-auto">
-      <div className="bg-white rounded-lg w-[90%] max-w-5xl my-8 p-6 relative max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 overflow-y-auto p-4">
+      <div className="bg-white rounded-lg w-full max-w-5xl my-8 p-4 sm:p-6 relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800 z-10"
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-600 text-2xl hover:text-gray-800 z-10"
         >
           ✕
         </button>
 
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">Detalles del Afiliado</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6 pr-8">Detalles del Afiliado</h1>
 
         {/* Datos de Afiliado */}
-        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+        <div className="mb-6 sm:mb-8 p-3 sm:p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#5FA92C] text-base sm:text-lg font-semibold mb-3 sm:mb-4 border-b-2 border-[#5FA92C] pb-1">
             Datos de Afiliado
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {displayAffiliate.tipoDocumento && (
               <div>
                 <label className="font-semibold mb-1 bg-gray-100 px-2 block">Tipo Documento</label>
@@ -261,6 +289,39 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
           </div>
         )}
 
+        {/* Documentos */}
+        {(displayAffiliate.dni_document_path || displayAffiliate.payslip_document_path) && (
+          <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+            <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+              Documentación Adjunta
+            </h2>
+            <div className="flex gap-4">
+              {displayAffiliate.dni_document_path && (
+                <a 
+                    href={`${API_BASE_URL.replace('/api', '')}${displayAffiliate.dni_document_path}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex-1 p-4 border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 transition"
+                >
+                    <span className="font-semibold text-gray-700">Ver DNI</span>
+                    <span className="text-blue-500 underline text-sm">Abrir documento</span>
+                </a>
+              )}
+              {displayAffiliate.payslip_document_path && (
+                <a 
+                    href={`${API_BASE_URL.replace('/api', '')}${displayAffiliate.payslip_document_path}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex-1 p-4 border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 transition"
+                >
+                    <span className="font-semibold text-gray-700">Ver Recibo de Sueldo</span>
+                    <span className="text-blue-500 underline text-sm">Abrir documento</span>
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Situaciones Terapéuticas */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
@@ -294,6 +355,16 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
                           En curso
                         </span>
                       )}
+                      {sit.fechaFin && new Date(sit.fechaFin) > new Date() && (
+                        <span className="bg-blue-100 px-3 py-1 rounded">
+                          Activa
+                        </span>
+                      )}
+                      {sit.fechaFin && new Date(sit.fechaFin) <= new Date() && (
+                        <span className="bg-gray-100 px-3 py-1 rounded text-gray-600">
+                          Finalizada
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -306,14 +377,33 @@ export function ViewAffiliatePopup({ affiliate, onClose }: ViewAffiliatePopupPro
           )}
         </div>
 
-        {/* Botón de cierre */}
-        <div className="flex justify-center mt-6">
+        {/* Botón de cierre o Acciones de Aprobación */}
+        <div className="flex justify-between mt-4 sm:mt-6 border-t pt-4">
           <button
             onClick={onClose}
-            className="bg-gray-500 text-white px-8 py-3 rounded font-semibold shadow hover:bg-gray-600 transition"
+            className="bg-gray-500 text-white px-6 sm:px-8 py-2 sm:py-3 rounded font-semibold shadow hover:bg-gray-600 transition w-full sm:w-auto"
           >
             Cerrar
           </button>
+
+          {(!displayAffiliate.status) && displayAffiliate.id && (
+            <div className="flex gap-4">
+              <button
+                onClick={() => handleStatusChange('deactivate')}
+                disabled={actionLoading}
+                className="bg-red-500 text-white px-6 py-2 rounded font-semibold shadow hover:bg-red-600 transition disabled:opacity-50"
+              >
+                Rechazar
+              </button>
+              <button
+                onClick={() => handleStatusChange('activate')}
+                disabled={actionLoading}
+                className="bg-green-500 text-white px-6 py-2 rounded font-semibold shadow hover:bg-green-600 transition disabled:opacity-50"
+              >
+                Aprobar Alta
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

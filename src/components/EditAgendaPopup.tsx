@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import type { HorarioAgenda } from "../pages/Agenda";
+import { updateAgenda } from "../api/agendaService";
 
 interface FranjaHoraria {
   dias: string[];
@@ -14,36 +15,49 @@ interface EditAgendaPopupProps {
 }
 
 export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProps) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Mapear días abreviados a nombres completos
+  const mapDiaToComplete = (dia: string): string => {
+    const map: Record<string, string> = {
+      "Lun": "Lunes",
+      "Mar": "Martes",
+      "Mié": "Miercoles",
+      "Jue": "Jueves",
+      "Vie": "Viernes",
+      "Sáb": "Sabado",
+      "Dom": "Domingo"
+    };
+    return map[dia] || dia;
+  };
+
+  // Inicializar franjas desde los bloques de la agenda
+  const initialFranjas = agenda.bloques && agenda.bloques.length > 0
+    ? agenda.bloques.map(bloque => ({
+      dias: bloque.dias.map(mapDiaToComplete),
+      desde: bloque.desde,
+      hasta: bloque.hasta,
+    }))
+    : [{
+      dias: agenda.dias.map(mapDiaToComplete),
+      desde: agenda.horario.split(" - ")[0] || "",
+      hasta: agenda.horario.split(" - ")[1] || "",
+    }];
+
   const [formData, setFormData] = useState({
-    prestador: agenda.prestador,
-    especialidad: agenda.especialidad,
-    lugar: agenda.lugar,
     duracion: agenda.duracion,
-    franjas: [
-      {
-        dias: agenda.dias.length ? agenda.dias : [],
-        desde: agenda.horario.split(" - ")[0] || "",
-        hasta: agenda.horario.split(" - ")[1] || "",
-      },
-    ] as FranjaHoraria[],
+    franjas: initialFranjas as FranjaHoraria[],
   });
 
   const diasSemana = [
-    { id: "Lun", label: "Lun" },
-    { id: "Mar", label: "Mar" },
-    { id: "Mié", label: "Mié" },
-    { id: "Jue", label: "Jue" },
-    { id: "Vie", label: "Vie" },
-    { id: "Sáb", label: "Sáb" },
+    { id: "Lunes", label: "Lun" },
+    { id: "Martes", label: "Mar" },
+    { id: "Miercoles", label: "Mié" },
+    { id: "Jueves", label: "Jue" },
+    { id: "Viernes", label: "Vie" },
+    { id: "Sabado", label: "Sáb" },
   ];
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "duracion" ? parseInt(value) : value,
-    }));
-  };
 
   // ---------- Franjas horarias ----------
   const toggleDia = (franjaIdx: number, dia: string) => {
@@ -84,19 +98,93 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
     }));
   };
 
-  const handleSave = () => {
-    const primeraFranja = formData.franjas[0];
-    const updated: HorarioAgenda = {
-      ...agenda,
-      prestador: formData.prestador,
-      especialidad: formData.especialidad,
-      lugar: formData.lugar,
-      dias: primeraFranja.dias,
-      horario: `${primeraFranja.desde} - ${primeraFranja.hasta}`,
-      duracion: formData.duracion,
-    };
-    onSave(updated);
-    onClose();
+  // Función para validar que no haya días y horarios duplicados
+  const validarFranjasDuplicadas = (franjas: FranjaHoraria[]): string | null => {
+    for (let i = 0; i < franjas.length; i++) {
+      for (let j = i + 1; j < franjas.length; j++) {
+        const franja1 = franjas[i];
+        const franja2 = franjas[j];
+
+        // Verificar si hay días en común
+        const diasEnComun = franja1.dias.filter(dia => franja2.dias.includes(dia));
+
+        if (diasEnComun.length > 0) {
+          // Convertir horarios a minutos para comparar
+          const [h1Desde, m1Desde] = franja1.desde.split(':').map(Number);
+          const [h1Hasta, m1Hasta] = franja1.hasta.split(':').map(Number);
+          const [h2Desde, m2Desde] = franja2.desde.split(':').map(Number);
+          const [h2Hasta, m2Hasta] = franja2.hasta.split(':').map(Number);
+
+          const minutos1Desde = h1Desde * 60 + m1Desde;
+          const minutos1Hasta = h1Hasta * 60 + m1Hasta;
+          const minutos2Desde = h2Desde * 60 + m2Desde;
+          const minutos2Hasta = h2Hasta * 60 + m2Hasta;
+
+          // Verificar si los horarios se solapan
+          const haySolapamiento =
+            (minutos1Desde < minutos2Hasta && minutos1Hasta > minutos2Desde);
+
+          if (haySolapamiento) {
+            const diasTexto = diasEnComun.join(', ');
+            return `Las franjas ${i + 1} y ${j + 1} tienen días y horarios que se solapan (${diasTexto}). Por favor, corrija los horarios.`;
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  const handleSave = async () => {
+    // Validaciones
+    if (formData.franjas.length === 0) {
+      setError("Debe tener al menos una franja horaria");
+      return;
+    }
+
+    const franjasValidas = formData.franjas.filter(f =>
+      f.dias.length > 0 && f.desde && f.hasta
+    );
+
+    if (franjasValidas.length === 0) {
+      setError("Debe configurar al menos una franja horaria con días y horarios válidos");
+      return;
+    }
+
+    // Validar que no haya franjas duplicadas o con solapamiento
+    const errorDuplicados = validarFranjasDuplicadas(franjasValidas);
+    if (errorDuplicados) {
+      setError(errorDuplicados);
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const payload = {
+        duracionTurno: formData.duracion,
+        bloques: franjasValidas.map(f => ({
+          dias: f.dias,
+          desde: f.desde,
+          hasta: f.hasta
+        }))
+      };
+
+      await updateAgenda(agenda.id, payload);
+
+      // Crear objeto actualizado para el estado local
+      const updated: HorarioAgenda = {
+        ...agenda,
+        duracion: formData.duracion,
+        bloques: franjasValidas,
+      };
+
+      onSave(updated);
+    } catch (err: any) {
+      setError(err.message || "Error al actualizar la agenda");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -104,14 +192,22 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
       <div className="bg-white rounded-lg w-[90%] max-w-4xl max-h-[90vh] overflow-y-auto p-6 relative shadow-lg">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800"
+          disabled={loading}
+          className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800 disabled:opacity-50"
         >
           ✕
         </button>
 
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">Editar Agenda</h1>
 
-        {/* DATOS DEL PRESTADOR */}
+        {/* Error */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+
+        {/* DATOS DEL PRESTADOR (solo lectura) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Datos del prestador
@@ -120,37 +216,25 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Nombre</label>
-              <input
-                type="text"
-                name="prestador"
-                value={formData.prestador}
-                onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-              />
+              <div className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-700">
+                {agenda.prestador}
+              </div>
             </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Especialidad</label>
-              <input
-                type="text"
-                name="especialidad"
-                value={formData.especialidad}
-                onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-              />
+              <div className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-700">
+                {agenda.especialidad}
+              </div>
             </div>
 
             <div className="flex flex-col sm:col-span-2">
               <label className="font-semibold mb-1 bg-gray-100 px-2">
                 Lugar de atención
               </label>
-              <input
-                type="text"
-                name="lugar"
-                value={formData.lugar}
-                onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-              />
+              <div className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-700">
+                {agenda.lugar}
+              </div>
             </div>
           </div>
         </div>
@@ -172,6 +256,7 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
                       type="checkbox"
                       checked={f.dias.includes(d.id)}
                       onChange={() => toggleDia(idx, d.id)}
+                      disabled={loading}
                     />
                     {d.label}
                   </label>
@@ -183,13 +268,15 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
                   type="time"
                   value={f.desde}
                   onChange={(e) => setDesde(idx, e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2"
+                  disabled={loading}
+                  className="border border-gray-300 rounded-lg px-3 py-2 disabled:opacity-50"
                 />
                 <input
                   type="time"
                   value={f.hasta}
                   onChange={(e) => setHasta(idx, e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2"
+                  disabled={loading}
+                  className="border border-gray-300 rounded-lg px-3 py-2 disabled:opacity-50"
                 />
               </div>
 
@@ -197,7 +284,8 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
                 <button
                   type="button"
                   onClick={() => removeFranja(idx)}
-                  className="mt-2 text-red-500 font-semibold text-sm"
+                  disabled={loading}
+                  className="mt-2 text-red-500 font-semibold text-sm disabled:opacity-50"
                 >
                   Eliminar franja
                 </button>
@@ -208,7 +296,8 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
           <button
             type="button"
             onClick={addFranja}
-            className="text-[#5FA92C] text-sm font-semibold"
+            disabled={loading}
+            className="text-[#5FA92C] text-sm font-semibold disabled:opacity-50"
           >
             + Agregar franja horaria
           </button>
@@ -218,10 +307,10 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
               Duración del turno
             </label>
             <select
-              name="duracion"
               value={formData.duracion}
-              onChange={handleInputChange}
-              className="p-2 border border-gray-300 rounded"
+              onChange={(e) => setFormData(prev => ({ ...prev, duracion: parseInt(e.target.value) }))}
+              disabled={loading}
+              className="p-2 border border-gray-300 rounded disabled:opacity-50"
             >
               <option value={15}>15 min</option>
               <option value={20}>20 min</option>
@@ -236,13 +325,15 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
         <div className="flex justify-center gap-4 mt-4">
           <button
             onClick={handleSave}
-            className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
+            disabled={loading}
+            className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Guardar Cambios
+            {loading ? "Guardando..." : "Guardar Cambios"}
           </button>
           <button
             onClick={onClose}
-            className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition"
+            disabled={loading}
+            className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>
@@ -251,4 +342,3 @@ export function EditAgendaPopup({ agenda, onClose, onSave }: EditAgendaPopupProp
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 export interface Plan {
   idPlan: number;
@@ -10,18 +10,17 @@ export interface Plan {
  */
 export const fetchPlans = async (): Promise<Plan[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/plans`);
-    
+    const response = await apiFetch(`${API_BASE_URL}/plans`);
+
     if (!response.ok) {
       throw new Error(`Error al obtener planes: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     // El backend devuelve { plans: [...] }
     return data.plans || [];
   } catch (error) {
-    console.error("Error en fetchPlans:", error);
     throw error;
   }
 };
@@ -31,8 +30,8 @@ export const fetchPlans = async (): Promise<Plan[]> => {
  */
 export const fetchPlanById = async (id: number): Promise<Plan | null> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/plans/${id}`);
-    
+    const response = await apiFetch(`${API_BASE_URL}/plans/${id}`);
+
     if (!response.ok) {
       if (response.status === 404) return null;
       throw new Error(`Error al obtener plan: ${response.status}`);
@@ -40,7 +39,6 @@ export const fetchPlanById = async (id: number): Promise<Plan | null> => {
 
     return await response.json();
   } catch (error) {
-    console.error("Error en fetchPlanById:", error);
     throw error;
   }
 };

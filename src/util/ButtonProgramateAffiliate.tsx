@@ -20,11 +20,8 @@ export function ButtonProgramateAffiliate({ text, onClick }: ButtonProgramateAff
         focus:outline-none focus:ring-2 focus:ring-[#5FA92C]  focus:ring-offset-2
       "
     >
-    <AccessTimeIcon fontSize="small"/>
+      <AccessTimeIcon fontSize="small" />
       {text}
     </button>
   );
 }
-
-//Para usarlo <ButtonProgramateAffiliate text="Programar Alta Afiliado" onClick={() => console.log("click")} />
-// Hay que hacer que el onClick lo lleve a la pagina que corresponde.

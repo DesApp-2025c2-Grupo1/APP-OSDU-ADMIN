@@ -1,69 +1,61 @@
-# React + TypeScript + Vite
+# front-unahur-admin — Panel de Administración
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend del panel administrativo del Portal de Medicina Integral UNAHUR. Permite gestionar afiliados, prestadores, agendas y consultas.
 
-Currently, two official plugins are available:
+## Tecnologías
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- React + TypeScript + Vite
+- Tailwind CSS + Material UI
+- React Router DOM
+- Autenticación via cookie JWT (httpOnly)
 
-## Expanding the ESLint configuration
+## Requisitos previos
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- [Node.js v18+](https://nodejs.org/)
+- Backend `app-unahur-portal` corriendo en el puerto 9002
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Instalación
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+```bash
+# 1. Clonar el repo
+git clone <url-del-repo>
+cd front-unahur-admin
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# 2. Instalar dependencias
+npm install
+
+# 3. Crear archivo de variables de entorno
+cp .env.example .env
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Variables de entorno
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Crear un archivo `.env` en la raíz:
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_API_URL=http://localhost:9002
 ```
+
+> Debe apuntar a la URL donde corre el backend.
+
+## Ejecutar en desarrollo
+
+```bash
+npm run dev
+```
+
+El panel queda disponible en **http://localhost:5173**
+
+## Credenciales de acceso
+
+| Campo    | Valor                    |
+|----------|--------------------------|
+| Email    | admin@mediunahur.com     |
+| Password | clave123                 |
+
+## Funcionalidades
+
+- **Afiliados**: alta, baja, edición, búsqueda y grupo familiar
+- **Prestadores**: alta, baja, edición con especialidades y lugares de atención
+- **Agendas**: creación y gestión de agendas por prestador
+- **Consultas**: reportes de afiliados, prestadores y situaciones terapéuticas

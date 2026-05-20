@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
-import { SPECIALTIES, loadSpecialties } from "../data/specialties";
-import { API_BASE_URL } from "../config/api";
+import { SPECIALTIES } from "../data/specialties";
+import { API_BASE_URL, apiFetch } from "../config/api";
+import { PDFDownloadButton } from "../util/ReportPDFExporter";
+
 
 // 🔹 Fila de resultado (ajustarla a lo que devuelva tu API real)
 type PrestadorEspecialidadRow = {
@@ -20,6 +22,7 @@ export function PrestadoresPorEspecialidad() {
   const [results, setResults] = useState<PrestadorEspecialidadRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
 
   // 🔹 Paginación
   const [page, setPage] = useState(1);
@@ -44,7 +47,7 @@ export function PrestadoresPorEspecialidad() {
       setPage(1);
 
       // CAMBIAR SI O SI POR LA RUTA DEL BACK-END PARA ESTE REPORTE
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/reports/prestadores-por-especialidad?specialtyId=${selectedSpecialtyId}`
       );
 
@@ -60,13 +63,22 @@ export function PrestadoresPorEspecialidad() {
         : data.results || data.providers || [];
 
       setResults(rows);
+      setSearched(true);
     } catch (e: any) {
-      console.error(e);
       setError(e.message || "Error al consultar el reporte");
+      setSearched(true);
     } finally {
       setLoading(false);
     }
   };
+
+  const pdfColumns = [
+    { key: "nombreCompleto", label: "Nombre Completo" },
+    { key: "cuitCuil", label: "CUIL/CUIT" },
+    { key: "tipoPrestador", label: "Tipo de Prestador" },
+    { key: "especialidadNombre", label: "Especialidad" },
+  ];
+
 
   return (
     <div className="w-full flex justify-center px-2">
@@ -104,10 +116,9 @@ export function PrestadoresPorEspecialidad() {
               disabled={!selectedSpecialtyId || loading}
               className={`
                 px-5 py-2 rounded-md text-white font-semibold
-                ${
-                  selectedSpecialtyId && !loading
-                    ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
-                    : "bg-gray-300 cursor-not-allowed"
+                ${selectedSpecialtyId && !loading
+                  ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
+                  : "bg-gray-300 cursor-not-allowed"
                 }
               `}
             >
@@ -115,8 +126,18 @@ export function PrestadoresPorEspecialidad() {
             </button>
           </div>
 
-          
+
         </div>
+
+        {results.length > 0 && (
+          <PDFDownloadButton
+            title="Prestadores por especialidad"
+            subtitle={selectedSpecialty?.nombre || "—"}
+            data={results}
+            columns={pdfColumns}
+            filename="prestadores-especialidad"
+          />
+        )}
 
         {/* MENSAJE DE ERROR */}
         {error && (
@@ -127,11 +148,17 @@ export function PrestadoresPorEspecialidad() {
 
         {/* RESULTADOS */}
         <div className="mt-2">
-          {!loading && results.length === 0 && !error && (
+          {!loading && results.length === 0 && !error && !searched && (
             <p className="text-sm text-gray-600">
               Seleccione una especialidad y presione{" "}
               <span className="font-semibold">Buscar</span> para ver los
               prestadores que la poseen.
+            </p>
+          )}
+
+          {!loading && results.length === 0 && !error && searched && (
+            <p className="text-sm text-gray-600">
+              No se encontraron prestadores con la especialidad seleccionada.
             </p>
           )}
 

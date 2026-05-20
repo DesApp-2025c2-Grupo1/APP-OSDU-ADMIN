@@ -32,20 +32,23 @@ const MenuIcon = ({ open }: { open: boolean }) => (
 
 const NavLinks = memo(function NavLinks({ onClick }: { onClick: () => void }) {
   const items = useMemo(() => LINKS, []);
+
   return (
-    <ul className="flex flex-col gap-2">
-      {items.map(({ to, label }) => (
-        <li key={to}>
-          <NavLink
-            to={to}
-            className={({ isActive }) => clsx(baseLink, isActive ? activeLink : inactiveLink)}
-            onClick={onClick}
-          >
-            {label}
-          </NavLink>
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col h-full">
+      <ul className="flex flex-col gap-2">
+        {items.map(({ to, label }) => (
+          <li key={to}>
+            <NavLink
+              to={to}
+              className={({ isActive }) => clsx(baseLink, isActive ? activeLink : inactiveLink)}
+              onClick={onClick}
+            >
+              {label}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 });
 

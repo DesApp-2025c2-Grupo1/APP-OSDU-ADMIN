@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 import { fetchPlans, type Plan } from "../api/planService";
+import AltaProgramadaPopup from "../components/AltaProgramadaPopup";
 
 interface Situacion {
   idSituacion: number;
@@ -50,7 +51,6 @@ export function AddAffiliate() {
 
   const [showPhone2, setShowPhone2] = useState(false);
   const [showEmail2, setShowEmail2] = useState(false);
-  const [showAddress2, setShowAddress2] = useState(false);
   const [situaciones, setSituaciones] = useState<Situacion[]>([]);
   const [situacionesDisponibles, setSituacionesDisponibles] = useState<SituacionDisponible[]>([]);
   const [loadingSituaciones, setLoadingSituaciones] = useState(true);
@@ -67,15 +67,15 @@ export function AddAffiliate() {
       try {
         // Cargar situaciones terapéuticas
         setLoadingSituaciones(true);
-        const responseSit = await fetch(`${API_BASE_URL}/therapeutic`);
-        
+        const responseSit = await apiFetch(`${API_BASE_URL}/therapeutic`);
+
         if (!responseSit.ok) throw new Error("Error al cargar situaciones terapéuticas");
-        
         const dataSit = await responseSit.json();
-        console.log("📋 Situaciones cargadas:", dataSit.situaciones);
-        setSituacionesDisponibles(dataSit.situaciones || []);
+        
+        // Backend now securely returns Array of {idSituacion, nombre}
+        setSituacionesDisponibles(Array.isArray(dataSit) ? dataSit : []);
+        setErrors(prev => ({ ...prev, situaciones: "" }));
       } catch (error) {
-        console.error("Error al cargar situaciones:", error);
         setErrors(prev => ({ ...prev, situaciones: "No se pudieron cargar las situaciones terapéuticas" }));
       } finally {
         setLoadingSituaciones(false);
@@ -85,10 +85,8 @@ export function AddAffiliate() {
         // Cargar planes
         setLoadingPlanes(true);
         const planes = await fetchPlans();
-        console.log("📋 Planes cargados:", planes);
         setPlanesDisponibles(planes);
       } catch (error) {
-        console.error("Error al cargar planes:", error);
         setErrors(prev => ({ ...prev, planes: "No se pudieron cargar los planes médicos" }));
       } finally {
         setLoadingPlanes(false);
@@ -188,147 +186,212 @@ export function AddAffiliate() {
   };
 
   const validate = () => {
-  const newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {};
 
-  // DNI del titular
-  if (!formData.nroDocumento?.trim()) {
-    newErrors.nroDocumento = "Requerido";
-  } else if (!/^[0-9]{7,8}$/.test(formData.nroDocumento)) {
-    newErrors.nroDocumento = "El DNI debe tener 7 u 8 dígitos numéricos";
-  }
-
-  // Nombre del titular
-  if (!formData.nombre?.trim()) {
-    newErrors.nombre = "Requerido";
-  } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
-    newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
-  }
-
-  // Apellido del titular
-  if (!formData.apellido?.trim()) {
-    newErrors.apellido = "Requerido";
-  } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
-    newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
-  }
-
-  // Fecha de nacimiento del titular
-  if (!formData.fechaNacimiento) {
-    newErrors.fechaNacimiento = "Requerido";
-  } else {
-    const fechaNac = new Date(formData.fechaNacimiento);
-    const hoy = new Date();
-    
-    if (fechaNac > hoy) {
-      newErrors.fechaNacimiento = "La fecha no puede ser futura";
-    }
-    
-    const edad = (hoy.getTime() - fechaNac.getTime()) / (1000 * 60 * 60 * 24 * 365);
-    //if (edad < 18) {
-    //  newErrors.fechaNacimiento = "El titular debe ser mayor de 18 años";
-   // }
-    
-    if (edad > 150) {
-      newErrors.fechaNacimiento = "La fecha de nacimiento no es válida";
-    }
-  }
-
-  // Emails del titular
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (formData.email && !emailRegex.test(formData.email)) {
-    newErrors.email = "Formato de email inválido";
-  }
-  if (formData.email2 && !emailRegex.test(formData.email2)) {
-    newErrors.email2 = "Formato de email inválido";
-  }
-
-  // Teléfonos del titular
-  if (formData.telefono && !/^[0-9]{7,15}$/.test(formData.telefono.replace(/\s/g, ''))) {
-    newErrors.telefono = "El teléfono debe tener entre 7 y 15 dígitos";
-  }
-  if (formData.telefono2 && !/^[0-9]{7,15}$/.test(formData.telefono2.replace(/\s/g, ''))) {
-    newErrors.telefono2 = "El teléfono debe tener entre 7 y 15 dígitos";
-  }
-
-  // Plan del titular
-  if (!formData.planMedico) {
-    newErrors.planMedico = "Requerido";
-  }
-
-  // Dirección del titular (opcional pero con límite)
-  if (formData.direccion && formData.direccion.length > 100) {
-    newErrors.direccion = "La dirección no puede superar los 100 caracteres";
-  }
-
-  // Validaciones de familiares
-  familiares.forEach((f, index) => {
-    const prefix = `familiares[${index}]`;
-    
-    // DNI del familiar
-    if (!f.nroDocumento?.trim()) {
-      newErrors[`${prefix}.nroDocumento`] = "Requerido";
-    } else if (!/^[0-9]{7,8}$/.test(f.nroDocumento)) {
-      newErrors[`${prefix}.nroDocumento`] = "El DNI debe tener 7 u 8 dígitos numéricos";
+    // DNI del titular
+    if (!formData.nroDocumento?.trim()) {
+      newErrors.nroDocumento = "Requerido";
+    } else if (!/^[0-9]{7,8}$/.test(formData.nroDocumento)) {
+      newErrors.nroDocumento = "El DNI debe tener 7 u 8 dígitos numéricos";
     }
 
-    // Nombre del familiar
-    if (!f.nombre?.trim()) {
-      newErrors[`${prefix}.nombre`] = "Requerido";
-    } else if (f.nombre.trim().length < 2 || f.nombre.trim().length > 50) {
-      newErrors[`${prefix}.nombre`] = "El nombre debe tener entre 2 y 50 caracteres";
+    // Nombre del titular
+    if (!formData.nombre?.trim()) {
+      newErrors.nombre = "Requerido";
+    } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
+      newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
     }
 
-    // Apellido del familiar
-    if (!f.apellido?.trim()) {
-      newErrors[`${prefix}.apellido`] = "Requerido";
-    } else if (f.apellido.trim().length < 2 || f.apellido.trim().length > 50) {
-      newErrors[`${prefix}.apellido`] = "El apellido debe tener entre 2 y 50 caracteres";
+    // Apellido del titular
+    if (!formData.apellido?.trim()) {
+      newErrors.apellido = "Requerido";
+    } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
+      newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
     }
 
-    // Fecha de nacimiento del familiar
-    if (!f.fechaNacimiento) {
-      newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
+    // Fecha de nacimiento del titular
+    if (!formData.fechaNacimiento) {
+      newErrors.fechaNacimiento = "Requerido";
     } else {
-      const fechaNac = new Date(f.fechaNacimiento);
+      const fechaNac = new Date(formData.fechaNacimiento);
       const hoy = new Date();
-      
+
       if (fechaNac > hoy) {
-        newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+        newErrors.fechaNacimiento = "La fecha no puede ser futura";
       }
-      
+
       const edad = (hoy.getTime() - fechaNac.getTime()) / (1000 * 60 * 60 * 24 * 365);
+
       if (edad > 150) {
-        newErrors[`${prefix}.fechaNacimiento`] = "La fecha de nacimiento no es válida";
+        newErrors.fechaNacimiento = "La fecha de nacimiento no es válida";
       }
     }
 
-    // Email del familiar
-    if (f.email && !emailRegex.test(f.email)) {
-      newErrors[`${prefix}.email`] = "Formato de email inválido";
+    // Emails del titular
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email?.trim()) {
+      newErrors.email = "Requerido";
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = "Formato de email inválido";
+    }
+    if (formData.email2 && !emailRegex.test(formData.email2)) {
+      newErrors.email2 = "Formato de email inválido";
     }
 
-    // Teléfono del familiar
-    if (f.telefono && !/^[0-9]{7,15}$/.test(f.telefono.replace(/\s/g, ''))) {
-      newErrors[`${prefix}.telefono`] = "El teléfono debe tener entre 7 y 15 dígitos";
+    // Teléfonos del titular
+    if (!formData.telefono?.trim()) {
+      newErrors.telefono = "Requerido";
+    } else if (!/^[0-9]{7,15}$/.test(formData.telefono.replace(/\s/g, ''))) {
+      newErrors.telefono = "El teléfono debe tener entre 7 y 15 dígitos";
+    }
+    if (formData.telefono2 && !/^[0-9]{7,15}$/.test(formData.telefono2.replace(/\s/g, ''))) {
+      newErrors.telefono2 = "El teléfono debe tener entre 7 y 15 dígitos";
     }
 
-    // Validar que el DNI del familiar no sea igual al del titular
-    if (f.nroDocumento === formData.nroDocumento) {
-      newErrors[`${prefix}.nroDocumento`] = "El DNI del familiar no puede ser igual al del titular";
+    // Plan del titular
+    if (!formData.planMedico) {
+      newErrors.planMedico = "Requerido";
     }
 
-    // Validar que no haya DNIs duplicados entre familiares
-    const duplicados = familiares.filter((fam, idx) => 
-      idx !== index && fam.nroDocumento === f.nroDocumento
-    );
-    if (duplicados.length > 0 && f.nroDocumento) {
-      newErrors[`${prefix}.nroDocumento`] = "Este DNI ya está en uso por otro familiar";
+    // Dirección del titular (opcional pero con límite)
+    if (formData.direccion && formData.direccion.length > 100) {
+      newErrors.direccion = "La dirección no puede superar los 100 caracteres";
     }
-  });
 
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
+    // Validaciones de familiares
+    familiares.forEach((f, index) => {
+      const prefix = `familiares[${index}]`;
 
+      // DNI del familiar
+      if (!f.nroDocumento?.trim()) {
+        newErrors[`${prefix}.nroDocumento`] = "Requerido";
+      } else if (!/^[0-9]{7,8}$/.test(f.nroDocumento)) {
+        newErrors[`${prefix}.nroDocumento`] = "El DNI debe tener 7 u 8 dígitos numéricos";
+      }
+
+      // Nombre del familiar
+      if (!f.nombre?.trim()) {
+        newErrors[`${prefix}.nombre`] = "Requerido";
+      } else if (f.nombre.trim().length < 2 || f.nombre.trim().length > 50) {
+        newErrors[`${prefix}.nombre`] = "El nombre debe tener entre 2 y 50 caracteres";
+      }
+
+      // Apellido del familiar
+      if (!f.apellido?.trim()) {
+        newErrors[`${prefix}.apellido`] = "Requerido";
+      } else if (f.apellido.trim().length < 2 || f.apellido.trim().length > 50) {
+        newErrors[`${prefix}.apellido`] = "El apellido debe tener entre 2 y 50 caracteres";
+      }
+
+      // Fecha de nacimiento del familiar
+      if (!f.fechaNacimiento) {
+        newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
+      } else {
+        const fechaNac = new Date(f.fechaNacimiento);
+        const hoy = new Date();
+
+        if (fechaNac > hoy) {
+          newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
+        }
+
+        const edad = (hoy.getTime() - fechaNac.getTime()) / (1000 * 60 * 60 * 24 * 365);
+        if (edad > 150) {
+          newErrors[`${prefix}.fechaNacimiento`] = "La fecha de nacimiento no es válida";
+        }
+      }
+
+      // Email del familiar
+      if (!f.usaContactoTitular) {
+        // Si no usa contacto del titular, debe proveer su propio email
+        if (!f.email?.trim()) {
+          newErrors[`${prefix}.email`] = "Requerido";
+        } else if (!emailRegex.test(f.email)) {
+          newErrors[`${prefix}.email`] = "Formato de email inválido";
+        }
+      }
+
+      // Teléfono del familiar
+      if (!f.usaContactoTitular) {
+        // Si no usa contacto del titular, debe proveer su propio teléfono
+        if (!f.telefono?.trim()) {
+          newErrors[`${prefix}.telefono`] = "Requerido";
+        } else if (!/^[0-9]{7,15}$/.test(f.telefono.replace(/\s/g, ''))) {
+          newErrors[`${prefix}.telefono`] = "El teléfono debe tener entre 7 y 15 dígitos";
+        }
+      }
+
+      // Validar que el DNI del familiar no sea igual al del titular
+      if (f.nroDocumento === formData.nroDocumento) {
+        newErrors[`${prefix}.nroDocumento`] = "El DNI del familiar no puede ser igual al del titular";
+      }
+
+      // Validar que no haya DNIs duplicados entre familiares
+      const duplicados = familiares.filter((fam, idx) =>
+        idx !== index && fam.nroDocumento === f.nroDocumento
+      );
+      if (duplicados.length > 0 && f.nroDocumento) {
+        newErrors[`${prefix}.nroDocumento`] = "Este DNI ya está en uso por otro familiar";
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+
+  const buildFormData = () => {
+    const familyGroup = familiares.map(f => ({
+      full_name: `${f.nombre.trim()} ${f.apellido.trim()}`,
+      relationship: f.parentesco,
+      document_number: f.nroDocumento,
+    }));
+
+    const fd = new FormData();
+    fd.append('document_number', formData.nroDocumento);
+    fd.append('first_name', formData.nombre);
+    fd.append('last_name', formData.apellido);
+    fd.append('document_type', formData.tipoDocumento);
+    fd.append('birth_date', formData.fechaNacimiento);
+    fd.append('plan_id', formData.planMedico);
+    fd.append('email', formData.email.trim());
+    fd.append('phone', formData.telefono.trim());
+    if (formData.direccion?.trim()) fd.append('address', formData.direccion.trim());
+    if (familyGroup.length > 0) fd.append('family_group', JSON.stringify(familyGroup));
+    return fd;
+  };
+
+  const handleProgramarAlta = async (_fechaAltaISO: string) => {
+    if (!validate()) {
+      setShowAltaPopup(false);
+      return;
+    }
+
+    setLoading(true);
+    setSuccess(null);
+    setShowAltaPopup(false);
+
+    try {
+      const response = await apiFetch(`${API_BASE_URL}/affiliates`, {
+        method: "POST",
+        body: buildFormData(),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      setLoading(false);
+      setSuccess("Afiliado programado exitosamente para alta futura");
+      setTimeout(() => navigate("/home"), 1500);
+    } catch (err: any) {
+      setLoading(false);
+      setErrors((prev) => ({
+        ...prev,
+        submit: err.message || "Error al programar. Verifica la conexión con el servidor."
+      }));
+    }
+  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -338,87 +401,9 @@ export function AddAffiliate() {
     setSuccess(null);
 
     try {
-      // Construir emails del titular
-      const emails = [];
-      if (formData.email?.trim()) emails.push({ email: formData.email.trim() });
-      if (formData.email2?.trim()) emails.push({ email: formData.email2.trim() });
-
-      // Construir teléfonos del titular
-      const telefonos = [];
-      if (formData.telefono?.trim()) telefonos.push({ telefono: formData.telefono.trim() });
-      if (formData.telefono2?.trim()) telefonos.push({ telefono: formData.telefono2.trim() });
-
-      // Construir situaciones del titular con IDs de la BD
-      const situacionesPayload = situaciones
-        .filter(s => s.idSituacion)
-        .map(s => ({
-          id: s.idSituacion,
-          fecha_inicio: new Date().toISOString().split('T')[0],
-          fecha_fin: s.fechaFinalizacion || null,
-        }));
-
-      // Construir familiares
-      const familiaresPayload = familiares.map(f => {
-        const emailsFam = [];
-        if (f.usaContactoTitular && formData.email) {
-          emailsFam.push({ email: formData.email });
-        } else if (f.email?.trim()) {
-          emailsFam.push({ email: f.email.trim() });
-        }
-
-        const telefonosFam = [];
-        if (f.usaContactoTitular && formData.telefono) {
-          telefonosFam.push({ telefono: formData.telefono });
-        } else if (f.telefono?.trim()) {
-          telefonosFam.push({ telefono: f.telefono.trim() });
-        }
-
-        const situacionesFam = (f.situaciones || [])
-          .filter(s => s.idSituacion)
-          .map(s => ({
-            id: s.idSituacion,
-            fecha_inicio: new Date().toISOString().split('T')[0],
-            fecha_fin: s.fechaFinalizacion || null,
-          }));
-
-        return {
-          dni: f.nroDocumento,
-          nombre: f.nombre,
-          apellido: f.apellido,
-          parentesco: f.parentesco,
-          direccion: f.usaDireccionTitular ? formData.direccion : (f.direccion || ""),
-          tipoDocumento: f.tipoDocumento,
-          fecha_nacimiento: f.fechaNacimiento,
-          emails: emailsFam,
-          telefonos: telefonosFam,
-          situaciones: situacionesFam,
-        };
-      });
-
-      // Construir payload completo
-      const payload = {
-        dni: formData.nroDocumento,
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        direccion: formData.direccion,
-        tipoDocumento: formData.tipoDocumento,
-        fecha_nacimiento: formData.fechaNacimiento,
-        plan: parseInt(formData.planMedico),
-        emails: emails,
-        telefonos: telefonos,
-        situaciones: situacionesPayload,
-        familiares: familiaresPayload,
-      };
-
-      console.log("Payload a enviar:", JSON.stringify(payload, null, 2));
-
-      // Hacer la petición al API
-      const response = await fetch(`${API_BASE_URL}/affiliates`, {
+      const response = await apiFetch(`${API_BASE_URL}/affiliates`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: buildFormData(),
       });
 
       if (!response.ok) {
@@ -426,24 +411,20 @@ export function AddAffiliate() {
         throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
 
-      const result = await response.json();
-      console.log("Respuesta del servidor:", result);
-
       setLoading(false);
       setSuccess("Afiliado y familiares creados con éxito");
       setTimeout(() => navigate("/home"), 1500);
     } catch (err: any) {
-      console.error("Error al guardar:", err);
       setLoading(false);
-      setErrors((prev) => ({ 
-        ...prev, 
-        submit: err.message || "Error al guardar. Verifica la conexión con el servidor." 
+      setErrors((prev) => ({
+        ...prev,
+        submit: err.message || "Error al guardar. Verifica la conexión con el servidor."
       }));
     }
   };
 
   return (
-    <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 mx-auto mt-6 shadow">
+    <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto mt-4 sm:mt-6 shadow">
       <div className="flex flex-col items-center sm:items-start mb-6 gap-4">
         <h1 className="text-2xl font-semibold text-gray-800 text-center sm:text-left">
           Crear nuevo afiliado
@@ -455,12 +436,6 @@ export function AddAffiliate() {
             className="px-4 py-2 border rounded hover:bg-gray-50"
           >
             Volver
-          </button>
-          <button
-            onClick={() => setShowAltaPopup(true)}
-            className="px-4 py-2 bg-[#5FA92C] text-white rounded hover:bg-green-700"
-          >
-            Programar Alta
           </button>
         </div>
       </div>
@@ -483,7 +458,7 @@ export function AddAffiliate() {
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Datos de Afiliado (Titular)
           </h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo Documento (*)</label>
               <select
@@ -493,10 +468,6 @@ export function AddAffiliate() {
                 className="p-2 border border-gray-300 rounded"
               >
                 <option value="DNI">DNI</option>
-                <option value="CUIL">CUIL</option>
-                <option value="CUIT">CUIT</option>
-                <option value="DOCUMENTO EXTRANJERO">DOCUMENTO EXTRANJERO</option>
-                <option value="CDI">CDI</option>
                 <option value="Pasaporte">Pasaporte</option>
               </select>
             </div>
@@ -574,7 +545,7 @@ export function AddAffiliate() {
               )}
             </div>
 
-            <div className="flex flex-col col-span-2">
+            <div className="flex flex-col md:col-span-2">
               <label className="font-semibold mb-1 bg-gray-100 px-2">Dirección</label>
               <input
                 type="text"
@@ -592,9 +563,9 @@ export function AddAffiliate() {
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
             Datos de Contacto
           </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col col-span-2">
-              <label className="font-semibold mb-1">Teléfono</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col md:col-span-2">
+              <label className="font-semibold mb-1">Teléfono (*)</label>
               <input
                 type="text"
                 name="telefono"
@@ -603,27 +574,31 @@ export function AddAffiliate() {
                 className="p-2 border border-gray-300 rounded"
                 placeholder="Teléfono"
               />
+              {errors.telefono && <p className="text-red-500 text-xs mt-1">{errors.telefono}</p>}
 
               {showPhone2 && (
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="text"
-                    name="telefono2"
-                    value={formData.telefono2}
-                    onChange={handleInputChange}
-                    className="flex-1 p-2 border border-gray-300 rounded"
-                    placeholder="Teléfono adicional"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({ ...prev, telefono2: "" }));
-                      setShowPhone2(false);
-                    }}
-                    className="px-3 py-2 border rounded hover:bg-gray-50"
-                  >
-                    Quitar
-                  </button>
+                <div className="mt-2 flex flex-col gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      name="telefono2"
+                      value={formData.telefono2}
+                      onChange={handleInputChange}
+                      className="flex-1 p-2 border border-gray-300 rounded"
+                      placeholder="Teléfono adicional"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, telefono2: "" }));
+                        setShowPhone2(false);
+                      }}
+                      className="px-3 py-2 border rounded hover:bg-gray-50"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                  {errors.telefono2 && <p className="text-red-500 text-xs mt-1">{errors.telefono2}</p>}
                 </div>
               )}
 
@@ -638,8 +613,8 @@ export function AddAffiliate() {
               )}
             </div>
 
-            <div className="flex flex-col col-span-2">
-              <label className="font-semibold mb-1">Email</label>
+            <div className="flex flex-col md:col-span-2">
+              <label className="font-semibold mb-1">Email (*)</label>
               <input
                 type="email"
                 name="email"
@@ -651,7 +626,7 @@ export function AddAffiliate() {
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
 
               {showEmail2 && (
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex flex-col sm:flex-row gap-2">
                   <input
                     type="email"
                     name="email2"
@@ -700,7 +675,10 @@ export function AddAffiliate() {
             )}
 
             {situaciones.map((s, idx) => (
-              <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full">
+              <div
+                key={idx}
+                className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
+              >
                 <div className="flex flex-col">
                   <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
                   <select
@@ -728,7 +706,7 @@ export function AddAffiliate() {
                   />
                 </div>
 
-                <div className="justify-self-end">
+                <div className="justify-self-start md:justify-self-end">
                   <button
                     type="button"
                     onClick={() => removeSituacion(idx)}
@@ -763,7 +741,7 @@ export function AddAffiliate() {
 
           {familiares.map((familiar, i) => (
             <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-4">
-              <div className="flex justify-between items-center mb-3">
+              <div className="flex flex-col sm:flex-row justify-between gap-2 items-start sm:items-center mb-3">
                 <h3 className="font-semibold text-gray-700">Familiar {i + 1}</h3>
                 <button
                   type="button"
@@ -774,7 +752,7 @@ export function AddAffiliate() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
                   <label className="font-semibold mb-1 text-sm">Tipo Documento</label>
                   <select
@@ -783,10 +761,6 @@ export function AddAffiliate() {
                     className="p-2 border border-gray-300 rounded"
                   >
                     <option value="DNI">DNI</option>
-                    <option value="CUIL">CUIL</option>
-                    <option value="CUIT">CUIT</option>
-                    <option value="DOCUMENTO EXTRANJERO">DOCUMENTO EXTRANJERO</option>
-                    <option value="CDI">CDI</option>
                     <option value="Pasaporte">Pasaporte</option>
                   </select>
                 </div>
@@ -857,7 +831,7 @@ export function AddAffiliate() {
                   </select>
                 </div>
 
-                <div className="flex flex-col col-span-2">
+                <div className="flex flex-col md:col-span-2">
                   <label className="font-semibold mb-1 text-sm flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -878,7 +852,7 @@ export function AddAffiliate() {
                   )}
                 </div>
 
-                <div className="flex flex-col col-span-2">
+                <div className="flex flex-col md:col-span-2">
                   <label className="font-semibold mb-1 text-sm flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -889,18 +863,21 @@ export function AddAffiliate() {
                     Usar contacto del titular
                   </label>
                   {!familiar.usaContactoTitular && (
-                    <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                       <div className="flex flex-col">
-                        <label className="text-sm mb-1">Teléfono</label>
+                        <label className="text-sm mb-1">Teléfono (*)</label>
                         <input
                           type="text"
                           value={familiar.telefono || ""}
                           onChange={(e) => cambiarDatoFamiliar(i, "telefono", e.target.value)}
                           className="p-2 border border-gray-300 rounded"
                         />
+                        {errors[`familiares[${i}].telefono`] && (
+                          <p className="text-red-500 text-xs mt-1">{errors[`familiares[${i}].telefono`]}</p>
+                        )}
                       </div>
                       <div className="flex flex-col">
-                        <label className="text-sm mb-1">Email</label>
+                        <label className="text-sm mb-1">Email (*)</label>
                         <input
                           type="email"
                           value={familiar.email || ""}
@@ -928,7 +905,10 @@ export function AddAffiliate() {
                   )}
 
                   {familiar.situaciones?.map((s, idx) => (
-                    <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-4 items-end w-full">
+                    <div
+                      key={idx}
+                      className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end w-full"
+                    >
                       <div className="flex flex-col">
                         <label className="text-sm font-semibold mb-1">Situación terapéutica</label>
                         <select
@@ -956,7 +936,7 @@ export function AddAffiliate() {
                         />
                       </div>
 
-                      <div className="justify-self-end">
+                      <div className="justify-self-start md:justify-self-end">
                         <button
                           type="button"
                           onClick={() => removeSituacionFamiliar(i, idx)}
@@ -992,11 +972,11 @@ export function AddAffiliate() {
       </div>
 
       {/* BOTONES */}
-      <div className="flex justify-center gap-4 mt-4">
+      <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-4">
         <button
           type="submit"
           onClick={handleSubmit}
-          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
+          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition w-full sm:w-auto"
           disabled={loading}
         >
           {loading ? "Guardando..." : "Crear Afiliado"}
@@ -1004,9 +984,17 @@ export function AddAffiliate() {
         <button
           type="button"
           onClick={() => navigate("/home")}
-          className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition"
+          className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition w-full sm:w-auto"
         >
           Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowAltaPopup(true)}
+          className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition w-full sm:w-auto"
+          disabled={loading}
+        >
+          Programar Alta
         </button>
       </div>
 
@@ -1019,6 +1007,13 @@ export function AddAffiliate() {
         <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded text-center">
           <p className="text-green-600 font-semibold">{success}</p>
         </div>
+      )}
+
+      {showAltaPopup && (
+        <AltaProgramadaPopup
+          onClose={() => setShowAltaPopup(false)}
+          onConfirm={handleProgramarAlta}
+        />
       )}
     </div>
   );

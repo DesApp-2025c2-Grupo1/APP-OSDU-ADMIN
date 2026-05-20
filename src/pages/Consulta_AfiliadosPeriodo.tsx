@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "../config/api";
+import { PDFDownloadButton } from "../util/ReportPDFExporter";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 function isSameDay(a: Date, b: Date) {
     return (
@@ -18,17 +19,15 @@ function formatEs(d: Date | null) {
 
 function formatFechaAlta(fecha: string) {
     const d = new Date(fecha);
-    if (isNaN(d.getTime())) return fecha; // si ya viene formateada
+    if (isNaN(d.getTime())) return fecha;
     return d.toLocaleDateString("es-AR");
 }
 
-// 🔹 Tipo de fila de resultado (ajustalo a tu API real)
 type AltaAfiliadoRow = {
     dni: string;
     nombre: string;
     apellido: string;
     plan: { nombre: string } | string;
-    // CAMBIAR SI O SI DEPENDIENDO NOMBRE DEL DATO QUE MANEJE FECHA DE ALTA EN EL BACK
     fechaAlta: string;
 };
 
@@ -43,12 +42,11 @@ export function AltasAfiliadosPeriodo() {
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
 
-    // 🔹 Estado de resultados
     const [results, setResults] = useState<AltaAfiliadoRow[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [searched, setSearched] = useState(false);
 
-    // 🔹 Paginación
     const [page, setPage] = useState(1);
     const pageSize = 5;
     const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
@@ -100,7 +98,7 @@ export function AltasAfiliadosPeriodo() {
         0
     ).getDate();
 
-    const firstWeekday = currentMonth.getDay(); // 0 = domingo
+    const firstWeekday = currentMonth.getDay();
 
     const blanks = Array(firstWeekday).fill(null);
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -120,9 +118,8 @@ export function AltasAfiliadosPeriodo() {
     const handleBuscar = async () => {
         if (!hasValidRange || !startDate || !endDate) return;
 
-        // formateamos a YYYY-MM-DD para el backend
         const toISODate = (d: Date) =>
-            d.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+            d.toISOString().slice(0, 10);
 
         const from = toISODate(startDate);
         const to = toISODate(endDate);
@@ -133,32 +130,51 @@ export function AltasAfiliadosPeriodo() {
             setResults([]);
             setPage(1);
 
-            // CAMBIAR SI O SI POR LA RUTA DEL BACK 
-            const res = await fetch(
+            const res = await apiFetch(
                 `${API_BASE_URL}/reports/altas-afiliados?from=${from}&to=${to}`
             );
 
             if (!res.ok) {
                 throw new Error("Error al obtener altas de afiliados");
             }
-            // CAMBIAR SI O SI DEPENDIENDO CONSULTA DEL BACK 
+
             const data = await res.json();
             const rows: AltaAfiliadoRow[] = Array.isArray(data)
                 ? data
                 : data.results || data.affiliates || [];
 
             setResults(rows);
+            setSearched(true);
         } catch (e: any) {
-            console.error(e);
             setError(e.message || "Error al consultar el reporte");
+            setSearched(true);
         } finally {
             setLoading(false);
         }
     };
 
+    // 📌 CONFIGURACIÓN PDF
+    const pdfColumns = [
+        { key: "nombre", label: "Nombre" },
+        { key: "apellido", label: "Apellido" },
+        {
+            key: "plan",
+            label: "Plan",
+            format: (val: any) => (typeof val === "string" ? val : val?.nombre || "—"),
+        },
+        {
+            key: "fechaAlta",
+            label: "Fecha de Alta",
+            format: (val: string) => formatFechaAlta(val),
+        },
+    ];
+
+    const subtitulo = startDate && endDate
+        ? `Período: ${formatEs(startDate)} - ${formatEs(endDate)}`
+        : "";
+
     return (
         <div className="w-full flex justify-center">
-            {/* 🔹 CARD estilo AddProvider */}
             <div className="w-full max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
 
                 <h1 className="text-2xl font-bold text-[#5FA92C] mb-2">
@@ -189,10 +205,9 @@ export function AltasAfiliadosPeriodo() {
                     )}
                 </div>
 
-                {/* CALENDARIO — CENTRADO */}
+                {/* CALENDARIO */}
                 <div className="flex justify-center">
                     <div className="inline-block rounded-lg border border-gray-200 bg-white p-4">
-                        {/* Header mes / navegación */}
                         <div className="flex items-center justify-between mb-3">
                             <button
                                 type="button"
@@ -216,7 +231,6 @@ export function AltasAfiliadosPeriodo() {
                             </button>
                         </div>
 
-                        {/* Nombres días */}
                         <div className="grid grid-cols-7 text-xs font-semibold text-gray-500 mb-1">
                             <div className="text-center">Dom</div>
                             <div className="text-center">Lun</div>
@@ -227,7 +241,6 @@ export function AltasAfiliadosPeriodo() {
                             <div className="text-center">Sáb</div>
                         </div>
 
-                        {/* Días */}
                         <div className="space-y-1">
                             {weeks.map((week, wi) => (
                                 <div key={wi} className="grid grid-cols-7 gap-1">
@@ -278,9 +291,8 @@ export function AltasAfiliadosPeriodo() {
                     </div>
                 </div>
 
-
                 {/* BOTÓN BUSCAR */}
-                <div className="mt-6 mb-4">
+                <div className="mt-6 mb-4 flex flex-col sm:flex-row gap-3">
                     <button
                         type="button"
                         onClick={handleBuscar}
@@ -295,6 +307,17 @@ export function AltasAfiliadosPeriodo() {
                     >
                         {loading ? "Buscando..." : "Buscar"}
                     </button>
+
+                    {/* 📌 BOTÓN PDF */}
+                    {results.length > 0 && (
+                        <PDFDownloadButton
+                            title="Alta de afiliados por período"
+                            subtitle={subtitulo}
+                            data={results}
+                            columns={pdfColumns}
+                            filename="altas-afiliados"
+                        />
+                    )}
                 </div>
 
                 {/* MENSAJE DE ERROR */}
@@ -307,10 +330,16 @@ export function AltasAfiliadosPeriodo() {
                 {/* RESULTADOS */}
                 <div className="mt-4">
 
-                    {!loading && results.length === 0 && !error && (
+                    {!loading && results.length === 0 && !error && !searched && (
                         <p className="text-sm text-gray-600">
                             Seleccione un rango de fechas y presione{" "}
                             <span className="font-semibold">Buscar</span> para ver las altas de afiliados.
+                        </p>
+                    )}
+
+                    {!loading && results.length === 0 && !error && searched && (
+                        <p className="text-sm text-gray-600">
+                            No se encontraron afiliados dados de alta en el período seleccionado.
                         </p>
                     )}
 

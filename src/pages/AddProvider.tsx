@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Prestador, PrestadorTipo, LugarAtencion, DiaSemana } from "../model/Provider.model";
+import type { PrestadorTipo, LugarAtencion, DiaSemana } from "../model/Provider.model";
 import { ButtonVolver } from "../util/ButtonVolver";
-import { API_BASE_URL } from "../config/api";
+import Toast from "../components/Toast";
+import { API_BASE_URL, apiFetch } from "../config/api";
+import { firstProviderValidationMessage, validateProviderPayload } from "../utils/providerValidation";
 
 type BloqueHorario = { dias: DiaSemana[]; desde: string; hasta: string };
 
@@ -14,7 +16,7 @@ export function AddProvider() {
   const [cuilCuit, setCuilCuit] = useState("");
   const [nombreCompleto, setNombreCompleto] = useState("");
   const [especialidades, setEspecialidades] = useState<number[]>([]);
-  const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{id: number, nombre: string}[]>([]);
+  const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{ id: number, nombre: string }[]>([]);
   const [loadingEspecialidades, setLoadingEspecialidades] = useState(true);
   const [telefonos, setTelefonos] = useState<string[]>([""]);
   const [mails, setMails] = useState<string[]>([""]);
@@ -26,25 +28,71 @@ export function AddProvider() {
   const [integraCentro, setIntegraCentro] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [telefonoErrors, setTelefonoErrors] = useState<string[]>([""]);
+  const [emailErrors, setEmailErrors] = useState<string[]>([""]);
+  const [openSuccess, setOpenSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Formatea CUIT/CUIL: inserta guiones en el patrón 2-8-1 cuando sea posible
+  const formatCuil = (input: string) => {
+    const digits = input.replace(/\D/g, "");
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 10) {
+      return digits.slice(0, 2) + "-" + digits.slice(2);
+    }
+    // 11+ -> take first 11 digits and format 2-8-1
+    const d = digits.slice(0, 11);
+    return `${d.slice(0, 2)}-${d.slice(2, 10)}-${d.slice(10)}`;
+  };
 
 
-  const handleAgregarTelefono = () => setTelefonos([...telefonos, ""]);
-  const handleEliminarTelefono = (index: number) =>
+  const handleAgregarTelefono = () => {
+    setTelefonos([...telefonos, ""]);
+    setTelefonoErrors([...telefonoErrors, ""]);
+  };
+  const handleEliminarTelefono = (index: number) => {
     setTelefonos(telefonos.filter((_, i) => i !== index));
+    setTelefonoErrors(telefonoErrors.filter((_, i) => i !== index));
+  };
 
-  const handleAgregarEmail = () => setMails([...mails, ""]);
-  const handleEliminarEmail = (index: number) =>
+  const handleAgregarEmail = () => {
+    setMails([...mails, ""]);
+    setEmailErrors([...emailErrors, ""]);
+  };
+  const handleEliminarEmail = (index: number) => {
     setMails(mails.filter((_, i) => i !== index));
+    setEmailErrors(emailErrors.filter((_, i) => i !== index));
+  };
 
   const handleAgregarEspecialidad = () => {
-    const primerIdDisponible = especialidadesDisponibles[0]?.id || 1;
+    // Verificar si hay especialidades disponibles no seleccionadas
+    const especialidadesDisponiblesNoSeleccionadas = especialidadesDisponibles.filter(
+      esp => !especialidades.includes(esp.id)
+    );
+
+    if (especialidadesDisponiblesNoSeleccionadas.length === 0) {
+      alert('Ya has seleccionado todas las especialidades disponibles.');
+      return;
+    }
+
+    const primerIdDisponible = especialidadesDisponiblesNoSeleccionadas[0].id;
     setEspecialidades([...especialidades, primerIdDisponible]);
   };
+
+
   const handleEspecialidadChange = (index: number, valor: number) => {
+    // Verificar si la especialidad ya está seleccionada en otro índice
+    const yaSeleccionada = especialidades.some((esp, idx) => idx !== index && esp === valor);
+    if (yaSeleccionada && valor !== 0) {
+      alert('Esta especialidad ya ha sido seleccionada. Por favor, elija una diferente.');
+      return;
+    }
+
     const nuevas = [...especialidades];
     nuevas[index] = valor;
     setEspecialidades(nuevas);
   };
+
   const handleEliminarEspecialidad = (index: number) => {
     setEspecialidades(especialidades.filter((_, i) => i !== index));
   };
@@ -63,31 +111,29 @@ export function AddProvider() {
     setLugaresAtencion(lugaresAtencion.filter((_, i) => i !== index));
 
 
-  
+
   // Cargar centros médicos y especialidades al montar
   useEffect(() => {
     const cargarDatos = async () => {
       try {
         // Cargar centros médicos
-        const resCentros = await fetch(`${API_BASE_URL}/providers/`);
+        const resCentros = await apiFetch(`${API_BASE_URL}/prestadores/`);
         const dataCentros = await resCentros.json();
         const centrosMedicos = dataCentros.filter((p: any) => p.tipoPrestador === "centro_medico");
         setCentros(centrosMedicos);
 
         // Cargar especialidades desde API
         setLoadingEspecialidades(true);
-        const resEsp = await fetch(`${API_BASE_URL}/specialties`);
+        const resEsp = await apiFetch(`${API_BASE_URL}/specialties`);
         const dataEsp = await resEsp.json();
-        console.log("📋 Especialidades cargadas:", dataEsp);
-        
+
         // El backend puede devolver { especialidades: [...] } o array directo
         const especialidadesArray = dataEsp.especialidades || dataEsp || [];
         setEspecialidadesDisponibles(especialidadesArray.map((e: any) => ({
-          id: e.idEspecialidad,
+          id: e.idEspecialidad || e.id,
           nombre: e.nombre
         })));
       } catch (err) {
-        console.error("Error cargando datos:", err);
         setError("No se pudieron cargar las especialidades");
       } finally {
         setLoadingEspecialidades(false);
@@ -96,73 +142,41 @@ export function AddProvider() {
     cargarDatos();
   }, []);
 
-  const diasSemana: { label: string; id: DiaSemana }[] = [
-    { id: "Lunes", label: "Lun" },
-    { id: "Martes", label: "Mar" },
-    { id: "Miércoles", label: "Mié" },
-    { id: "Jueves", label: "Jue" },
-    { id: "Viernes", label: "Vie" },
-    { id: "Sábado", label: "Sáb" },
-    { id: "Domingo", label: "Dom" },
-  ];
-
-  const addBloque = (lugarIdx: number) => {
-    const nuevas = [...lugaresAtencion];
-    (nuevas[lugarIdx].horarios as unknown as BloqueHorario[]).push({ dias: [], desde: "", hasta: "" });
-    setLugaresAtencion(nuevas);
-  };
-
-  const removeBloque = (lugarIdx: number, bloqueIdx: number) => {
-    const nuevas = [...lugaresAtencion];
-    const hs = nuevas[lugarIdx].horarios as unknown as BloqueHorario[];
-    hs.splice(bloqueIdx, 1);
-    if (hs.length === 0) hs.push({ dias: [], desde: "", hasta: "" });
-    setLugaresAtencion(nuevas);
-  };
-
-  const toggleDia = (lugarIdx: number, bloqueIdx: number, dia: DiaSemana) => {
-    const nuevas = [...lugaresAtencion];
-    const hs = nuevas[lugarIdx].horarios as unknown as BloqueHorario[];
-    const bloque = hs[bloqueIdx] || { dias: [], desde: "", hasta: "" };
-    const esta = bloque.dias.includes(dia);
-    bloque.dias = esta ? bloque.dias.filter((d) => d !== dia) : [...bloque.dias, dia];
-    hs[bloqueIdx] = bloque;
-    setLugaresAtencion(nuevas);
-  };
-
-  const setDesde = (lugarIdx: number, bloqueIdx: number, value: string) => {
-    const nuevas = [...lugaresAtencion];
-    const hs = nuevas[lugarIdx].horarios as unknown as BloqueHorario[];
-    hs[bloqueIdx] = hs[bloqueIdx] || { dias: [], desde: "", hasta: "" };
-    hs[bloqueIdx].desde = value;
-    setLugaresAtencion(nuevas);
-  };
-
-  const setHasta = (lugarIdx: number, bloqueIdx: number, value: string) => {
-    const nuevas = [...lugaresAtencion];
-    const hs = nuevas[lugarIdx].horarios as unknown as BloqueHorario[];
-    hs[bloqueIdx] = hs[bloqueIdx] || { dias: [], desde: "", hasta: "" };
-    hs[bloqueIdx].hasta = value;
-    setLugaresAtencion(nuevas);
-  };
-
   const handleGuardar = async () => {
-    if (!tipo) return setError("Debe seleccionar si es profesional o centro médico.");
-    if (!cuilCuit.trim() || !nombreCompleto.trim())
-      return setError("Complete el CUIL/CUIT y el nombre completo.");
-
-    // Validar formato CUIT/CUIL (XX-XXXXXXXX-X o similar)
-    const cuitRegex = /^[0-9]{1,2}-?[0-9]{6,8}-?[0-9]{1}$/;
-    if (!cuitRegex.test(cuilCuit)) {
-      return setError("Formato de CUIT/CUIL inválido. Ej: 20-31216123-0");
-    }
-
     const especialidadesValidas = especialidades.filter(id => id > 0);
-    if (especialidadesValidas.length === 0)
-      return setError("Debe seleccionar al menos una especialidad.");
+    const telefonosValidos = telefonos.filter(t => t.trim() !== "");
+    const emailsValidos = mails.filter(e => e.trim() !== "");
+    const validationErrors = validateProviderPayload({
+      cuitCuil: cuilCuit,
+      nombreCompleto,
+      tipoPrestador: tipo,
+      especialidades: especialidadesValidas,
+      telefonos: telefonosValidos,
+      mails: emailsValidos,
+      lugaresAtencion,
+    });
 
-    if (lugaresAtencion.length === 0 || lugaresAtencion.some(l => !l.calle.trim() || !l.localidad?.trim() || !l.provincia?.trim() || !l.cp.trim()))
-      return setError("Complete todos los datos de los lugares de atención.");
+    const newTelefonoErrors: string[] = [];
+    const newEmailErrors: string[] = [];
+    telefonos.forEach((_, idx) => {
+      newTelefonoErrors[idx] = validationErrors.some((err) => err.field === `telefonos.${idx}`)
+        ? "El teléfono debe tener entre 7 y 15 dígitos"
+        : "";
+    });
+
+    mails.forEach((_, idx) => {
+      newEmailErrors[idx] = validationErrors.some((err) => err.field === `mails.${idx}`)
+        ? "Formato de email inválido"
+        : "";
+    });
+
+    setTelefonoErrors(newTelefonoErrors);
+    setEmailErrors(newEmailErrors);
+
+    if (validationErrors.length > 0) {
+      setError(firstProviderValidationMessage(validationErrors));
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -191,9 +205,7 @@ export function AddProvider() {
         ...(tipo === "profesional" && integraCentro && { centroMedicoId: integraCentro })
       };
 
-      console.log("Payload enviado:", JSON.stringify(payload, null, 2));
-
-      const res = await fetch(`${API_BASE_URL}/providers/`, {
+      const res = await apiFetch(`${API_BASE_URL}/prestadores/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -201,19 +213,18 @@ export function AddProvider() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        console.error("Error del servidor:", errorData);
         throw new Error(errorData.error || errorData.message || "Error al crear prestador");
       }
 
-      alert("Prestador creado correctamente");
-      navigate("/prestadores");
+      // Mostrar diálogo de éxito en lugar de alert
+      setSuccessMessage("Prestador creado correctamente");
+      setOpenSuccess(true);
     } catch (err: any) {
       setError(err.message || "Error al guardar");
-      console.error(err);
     } finally {
       setLoading(false);
     }
-  };  return (
+  }; return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
       <h1 className="text-2xl font-bold text-[#5FA92C] mb-4">Agregar Prestador</h1>
       <div className="flex items-center gap-2 ">
@@ -255,7 +266,8 @@ export function AddProvider() {
               <input
                 type="text"
                 value={cuilCuit}
-                onChange={(e) => setCuilCuit(e.target.value)}
+                onChange={(e) => setCuilCuit(formatCuil(e.target.value))}
+                placeholder="20-12345678-3"
                 className="border border-gray-300 rounded-lg px-3 py-2 w-full"
               />
             </div>
@@ -283,10 +295,21 @@ export function AddProvider() {
                   disabled={loadingEspecialidades}
                 >
                   <option value={0}>-- Seleccionar --</option>
-                  {especialidadesDisponibles.map((s) => (
-                    <option key={s.id} value={s.id}>{s.nombre}</option>
-                  ))}
+                  {especialidadesDisponibles.map((s) => {
+                    const yaSeleccionada = especialidades.some((e, idx) => idx !== i && e === s.id);
+                    return (
+                      <option
+                        key={s.id}
+                        value={s.id}
+                        disabled={yaSeleccionada}
+                        style={{ color: yaSeleccionada ? '#ccc' : 'inherit' }}
+                      >
+                        {s.nombre} {yaSeleccionada ? '(ya seleccionada)' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
+
                 {especialidades.length > 1 && (
                   <button
                     type="button"
@@ -301,12 +324,12 @@ export function AddProvider() {
             <button
               type="button"
               onClick={handleAgregarEspecialidad}
-              className="text-[#5FA92C] text-sm font-semibold"
+              className="text-[#5FA92C] text-sm font-semibold hover:underline"
+              disabled={especialidades.length >= especialidadesDisponibles.length}
             >
               + Agregar otra especialidad
             </button>
           </div>
-
           {/* Centro médico (solo profesionales) */}
           {tipo === "profesional" && (
             <div className="mb-6">
@@ -331,26 +354,36 @@ export function AddProvider() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Teléfonos</label>
               {telefonos.map((t, i) => (
-                <div key={i} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={t}
-                    onChange={(e) => {
-                      const arr = [...telefonos];
-                      arr[i] = e.target.value;
-                      setTelefonos(arr);
-                    }}
-                    placeholder="Ej: 011 4444-5555"
-                    className="border border-gray-300 rounded-lg px-3 py-2 w-full"
-                  />
-                  {telefonos.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleEliminarTelefono(i)}
-                      className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
-                    >
-                      X
-                    </button>
+                <div key={i} className="flex flex-col gap-1 mb-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={t}
+                      onChange={(e) => {
+                        const arr = [...telefonos];
+                        arr[i] = e.target.value;
+                        setTelefonos(arr);
+                        // Limpiar error al cambiar
+                        const errors = [...telefonoErrors];
+                        errors[i] = "";
+                        setTelefonoErrors(errors);
+                      }}
+                      placeholder="Ej: 011 4444-5555 o 1234567890"
+                      className={`border rounded-lg px-3 py-2 w-full ${telefonoErrors[i] ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                    />
+                    {telefonos.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleEliminarTelefono(i)}
+                        className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
+                      >
+                        X
+                      </button>
+                    )}
+                  </div>
+                  {telefonoErrors[i] && (
+                    <p className="text-red-500 text-xs">{telefonoErrors[i]}</p>
                   )}
                 </div>
               ))}
@@ -366,26 +399,36 @@ export function AddProvider() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Emails</label>
               {mails.map((em, i) => (
-                <div key={i} className="flex gap-2 mb-2">
-                  <input
-                    type="email"
-                    value={em}
-                    onChange={(e) => {
-                      const arr = [...mails];
-                      arr[i] = e.target.value;
-                      setMails(arr);
-                    }}
-                    placeholder="ejemplo@correo.com"
-                    className="border border-gray-300 rounded-lg px-3 py-2 w-full"
-                  />
-                  {mails.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleEliminarEmail(i)}
-                      className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
-                    >
-                      X
-                    </button>
+                <div key={i} className="flex flex-col gap-1 mb-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={em}
+                      onChange={(e) => {
+                        const arr = [...mails];
+                        arr[i] = e.target.value;
+                        setMails(arr);
+                        // Limpiar error al cambiar
+                        const errors = [...emailErrors];
+                        errors[i] = "";
+                        setEmailErrors(errors);
+                      }}
+                      placeholder="ejemplo@correo.com"
+                      className={`border rounded-lg px-3 py-2 w-full ${emailErrors[i] ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                    />
+                    {mails.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleEliminarEmail(i)}
+                        className="px-3 py-2 border rounded hover:bg-gray-50 text-red-500"
+                      >
+                        X
+                      </button>
+                    )}
+                  </div>
+                  {emailErrors[i] && (
+                    <p className="text-red-500 text-xs">{emailErrors[i]}</p>
                   )}
                 </div>
               ))}
@@ -473,6 +516,16 @@ export function AddProvider() {
           </div>
         </>
       )}
+      <Toast
+        open={openSuccess}
+        message={successMessage}
+        variant="success"
+        duration={3000}
+        onClose={() => {
+          setOpenSuccess(false);
+          navigate("/prestadores");
+        }}
+      />
     </div>
   );
 }

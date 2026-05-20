@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
+import { PDFDownloadButton } from "../util/ReportPDFExporter";
 
 
 type PrestadorCodigoPostalRow = {
@@ -19,6 +20,7 @@ export function PrestadoresPorCodigoPostal() {
   const [results, setResults] = useState<PrestadorCodigoPostalRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
 
   // 🔹 Paginación
   const [page, setPage] = useState(1);
@@ -47,7 +49,7 @@ export function PrestadoresPorCodigoPostal() {
       setPage(1);
 
       // CAMBIAR SI O SI POR LA RUTA DEL BACK-END PARA ESTE REPORTE
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/reports/prestadores-por-codigo-postal?cp=${cp}`
       );
 
@@ -63,13 +65,22 @@ export function PrestadoresPorCodigoPostal() {
         : data.results || data.providers || [];
 
       setResults(rows);
+      setSearched(true);
     } catch (e: any) {
-      console.error(e);
       setError(e.message || "Error al consultar el reporte");
+      setSearched(true);
     } finally {
       setLoading(false);
     }
   };
+
+  // 📌 CONFIGURACIÓN PDF
+  const pdfColumns = [
+    { key: "nombreCompleto", label: "Nombre Completo" },
+    { key: "cuitCuil", label: "CUIL/CUIT" },
+    { key: "tipoPrestador", label: "Tipo de Prestador" },
+    { key: "codigoPostal", label: "Código Postal" },
+  ];
 
   return (
     <div className="w-full flex justify-center px-2">
@@ -104,16 +115,26 @@ export function PrestadoresPorCodigoPostal() {
               disabled={!cpValido || loading}
               className={`
                 px-5 py-2 rounded-md text-white font-semibold
-                ${
-                  cpValido && !loading
-                    ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
-                    : "bg-gray-300 cursor-not-allowed"
+                ${cpValido && !loading
+                  ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
+                  : "bg-gray-300 cursor-not-allowed"
                 }
               `}
             >
               {loading ? "Buscando..." : "Buscar"}
             </button>
           </div>
+
+          {results.length > 0 && (
+            <PDFDownloadButton
+              title="Prestadores por código postal"
+              subtitle={`Código Postal: ${cp}`}
+              data={results}
+              columns={pdfColumns}
+              filename="prestadores-codigo-postal"
+            />
+          )}
+
 
           <p className="text-xs text-gray-500 mt-1">
             Ingrese un código postal de 4 dígitos.
@@ -128,11 +149,17 @@ export function PrestadoresPorCodigoPostal() {
 
         {/* RESULTADOS */}
         <div className="mt-2">
-          {!loading && results.length === 0 && !error && (
+          {!loading && results.length === 0 && !error && !searched && (
             <p className="text-sm text-gray-600">
               Ingrese un código postal válido y presione{" "}
               <span className="font-semibold">Buscar</span> para ver los
               prestadores que atienden en ese código postal.
+            </p>
+          )}
+
+          {!loading && results.length === 0 && !error && searched && (
+            <p className="text-sm text-gray-600">
+              No se encontraron prestadores que atiendan en el código postal indicado.
             </p>
           )}
 

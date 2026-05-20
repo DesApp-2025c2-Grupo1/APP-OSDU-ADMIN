@@ -1,6 +1,4 @@
-import type { Prestador } from "../model/Provider.model";
-
-export const providersMock: Prestador[] = [
+export const providersMock = [
   //Centros Médicos
   {
     id: "centro-italiano",

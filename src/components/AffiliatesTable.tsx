@@ -6,7 +6,7 @@ import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import ScheduledSuccessPopup from "./BajaExitosaPopup";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 export type Affiliate = {
   grupoFamiliar: number;
@@ -101,9 +101,8 @@ export function AffiliatesTable({
 
   const handleSaveAffiliate = async (data: any) => {
     try {
-      console.log("Datos que se envían al backend:", JSON.stringify(data, null, 2));
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate?.dni}`,
         {
           method: "PUT",
@@ -116,20 +115,17 @@ export function AffiliatesTable({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("❌ Error del servidor:", errorData);
         throw new Error(errorData.message || "Error al actualizar afiliado");
       }
 
-      console.log("✅ Respuesta exitosa del servidor");
 
       // Recargar el afiliado actualizado
-      const updatedResponse = await fetch(
+      const updatedResponse = await apiFetch(
         `${API_BASE_URL}/affiliates/affiliate/${selectedAffiliate?.dni}`
       );
 
       if (updatedResponse.ok) {
         const updatedData = await updatedResponse.json();
-        console.log("📦 Afiliado actualizado:", updatedData);
         onAffiliateUpdated?.(updatedData.affiliates);
       }
 
@@ -137,7 +133,6 @@ export function AffiliatesTable({
       setSelectedAffiliate(null);
 
     } catch (error) {
-      console.error("❌ Error al actualizar afiliado:", error);
       alert("Error al actualizar el afiliado. Por favor, intente nuevamente.");
     }
   };
@@ -151,7 +146,7 @@ export function AffiliatesTable({
     setIsDeleting(true);
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`,
         {
           method: "DELETE",
@@ -174,7 +169,6 @@ export function AffiliatesTable({
       setSelectedAffiliate(null);
 
     } catch (error) {
-      console.error("❌ Error al eliminar afiliado:", error);
     } finally {
       setIsDeleting(false);
     }
@@ -184,7 +178,7 @@ export function AffiliatesTable({
     if (!selectedAffiliate) return;
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}/schedule-delete`,
         {
           method: "POST",
@@ -202,7 +196,6 @@ export function AffiliatesTable({
       setShowDeleteDialog(false);
       setSelectedAffiliate(null);
     } catch (error) {
-      console.error("❌ Error al programar baja:", error);
     }
   };
 
@@ -229,13 +222,13 @@ export function AffiliatesTable({
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {currentAffiliates.map((a, idx) => (
-                <tr key={a.credencial} className={idx % 2 === 0 ? "bg-gray-50" : ""}>
+                <tr key={a.credencial || a.dni || idx} className={idx % 2 === 0 ? "bg-gray-50" : ""}>
                   <td className="px-4 py-2 text-sm">{a.credencial}</td>
                   <td className="px-4 py-2 text-sm">{a.dni}</td>
                   <td className="px-4 py-2 text-sm">{a.nombre}</td>
                   <td className="px-4 py-2 text-sm">{a.apellido}</td>
                   <td className="px-4 py-2 text-sm">{a.fecha_nacimiento}</td>
-                  <td className="px-4 py-2 text-sm">{a.plan.nombre}</td>
+                  <td className="px-4 py-2 text-sm">{a.plan?.nombre || (a as any).plan_type || '-'}</td>
                   <td className="px-4 py-2 text-sm">{a.direccion}</td>
                   <td className="px-2 py-2 text-right w-10">
                     <OptionsMenu
@@ -258,6 +251,79 @@ export function AffiliatesTable({
           </table>
         </div>
 
+        <div className="md:hidden p-3">
+          {currentAffiliates.length === 0 && (
+            <div className="px-2 py-6 text-center text-sm text-gray-500">
+              No hay afiliados para mostrar.
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            {currentAffiliates.map((a) => (
+              <div key={a.credencial || a.dni} className="border border-gray-200 rounded-lg shadow-sm p-4 bg-white">
+                <div className="mb-3">
+                  <div className="text-xs text-gray-500 uppercase">Credencial</div>
+                  <div className="font-semibold break-all">{a.credencial}</div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase">DNI</div>
+                    <div className="text-sm">{a.dni}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
+                    <div className="text-sm">{a.fecha_nacimiento}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase">Nombre</div>
+                    <div className="text-sm">{a.nombre}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase">Apellido</div>
+                    <div className="text-sm">{a.apellido}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-xs text-gray-500 uppercase">Plan</div>
+                    <div className="text-sm">{a.plan?.nombre || (a as any).plan_type || '-'}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-xs text-gray-500 uppercase">Dirección</div>
+                    <div className="text-sm">{a.direccion}</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleOptionClick("Ver detalles", a)}
+                    className="flex-1 px-3 py-2 text-sm border rounded-md border-gray-300 hover:bg-gray-50"
+                  >
+                    Ver detalles
+                  </button>
+                  <button
+                    onClick={() => handleOptionClick("Editar", a)}
+                    className="flex-1 px-3 py-2 text-sm border-2 rounded-md border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white font-semibold"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleOptionClick("Ver Grupo Familiar", a)}
+                    className="flex-1 px-3 py-2 text-sm border rounded-md border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold"
+                  >
+                    Ver Grupo
+                  </button>
+                  <button
+                    onClick={() => handleOptionClick("Dar de baja", a)}
+                    className="w-full px-3 py-2 text-sm border-2 rounded-md border-red-500 text-red-600 hover:bg-red-50 font-semibold"
+                  >
+                    Dar de baja
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Footer de paginación */}
         <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
           <span className="text-sm text-gray-700">
@@ -267,14 +333,14 @@ export function AffiliatesTable({
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
-              className="px-2 py-1 border rounded"
+              className="px-2 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <NavigateBeforeIcon />
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
-              className="px-2 py-1 border rounded"
+              className="px-2 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <NavigateNextIcon />
             </button>

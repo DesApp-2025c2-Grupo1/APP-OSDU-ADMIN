@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import type { Prestador, LugarAtencion, Especialidad } from "../model/Provider.model";
 import { updateProvider } from "../api/providerService";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
+import { checkProviderSpecialtyAgendas, checkProviderPlaceAgendas } from "../api/providerService";
+import { ConfirmSpecialtyChangeDialog } from "./ConfirmSpecialtyChangeDialog";
+import { ConfirmPlaceChangeDialog } from "./ConfirmPlaceChangeDialog";
+import { firstProviderValidationMessage, validateProviderPayload } from "../utils/providerValidation";
 
 interface EditProviderPopupProps {
   provider: Prestador;
@@ -23,22 +27,38 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [telefonoErrors, setTelefonoErrors] = useState<string[]>([]);
+  const [emailErrors, setEmailErrors] = useState<string[]>([]);
   const [selectedLugarIndex, setSelectedLugarIndex] = useState<number>(0);
   const [centrosMedicos, setCentrosMedicos] = useState<any[]>([]);
-  const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{id: number, nombre: string}[]>([]);
+  const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{ id: number, nombre: string }[]>([]);
+
+  const [showSpecialtyWarning, setShowSpecialtyWarning] = useState(false);
+  const [pendingSpecialtyToRemove, setPendingSpecialtyToRemove] = useState<{
+    specialty: Especialidad;
+    agendas: any[];
+  } | null>(null);
+  const [checkingAgendas, setCheckingAgendas] = useState(false);
+
+  const [showPlaceWarning, setShowPlaceWarning] = useState(false);
+  const [placeAgendas, setPlaceAgendas] = useState<any[]>([]);
+  const [pendingSave, setPendingSave] = useState(false);
+  const [agendaImpactConfirmed, setAgendaImpactConfirmed] = useState(false);
+  const [originalPlaces, setOriginalPlaces] = useState<LugarAtencion[]>([]);
+
 
   // Cargar centros médicos y especialidades al montar
   useEffect(() => {
     const cargarDatos = async () => {
       try {
         // Cargar centros médicos
-        const resCentros = await fetch(`${API_BASE_URL}/providers/`);
+        const resCentros = await apiFetch(`${API_BASE_URL}/prestadores/`);
         const dataCentros = await resCentros.json();
         const centros = dataCentros.filter((p: any) => p.tipoPrestador === "centro_medico");
         setCentrosMedicos(centros);
 
         // Cargar especialidades desde API
-        const resEsp = await fetch(`${API_BASE_URL}/specialties`);
+        const resEsp = await apiFetch(`${API_BASE_URL}/specialties`);
         const dataEsp = await resEsp.json();
         const especialidadesArray = dataEsp.especialidades || dataEsp || [];
         setEspecialidadesDisponibles(especialidadesArray.map((e: any) => ({
@@ -46,18 +66,12 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           nombre: e.nombre
         })));
       } catch (err) {
-        console.error("Error cargando datos:", err);
       }
     };
     cargarDatos();
 
-    // Debug: imprimir datos del provider
-    console.log('📋 Provider en EditProviderPopup:', {
-      cuitCuil: provider.cuitCuil,
-      tipoPrestador: provider.tipoPrestador,
-      centroMedicoId: (provider as any).centroMedicoId,
-      formDataCentroMedicoId: (formData as any).centroMedicoId
-    });
+    // Guardar lugares originales para detectar cambios
+    setOriginalPlaces(JSON.parse(JSON.stringify(provider.lugaresAtencion || [])));
   }, []);
 
   // ---------- helpers campos simples ----------
@@ -78,7 +92,6 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
   const addLugar = () => {
     const nuevoLugar: LugarAtencion = {
       calle: "",
-      numero: "",
       localidad: "",
       provincia: "",
       cp: "",
@@ -102,40 +115,180 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
   };
 
   // ---------- telefonos / mails ----------
+  // Sin formateo automático - el usuario puede escribir libremente
   const setArr = (field: "telefonos" | "mails", i: number, val: string) => {
     const arr = [...formData[field]];
     arr[i] = val;
     setFormData(prev => ({ ...prev, [field]: arr }));
+    // Limpiar error al cambiar
+    if (field === "telefonos") {
+      const errors = [...telefonoErrors];
+      errors[i] = "";
+      setTelefonoErrors(errors);
+    } else if (field === "mails") {
+      const errors = [...emailErrors];
+      errors[i] = "";
+      setEmailErrors(errors);
+    }
   };
-  const addArr = (field: "telefonos" | "mails") =>
+  const addArr = (field: "telefonos" | "mails") => {
     setFormData(prev => ({ ...prev, [field]: [...prev[field], ""] }));
-  const delArr = (field: "telefonos" | "mails", i: number) =>
+    if (field === "telefonos") {
+      setTelefonoErrors([...telefonoErrors, ""]);
+    } else if (field === "mails") {
+      setEmailErrors([...emailErrors, ""]);
+    }
+  };
+  const delArr = (field: "telefonos" | "mails", i: number) => {
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].filter((_, idx) => idx !== i)
     }));
+    if (field === "telefonos") {
+      setTelefonoErrors(telefonoErrors.filter((_, idx) => idx !== i));
+    } else if (field === "mails") {
+      setEmailErrors(emailErrors.filter((_, idx) => idx !== i));
+    }
+  };
 
   // ---------- especialidades ----------
-  const delEsp = (i: number) =>
-    setFormData(prev => ({
+  const delEsp = async (i: number) => {
+    const specialtyToRemove = formData.especialidades[i];
+
+    try {
+      setCheckingAgendas(true);
+
+      // Verificar agendas desde el backend
+      const result = await checkProviderSpecialtyAgendas(
+        formData.cuitCuil,
+        specialtyToRemove.id
+      );
+
+      if (result.count > 0) {
+        // Mostrar diálogo de confirmación
+        setPendingSpecialtyToRemove({
+          specialty: specialtyToRemove,
+          agendas: result.agendas,
+        });
+        setShowSpecialtyWarning(true);
+      } else {
+        // Si no hay agendas, eliminar directamente
+        setFormData((prev) => ({
+          ...prev,
+          especialidades: prev.especialidades.filter((_, idx) => idx !== i),
+        }));
+      }
+    } catch (err) {
+      // Si hay error, permitir eliminar (pero mostrar alerta)
+      alert("No se pudo verificar las agendas asociadas. Por favor, intenta de nuevo.");
+    } finally {
+      setCheckingAgendas(false);
+    }
+  };
+
+  const confirmRemoveSpecialty = () => {
+    if (!pendingSpecialtyToRemove) return;
+
+    setFormData((prev) => ({
       ...prev,
-      especialidades: prev.especialidades.filter((_, idx) => idx !== i)
+      especialidades: prev.especialidades.filter(
+        (e) => e.id !== pendingSpecialtyToRemove.specialty.id
+      ),
     }));
+
+    setAgendaImpactConfirmed(true);
+    setShowSpecialtyWarning(false);
+    setPendingSpecialtyToRemove(null);
+  };
+
+  // Agregar función para cancelar
+  const cancelRemoveSpecialty = () => {
+    setShowSpecialtyWarning(false);
+    setPendingSpecialtyToRemove(null);
+  };
+
+
 
   const addEsp = (especialidad: Especialidad) => {
     // Verificar que no exista ya
-    if (formData.especialidades.some(e => e.id === especialidad.id)) return;
+    if (formData.especialidades.some(e => e.id === especialidad.id)) {
+      alert('Esta especialidad ya ha sido agregada.');
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       especialidades: [...prev.especialidades, especialidad]
     }));
   };
 
+
+  const handleSaveClick = async () => {
+    const validationErrors = validateProviderPayload({
+      cuitCuil: formData.cuitCuil,
+      nombreCompleto: formData.nombreCompleto,
+      tipoPrestador: formData.tipoPrestador,
+      mails: formData.mails,
+      telefonos: formData.telefonos,
+      especialidades: formData.especialidades,
+      lugaresAtencion: formData.lugaresAtencion,
+    });
+    const newTelefonoErrors: string[] = [];
+    const newEmailErrors: string[] = [];
+
+    formData.telefonos.forEach((_, idx) => {
+      newTelefonoErrors[idx] = validationErrors.some((err) => err.field === `telefonos.${idx}`)
+        ? "El teléfono debe tener entre 7 y 15 dígitos"
+        : "";
+    });
+
+    formData.mails.forEach((_, idx) => {
+      newEmailErrors[idx] = validationErrors.some((err) => err.field === `mails.${idx}`)
+        ? "Formato de email inválido"
+        : "";
+    });
+
+    setTelefonoErrors(newTelefonoErrors);
+    setEmailErrors(newEmailErrors);
+
+    if (validationErrors.length > 0) {
+      setError(firstProviderValidationMessage(validationErrors));
+      return;
+    }
+
+    await handleSave();
+  };
+
   const handleSave = async () => {
+    const placesChanged = JSON.stringify(originalPlaces) !== JSON.stringify(formData.lugaresAtencion);
+
+    if (placesChanged && !pendingSave) {
+      try {
+        setCheckingAgendas(true);
+        const result = await checkProviderPlaceAgendas(formData.cuitCuil);
+
+      if (result.count > 0) {
+        setPlaceAgendas(result.agendas);
+        setShowPlaceWarning(true);
+          setCheckingAgendas(false);
+          return; // No continuar con el guardado
+        } else {
+        }
+      } catch (err) {
+      } finally {
+        setCheckingAgendas(false);
+      }
+    } else {
+    }
+    await performSave();
+  };
+
+  const performSave = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
+      const placesChanged = JSON.stringify(originalPlaces) !== JSON.stringify(formData.lugaresAtencion);
       // Enviar solo los IDs de especialidades, no los objetos completos
       const updated = {
         cuitCuil: formData.cuitCuil,
@@ -144,36 +297,44 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
         especialidades: formData.especialidades.map(e => (e as any).id), // Extraer solo IDs
         telefonos: formData.telefonos.filter(t => t.trim()),
         mails: formData.mails.filter(m => m.trim()),
-        lugaresAtencion: formData.lugaresAtencion
+        confirmAgendaImpact: pendingSave || agendaImpactConfirmed
       };
+
+      if (placesChanged) {
+        (updated as any).lugaresAtencion = formData.lugaresAtencion;
+      }
 
       // Agregar centroMedicoId si es profesional
       if (formData.tipoPrestador === "profesional") {
         (updated as any).centroMedicoId = (formData as any).centroMedicoId || null;
       }
-      
-      console.log('📤 Enviando actualización:', JSON.stringify(updated, null, 2));
-      console.log('🏥 Centro Médico ID:', (formData as any).centroMedicoId);
-      
+
+
       // Llamar al API para guardar cambios
       const result = await updateProvider(formData.cuitCuil, updated);
-      
-      console.log('✅ Respuesta del servidor:', result);
-      
-      // Notificar que se guardó correctamente
+
       onSave(result);
       onClose();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
-      console.error('❌ Error al guardar:', {
-        error: err,
-        errorMessage: errorMsg,
-        cuitCuil: formData.cuitCuil
-      });
       setError(errorMsg);
     } finally {
       setLoading(false);
+      setPendingSave(false); // Reset pending save flag
     }
+  };
+
+  const confirmPlaceChange = () => {
+    setShowPlaceWarning(false);
+    setPendingSave(true);
+    setAgendaImpactConfirmed(true);
+    // Llamar performSave inmediatamente después de confirmar
+    setTimeout(() => performSave(), 0);
+  };
+
+  const cancelPlaceChange = () => {
+    setShowPlaceWarning(false);
+    setPendingSave(false);
   };
 
   const lugarActual = formData.lugaresAtencion[selectedLugarIndex];
@@ -249,7 +410,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
         {/* ESPECIALIDADES (editable) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">Especialidades</h2>
-          
+
           {formData.especialidades.length > 0 ? (
             <div className="space-y-2 mb-4">
               {formData.especialidades.map((esp, i) => (
@@ -271,7 +432,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
           {/* Dropdown para agregar especialidades */}
           <div className="flex gap-2">
-            <select 
+            <select
               onChange={(e) => {
                 const selected = especialidadesDisponibles.find(s => s.id === parseInt(e.target.value));
                 if (selected) addEsp(selected);
@@ -281,13 +442,21 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
               defaultValue=""
             >
               <option value="">Seleccionar especialidad...</option>
-              {especialidadesDisponibles.map((esp) => (
-                <option key={esp.id} value={esp.id}>
-                  {esp.nombre}
-                </option>
-              ))}
+              {especialidadesDisponibles
+                .filter(esp => !formData.especialidades.some(e => e.id === esp.id))
+                .map((esp) => (
+                  <option key={esp.id} value={esp.id}>
+                    {esp.nombre}
+                  </option>
+                ))
+              }
             </select>
           </div>
+          {formData.especialidades.length === especialidadesDisponibles.length && (
+            <p className="text-sm text-gray-500 mt-2">
+              ℹ️ Todas las especialidades disponibles ya han sido agregadas
+            </p>
+          )}
         </div>
 
         {/* CONTACTO */}
@@ -298,21 +467,27 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           <div className="mb-6">
             <label className="font-semibold mb-2 block">Teléfonos</label>
             {formData.telefonos.map((tel, i) => (
-              <div key={i} className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={tel}
-                  onChange={(e) => setArr("telefonos", i, e.target.value)}
-                  className="p-2 border border-gray-300 rounded w-full"
-                  placeholder="Ej: 011-1234-5678"
-                />
-                <button
-                  type="button"
-                  onClick={() => delArr("telefonos", i)}
-                  className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
-                >
-                  X
-                </button>
+              <div key={i} className="flex flex-col gap-1 mb-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={tel}
+                    onChange={(e) => setArr("telefonos", i, e.target.value)}
+                    className={`p-2 border rounded w-full ${telefonoErrors[i] ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    placeholder="Ej: 011 4444-5555 o 1234567890"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => delArr("telefonos", i)}
+                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
+                  >
+                    X
+                  </button>
+                </div>
+                {telefonoErrors[i] && (
+                  <p className="text-red-500 text-xs">{telefonoErrors[i]}</p>
+                )}
               </div>
             ))}
             <button type="button" onClick={() => addArr("telefonos")} className="text-sm text-[#5FA92C] font-semibold hover:underline">
@@ -324,21 +499,27 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           <div>
             <label className="font-semibold mb-2 block">Emails</label>
             {formData.mails.map((mail, i) => (
-              <div key={i} className="flex gap-2 mb-2">
-                <input
-                  type="email"
-                  value={mail}
-                  onChange={(e) => setArr("mails", i, e.target.value)}
-                  className="p-2 border border-gray-300 rounded w-full"
-                  placeholder="Ej: email@example.com"
-                />
-                <button
-                  type="button"
-                  onClick={() => delArr("mails", i)}
-                  className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
-                >
-                  X
-                </button>
+              <div key={i} className="flex flex-col gap-1 mb-2">
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={mail}
+                    onChange={(e) => setArr("mails", i, e.target.value)}
+                    className={`p-2 border rounded w-full ${emailErrors[i] ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    placeholder="Ej: email@example.com"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => delArr("mails", i)}
+                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
+                  >
+                    X
+                  </button>
+                </div>
+                {emailErrors[i] && (
+                  <p className="text-red-500 text-xs">{emailErrors[i]}</p>
+                )}
               </div>
             ))}
             <button type="button" onClick={() => addArr("mails")} className="text-sm text-[#5FA92C] font-semibold hover:underline">
@@ -355,16 +536,15 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           {formData.lugaresAtencion.length > 0 && (
             <div className="mb-4">
               <div className="flex gap-2 flex-wrap">
-                {formData.lugaresAtencion.map((lugar, idx) => (
+                {formData.lugaresAtencion.map((_, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => setSelectedLugarIndex(idx)}
-                    className={`px-4 py-2 rounded font-semibold transition ${
-                      selectedLugarIndex === idx
-                        ? 'bg-[#5FA92C] text-white'
-                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    }`}
+                    className={`px-4 py-2 rounded font-semibold transition ${selectedLugarIndex === idx
+                      ? 'bg-[#5FA92C] text-white'
+                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                      }`}
                   >
                     Lugar {idx + 1}
                   </button>
@@ -453,14 +633,14 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
         {/* BOTONES */}
         <div className="flex justify-center gap-4 mt-4">
-          <button 
-            onClick={handleSave} 
+          <button
+            onClick={handleSaveClick}
             disabled={loading}
             className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Guardando..." : "Guardar Cambios"}
           </button>
-          <button 
+          <button
             onClick={onClose}
             disabled={loading}
             className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
@@ -469,6 +649,27 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           </button>
         </div>
       </div>
+      {showSpecialtyWarning && pendingSpecialtyToRemove && (
+        <ConfirmSpecialtyChangeDialog
+          open={showSpecialtyWarning}
+          providerName={formData.nombreCompleto}
+          specialty={pendingSpecialtyToRemove.specialty.nombre}
+          agendaCount={pendingSpecialtyToRemove.agendas.length}
+          onConfirm={confirmRemoveSpecialty}
+          onCancel={cancelRemoveSpecialty}
+          isLoading={loading || checkingAgendas}
+        />
+      )}
+      {showPlaceWarning && (
+        <ConfirmPlaceChangeDialog
+          open={showPlaceWarning}
+          providerName={formData.nombreCompleto}
+          agendaCount={placeAgendas.length}
+          onConfirm={confirmPlaceChange}
+          onCancel={cancelPlaceChange}
+          isLoading={loading || checkingAgendas}
+        />
+      )}
     </div>
   );
 }
