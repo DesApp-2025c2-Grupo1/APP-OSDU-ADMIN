@@ -5,7 +5,7 @@ import { updateSolicitudEstado } from "../api/solicitudService";
 const ESTADOS = ["Pendiente", "En análisis", "Observada", "Aprobada", "Rechazada"] as const;
 
 const ESTADO_BADGE: Record<string, string> = {
-  Pendiente:     "bg-gray-100 text-gray-600",
+  Pendiente:     "bg-slate-100 text-slate-600",
   "En análisis": "bg-blue-100 text-blue-700",
   Observada:     "bg-amber-100 text-amber-700",
   Aprobada:      "bg-green-100 text-green-700",
@@ -44,7 +44,7 @@ export function SolicitudDetailPopup({ solicitud, onClose, onUpdated }: Props) {
     }
   };
 
-  const badgeCls = ESTADO_BADGE[solicitud.estado] ?? "bg-gray-100 text-gray-600";
+  const badgeCls = ESTADO_BADGE[solicitud.estado] ?? "bg-slate-100 text-slate-600";
 
   return (
     <div
@@ -56,21 +56,32 @@ export function SolicitudDetailPopup({ solicitud, onClose, onUpdated }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-100 flex items-start justify-between gap-4">
+        <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-black text-[#5FA92C] uppercase tracking-widest mb-1">
+            <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest mb-1">
               Solicitud #{solicitud.nro}
             </p>
-            <h3 className="text-lg font-black text-gray-900">
+            <h3 className="text-lg font-bold text-slate-800">
               {solicitud.prestador ?? "Prestador desconocido"}
             </h3>
             {solicitud.prestadorCuit && (
-              <p className="text-xs text-gray-400 font-mono mt-0.5">CUIT {solicitud.prestadorCuit}</p>
+              <p className="text-xs text-slate-400 font-mono mt-0.5">CUIT {solicitud.prestadorCuit}</p>
             )}
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-black uppercase shrink-0 ${badgeCls}`}>
-            {solicitud.estado}
-          </span>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${badgeCls}`}>
+              {solicitud.estado}
+            </span>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              aria-label="Cerrar"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Cuerpo */}
@@ -78,37 +89,37 @@ export function SolicitudDetailPopup({ solicitud, onClose, onUpdated }: Props) {
 
           {/* Info básica */}
           <div>
-            <p className="text-[10px] font-black text-[#5FA92C] uppercase tracking-widest mb-3">
+            <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest mb-3">
               Datos de la Solicitud
             </p>
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Afiliado</p>
-                <p className="text-sm font-bold text-gray-800">{solicitud.afiliado ?? "—"}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Afiliado</p>
+                <p className="text-sm font-semibold text-slate-800">{solicitud.afiliado ?? "—"}</p>
                 {solicitud.credencial && (
-                  <p className="text-[10px] text-gray-400 mt-0.5">Cred. {solicitud.credencial}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Cred. {solicitud.credencial}</p>
                 )}
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Tipo</p>
-                <p className="text-sm font-bold text-gray-800">{solicitud.tipo}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Tipo</p>
+                <p className="text-sm font-semibold text-slate-800">{solicitud.tipo}</p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Fecha Solicitud</p>
-                <p className="text-sm font-bold text-gray-800">{solicitud.fecha}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Fecha Solicitud</p>
+                <p className="text-sm font-semibold text-slate-800">{solicitud.fecha}</p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Última actualización</p>
-                <p className="text-sm font-bold text-gray-800">{solicitud.fechaEstado}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Última actualización</p>
+                <p className="text-sm font-semibold text-slate-800">{solicitud.fechaEstado}</p>
               </div>
             </div>
           </div>
 
           {/* Descripción */}
           {solicitud.descripcion && (
-            <div className="border-t border-gray-50 pt-4">
-              <p className="text-[10px] text-gray-400 font-bold uppercase mb-2">Descripción</p>
-              <p className="text-sm text-gray-700 bg-gray-50 rounded-xl p-3 leading-relaxed">
+            <div className="border-t border-slate-50 pt-4">
+              <p className="text-[10px] text-slate-400 font-bold uppercase mb-2">Descripción</p>
+              <p className="text-sm text-slate-700 bg-slate-50 rounded-xl p-3 leading-relaxed">
                 {solicitud.descripcion}
               </p>
             </div>
@@ -116,18 +127,18 @@ export function SolicitudDetailPopup({ solicitud, onClose, onUpdated }: Props) {
 
           {/* Adjunto */}
           {solicitud.adjunto && (
-            <div className="border-t border-gray-50 pt-4">
-              <p className="text-[10px] text-gray-400 font-bold uppercase mb-2">Adjunto</p>
-              <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
-                <div className="bg-[#5FA92C]/10 text-[#5FA92C] rounded-lg p-2">
+            <div className="border-t border-slate-50 pt-4">
+              <p className="text-[10px] text-slate-400 font-bold uppercase mb-2">Adjunto</p>
+              <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
+                <div className="bg-teal-50 text-teal-600 rounded-lg p-2">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-800 truncate">{solicitud.adjunto.nombre}</p>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-sm font-semibold text-slate-800 truncate">{solicitud.adjunto.nombre}</p>
+                  <p className="text-[10px] text-slate-400">
                     {(solicitud.adjunto.tamanio / 1024).toFixed(1)} KB · {solicitud.adjunto.tipo}
                   </p>
                 </div>
@@ -140,17 +151,17 @@ export function SolicitudDetailPopup({ solicitud, onClose, onUpdated }: Props) {
 
           {/* Motivo actual */}
           {solicitud.motivoEstado && (
-            <div className="border-t border-gray-50 pt-4">
-              <p className="text-[10px] text-gray-400 font-bold uppercase mb-2">Motivo del estado actual</p>
-              <p className="text-sm text-gray-700 bg-amber-50 border border-amber-100 rounded-xl p-3">
+            <div className="border-t border-slate-50 pt-4">
+              <p className="text-[10px] text-slate-400 font-bold uppercase mb-2">Motivo del estado actual</p>
+              <p className="text-sm text-slate-700 bg-amber-50 border border-amber-100 rounded-xl p-3">
                 {solicitud.motivoEstado}
               </p>
             </div>
           )}
 
           {/* Cambio de estado */}
-          <div className="border-t border-gray-50 pt-4">
-            <p className="text-[10px] font-black text-[#5FA92C] uppercase tracking-widest mb-3">
+          <div className="border-t border-slate-50 pt-4">
+            <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest mb-3">
               Gestión del Estado
             </p>
 
@@ -162,11 +173,11 @@ export function SolicitudDetailPopup({ solicitud, onClose, onUpdated }: Props) {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Nuevo Estado</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nuevo Estado</label>
                 <select
                   value={estado}
                   onChange={(e) => { setEstado(e.target.value); setError(null); }}
-                  className="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#5FA92C] outline-none bg-white"
+                  className="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 outline-none bg-white text-slate-700"
                 >
                   {ESTADOS.map((e) => (
                     <option key={e} value={e}>{e}</option>
@@ -175,7 +186,7 @@ export function SolicitudDetailPopup({ solicitud, onClose, onUpdated }: Props) {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
                   Motivo / Mensaje
                   {MOTIVO_REQUERIDO.has(estado) && <span className="text-red-500 ml-1">*</span>}
                 </label>
@@ -190,7 +201,7 @@ export function SolicitudDetailPopup({ solicitud, onClose, onUpdated }: Props) {
                       ? "Indicar condiciones de aprobación..."
                       : "Motivo del rechazo..."
                   }
-                  className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#5FA92C] outline-none"
+                  className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 outline-none text-slate-700 placeholder:text-slate-300"
                 />
               </div>
             </div>
@@ -198,17 +209,17 @@ export function SolicitudDetailPopup({ solicitud, onClose, onUpdated }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-5 py-2 text-sm font-bold text-gray-500 rounded-lg hover:text-red-500 hover:bg-red-50 transition-all"
+            className="px-5 py-2 text-sm font-semibold text-slate-500 rounded-lg hover:text-rose-500 hover:bg-rose-50 transition-all"
           >
             Cancelar
           </button>
           <button
             onClick={handleGuardar}
             disabled={saving}
-            className="px-6 py-2 bg-[#5FA92C] text-white text-sm font-bold rounded-xl hover:bg-[#4a8a22] shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {saving ? "Guardando..." : "Guardar Cambio"}
           </button>

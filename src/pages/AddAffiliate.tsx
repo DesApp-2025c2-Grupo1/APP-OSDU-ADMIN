@@ -505,6 +505,7 @@ export function AddAffiliate() {
   };
 
   return (
+    <div className="p-4 sm:p-8">
     <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm max-w-5xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-700 text-slate-800 mb-2">Crear nuevo afiliado</h1>
@@ -1118,6 +1119,7 @@ export function AddAffiliate() {
           onConfirm={handleProgramarAlta}
         />
       )}
+    </div>
     </div>
   );
 }
