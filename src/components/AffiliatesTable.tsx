@@ -54,7 +54,7 @@ export type Affiliate = {
 interface AffiliatesTableProps {
   affiliates: Affiliate[];
   onOptionClick: (option: string, affiliate: Affiliate) => void;
-  onAffiliateDeleted?: (dni: string) => void;
+  onAffiliateDeleted?: () => void;
   onAffiliateUpdated?: (affiliate: Affiliate) => void;
 }
 
@@ -146,7 +146,7 @@ export function AffiliatesTable({
         throw new Error(errorData.message || "No se pudo dar de baja al afiliado");
       }
 
-      onAffiliateDeleted?.(selectedAffiliate.dni);
+      onAffiliateDeleted?.();
       setShowDeleteDialog(false);
       setSelectedAffiliate(null);
     } catch (error) {

@@ -54,7 +54,10 @@ export function Home() {
   const fetchAffiliates = async (pending: boolean) => {
     try {
       setLoading(true);
-      const endpoint = pending ? `${API_BASE_URL}/affiliates?status=false` : `${API_BASE_URL}/affiliates`;
+      // status=true → activos (vista principal) | status=false → pendientes/inactivos
+      const endpoint = pending
+        ? `${API_BASE_URL}/affiliates?status=false`
+        : `${API_BASE_URL}/affiliates?status=true`;
       const response = await apiFetch(endpoint, {
         credentials: "include"
       });
@@ -332,9 +335,9 @@ export function Home() {
             <AffiliatesTable
               affiliates={filtered}
               onOptionClick={handleOptionClick}
-              onAffiliateDeleted={(dni) => {
-                setAffiliates(prev => prev.filter(a => a.dni !== dni));
-                showToast("Afiliado eliminado correctamente");
+              onAffiliateDeleted={() => {
+                fetchAffiliates(showPending);
+                showToast("Afiliado dado de baja correctamente");
               }}
               onAffiliateUpdated={(updated) => {
                 setAffiliates(prev =>
