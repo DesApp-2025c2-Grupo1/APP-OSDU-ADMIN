@@ -65,23 +65,28 @@ export function Home() {
       if (!affiliatesData) throw new Error("No se encontraron afiliados");
 
       const normalized = affiliatesData.map((a: any) => {
-        let formattedDate = a.fecha_nacimiento || a.fechaNacimiento || "";
-        if (formattedDate && formattedDate.includes('-')) {
-          const d = new Date(formattedDate);
+        // Backend devuelve campos en inglés: first_name, last_name, document_number,
+        // credencial_number, birth_date, address, plan_type, plan_id
+        const rawDate = a.birth_date || a.fecha_nacimiento || a.fechaNacimiento || "";
+        let formattedDate = rawDate;
+        if (rawDate && rawDate.includes('-')) {
+          const d = new Date(rawDate);
           if (!isNaN(d.getTime())) {
-             formattedDate = d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+            formattedDate = d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
           }
         }
-        
+
         return {
           ...a,
-          nombre: a.nombre || "",
-          apellido: a.apellido || "",
-          dni: a.dni || a.nroDocumento || "",
-          credencial: a.credencial || `PENDING-${a.nroDocumento || a.id}`,
+          id: a.id,
+          nombre: a.first_name || a.nombre || "",
+          apellido: a.last_name || a.apellido || "",
+          dni: a.document_number || a.dni || a.nroDocumento || "",
+          credencial: a.credencial_number || a.credencial || `PENDING-${a.id}`,
           fecha_nacimiento: formattedDate,
-          direccion: a.direccion || "",
-          activo: a.activo,
+          direccion: a.address || a.direccion || "",
+          plan: a.plan || (a.plan_type ? { idPlan: a.plan_id, nombre: a.plan_type } : null),
+          status: a.status,
         };
       });
 
@@ -131,19 +136,18 @@ export function Home() {
     }
   };
 
-  // 🟧 Confirmar eliminación
+  // 🟧 Dar de baja (desactiva — no existe DELETE en el backend)
   const handleConfirmDelete = async () => {
-    if (!selectedAffiliate) return;
+    if (!selectedAffiliate?.id) return;
 
     setIsDeleting(true);
     try {
-      // Si tu API borra por DNI (como en tu ejemplo actual):
-      const res = await apiFetch(`${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`, {
-        method: "DELETE",
+      const res = await apiFetch(`${API_BASE_URL}/affiliates/${selectedAffiliate.id}/deactivate`, {
+        method: "PUT",
         credentials: "include"
       });
 
-      if (!res.ok && res.status !== 204) throw new Error("Error al eliminar afiliado");
+      if (!res.ok) throw new Error("Error al dar de baja al afiliado");
 
       // 🔸 Actualizamos UI:
       // - Si es TITULAR (sufijo -01), quitamos TODO el grupo (misma base).
@@ -192,32 +196,41 @@ export function Home() {
   };
 
   // 🟦 Guardar edición
-  const handleSaveEdit = async (updatedAffiliate: Affiliate) => {
+  const handleSaveEdit = async (payload: any) => {
+    if (!selectedAffiliate?.id) return;
     try {
-      const response = await apiFetch(`${API_BASE_URL}/affiliates/${updatedAffiliate.dni}`, {
+      const response = await apiFetch(`${API_BASE_URL}/affiliates/${selectedAffiliate.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedAffiliate),
+        body: JSON.stringify(payload),
         credentials: "include"
       });
 
       if (!response.ok) throw new Error("Error al actualizar afiliado");
 
-      // Recargar datos completos del afiliado
-      const updatedResponse = await apiFetch(`${API_BASE_URL}/affiliates/affiliate/${updatedAffiliate.dni}`, {
-        credentials: "include"
-      });
-      if (updatedResponse.ok) {
-        const updatedData = await updatedResponse.json();
+      const updated = await response.json();
+      // Normalizar la respuesta igual que en fetchAffiliates
+      const rawDate = updated.birth_date || "";
+      const formattedDate = rawDate
+        ? new Date(rawDate).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" })
+        : "";
+      const normalizedUpdated = {
+        ...updated,
+        nombre: updated.first_name || "",
+        apellido: updated.last_name || "",
+        dni: updated.document_number || "",
+        credencial: updated.credencial_number || "",
+        fecha_nacimiento: formattedDate,
+        direccion: updated.address || "",
+        plan: updated.plan_type ? { idPlan: updated.plan_id, nombre: updated.plan_type } : null,
+      };
 
-        setAffiliates((prev) =>
-          prev.map((a) => (a.dni === updatedAffiliate.dni ? updatedData.affiliates : a))
-        );
-      }
-
+      setAffiliates((prev) =>
+        prev.map((a) => (a.id === selectedAffiliate.id ? normalizedUpdated : a))
+      );
       setShowEditPopup(false);
       setSelectedAffiliate(null);
-      showToast(`Afiliado ${updatedAffiliate.nombre} actualizado`);
+      showToast(`Afiliado ${normalizedUpdated.nombre} actualizado`);
     } catch (error) {
       showToast("Error al actualizar el afiliado");
     }
