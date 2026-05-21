@@ -1,8 +1,8 @@
 import axios from "axios";
-import { API_PORTAL_URL } from "../config/api";
+import { API_BASE_URL } from "../config/api";
 
 const api = axios.create({
-  baseURL: API_PORTAL_URL,
+  baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
     'X-Session-Allowed-Roles': 'ADMIN',
@@ -11,10 +11,6 @@ const api = axios.create({
 
 function responseData(request) {
   return request.then((response) => response.data);
-}
-
-function normalizeAffiliate(affiliate) {
-  return affiliate;
 }
 
 export function login(email, password) {
@@ -29,10 +25,10 @@ export function logout() {
   return responseData(api.post("/auth/logout"));
 }
 
-export function getAffiliates(activo) {
-  const params = activo === "all" ? {} : { activo };
+export function getAffiliates(status) {
+  const params = status === "all" ? {} : { status };
   return responseData(api.get("/admin/affiliates", { params })).then((affiliates) =>
-    Array.isArray(affiliates) ? affiliates.map(normalizeAffiliate) : affiliates
+    Array.isArray(affiliates) ? affiliates : affiliates
   );
 }
 
