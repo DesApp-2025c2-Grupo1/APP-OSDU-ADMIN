@@ -395,49 +395,26 @@ export function AddAffiliate() {
 
 
   const buildFormData = () => {
+    // El backend espera los nombres de campo en inglés según affiliateSchema
     const familyGroup = familiares.map(f => ({
-      nombreCompleto: `${f.nombre.trim()} ${f.apellido.trim()}`,
-      nombre: f.nombre.trim(),
-      apellido: f.apellido.trim(),
-      parentesco: f.parentesco,
-      nroDocumento: f.nroDocumento,
-      tipoDocumento: f.tipoDocumento,
-      fechaNacimiento: f.fechaNacimiento,
-      email: (f.usaContactoTitular ? formData.email : f.email)?.trim(),
-      telefono: (f.usaContactoTitular ? formData.telefono : f.telefono)?.trim(),
-      direccion: f.usaDireccionTitular ? formData.direccion.trim() : (f.direccion || "").trim(),
-      localidad: f.usaDireccionTitular ? formData.localidad.trim() : "",
-      provincia: f.usaDireccionTitular ? formData.provincia.trim() : "",
-      situaciones: (f.situaciones || [])
-        .filter(s => s.idSituacion)
-        .map(s => ({
-          id: s.idSituacion,
-          fechaInicio: new Date().toISOString().split("T")[0],
-          fechaFin: s.fechaFinalizacion || null,
-        })),
+      full_name: `${f.nombre.trim()} ${f.apellido.trim()}`,
+      relationship: f.parentesco,
+      document_number: f.nroDocumento,
     }));
-    const titularSituations = situaciones
-      .filter(s => s.idSituacion)
-      .map(s => ({
-        id: s.idSituacion,
-        fechaInicio: new Date().toISOString().split("T")[0],
-        fechaFin: s.fechaFinalizacion || null,
-      }));
 
     const fd = new FormData();
-    fd.append('nroDocumento', formData.nroDocumento);
-    fd.append('nombre', formData.nombre);
-    fd.append('apellido', formData.apellido);
-    fd.append('tipoDocumento', formData.tipoDocumento);
-    fd.append('fechaNacimiento', formData.fechaNacimiento);
-    fd.append('idPlan', formData.planMedico);
+    fd.append('document_number', formData.nroDocumento);
+    fd.append('first_name', formData.nombre.trim());
+    fd.append('last_name', formData.apellido.trim());
+    fd.append('document_type', formData.tipoDocumento);
+    fd.append('birth_date', formData.fechaNacimiento);
+    fd.append('plan_id', formData.planMedico);
     fd.append('email', formData.email.trim());
-    fd.append('telefono', formData.telefono.trim());
-    if (formData.direccion?.trim()) fd.append('direccion', formData.direccion.trim());
-    if (formData.localidad?.trim()) fd.append('localidad', formData.localidad.trim());
-    if (formData.provincia?.trim()) fd.append('provincia', formData.provincia.trim());
-    if (familyGroup.length > 0) fd.append('grupoFamiliar', JSON.stringify(familyGroup));
-    if (titularSituations.length > 0) fd.append('situaciones', JSON.stringify(titularSituations));
+    fd.append('phone', formData.telefono.trim());
+    if (formData.direccion?.trim()) fd.append('address', formData.direccion.trim());
+    if (formData.localidad?.trim()) fd.append('city', formData.localidad.trim());
+    if (formData.provincia?.trim()) fd.append('province', formData.provincia.trim());
+    if (familyGroup.length > 0) fd.append('family_group', JSON.stringify(familyGroup));
     return fd;
   };
 
@@ -505,6 +482,7 @@ export function AddAffiliate() {
   };
 
   return (
+    <div className="p-4 sm:p-8">
     <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm max-w-5xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-700 text-slate-800 mb-2">Crear nuevo afiliado</h1>
@@ -1118,6 +1096,7 @@ export function AddAffiliate() {
           onConfirm={handleProgramarAlta}
         />
       )}
+    </div>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import { API_BASE_URL, apiFetch } from "../config/api";
 
 export type Affiliate = {
+  id: number;
   grupoFamiliar: number;
   tipoDocumento: string;
   apellido: string;
@@ -18,6 +19,7 @@ export type Affiliate = {
   dni: string;
   nombre: string;
   parentesco: string;
+  status?: boolean;
 
   email: Array<{
     idEmail: number;
@@ -52,7 +54,7 @@ export type Affiliate = {
 interface AffiliatesTableProps {
   affiliates: Affiliate[];
   onOptionClick: (option: string, affiliate: Affiliate) => void;
-  onAffiliateDeleted?: (dni: string) => void;
+  onAffiliateDeleted?: () => void;
   onAffiliateUpdated?: (affiliate: Affiliate) => void;
 }
 
@@ -100,15 +102,13 @@ export function AffiliatesTable({
   };
 
   const handleSaveAffiliate = async (data: any) => {
+    if (!selectedAffiliate?.id) return;
     try {
-
       const response = await apiFetch(
-        `${API_BASE_URL}/affiliates/${selectedAffiliate?.dni}`,
+        `${API_BASE_URL}/affiliates/${selectedAffiliate.id}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
         }
       );
@@ -118,20 +118,10 @@ export function AffiliatesTable({
         throw new Error(errorData.message || "Error al actualizar afiliado");
       }
 
-
-      // Recargar el afiliado actualizado
-      const updatedResponse = await apiFetch(
-        `${API_BASE_URL}/affiliates/affiliate/${selectedAffiliate?.dni}`
-      );
-
-      if (updatedResponse.ok) {
-        const updatedData = await updatedResponse.json();
-        onAffiliateUpdated?.(updatedData.affiliates);
-      }
-
+      const updated = await response.json();
+      onAffiliateUpdated?.(updated);
       setShowEditPopup(false);
       setSelectedAffiliate(null);
-
     } catch (error) {
       alert("Error al actualizar el afiliado. Por favor, intente nuevamente.");
     }
@@ -140,34 +130,25 @@ export function AffiliatesTable({
 
 
 
-  // ✅ Eliminación inmediata sin alertas
   const handleConfirmDelete = async () => {
-    if (!selectedAffiliate) return;
+    if (!selectedAffiliate?.id) return;
     setIsDeleting(true);
 
     try {
+      // El backend no tiene DELETE — "dar de baja" desactiva el afiliado
       const response = await apiFetch(
-        `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        `${API_BASE_URL}/affiliates/${selectedAffiliate.id}/deactivate`,
+        { method: "PUT" }
       );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "No se pudo eliminar el afiliado");
+        throw new Error(errorData.message || "No se pudo dar de baja al afiliado");
       }
 
-      // ✅ Notifica al padre para recargar
-      onAffiliateDeleted?.(selectedAffiliate.dni);
-
-      // Cierra todo sin mostrar alertas
+      onAffiliateDeleted?.();
       setShowDeleteDialog(false);
       setSelectedAffiliate(null);
-
     } catch (error) {
     } finally {
       setIsDeleting(false);

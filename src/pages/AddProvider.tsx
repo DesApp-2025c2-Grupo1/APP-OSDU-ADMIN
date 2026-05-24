@@ -276,6 +276,7 @@ export function AddProvider() {
       setLoading(false);
     }
   }; return (
+    <div className="p-4 sm:p-8">
     <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm max-w-5xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-700 text-slate-800 mb-2">Agregar Prestador</h1>
@@ -613,6 +614,7 @@ export function AddProvider() {
           navigate("/prestadores");
         }}
       />
+    </div>
     </div>
   );
 }

@@ -92,8 +92,8 @@ export function Sidebar() {
         {!collapsed && (
           <div className="flex items-center gap-2.5">
             <img
-              src="/logo.jpg"
-              alt="mediunahur logo"
+              src="/icono.png"
+              alt="OSDU logo"
               className="w-9 h-9 object-contain flex-shrink-0"
             />
             <div>
@@ -104,7 +104,7 @@ export function Sidebar() {
         )}
         {collapsed && (
           <div className="flex items-center justify-center mx-auto">
-            <img src="/logo.png" alt="mediunahur logo" className="w-8 h-8 object-contain" />
+            <img src="/icono.png" alt="OSDU logo" className="w-8 h-8 object-contain" />
           </div>
         )}
         <button

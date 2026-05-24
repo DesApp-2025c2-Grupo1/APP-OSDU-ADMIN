@@ -31,6 +31,7 @@ interface EditAffiliatePopupProps {
 }
 
 export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliatePopupProps) {
+  const affiliateId = affiliate.id;
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     nombre: "",
@@ -58,9 +59,9 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         setLoading(true);
 
 
-        // Cargar datos del afiliado
+        // Cargar datos del afiliado — backend devuelve campos en inglés
         const [affiliateRes, situacionesData, planesRes] = await Promise.all([
-          apiFetch(`${API_BASE_URL}/affiliates/affiliate/${affiliate.dni}`),
+          apiFetch(`${API_BASE_URL}/affiliates/${affiliateId}`),
           fetchTherapeuticSituationTypes(),
           apiFetch(`${API_BASE_URL}/plans`)
         ]);
@@ -68,50 +69,31 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         if (!affiliateRes.ok) throw new Error("Error al cargar datos del afiliado");
         if (!planesRes.ok) throw new Error("Error al cargar planes");
 
-        const affiliateData = await affiliateRes.json();
+        const aff = await affiliateRes.json();
         const planesData = await planesRes.json();
 
-        // El endpoint puede devolver el afiliado directamente o dentro de un objeto
-        const aff = affiliateData.affiliate || affiliateData.affiliates || affiliateData;
-
-        if (!aff || !aff.dni) {
+        if (!aff || !aff.id) {
           throw new Error("No se encontraron datos del afiliado");
         }
 
-        // ✅ Manejar el plan correctamente (puede ser null, objeto, o número)
-        let planId = 0;
-        if (aff.plan) {
-          if (typeof aff.plan === 'object' && aff.plan.idPlan) {
-            planId = aff.plan.idPlan;
-          } else if (typeof aff.plan === 'number') {
-            planId = aff.plan;
-          }
-        }
+        // Normalizar: el backend devuelve first_name/last_name/birth_date/address/plan_id
+        const planId = aff.plan_id || 0;
+        const birthDate = aff.birth_date
+          ? aff.birth_date.split('T')[0]
+          : (aff.fecha_nacimiento || "");
 
         setFormData({
-          nombre: aff.nombre || "",
-          apellido: aff.apellido || "",
-          fechaNacimiento: aff.fecha_nacimiento || "",
-          direccion: aff.direccion || "",
+          nombre: aff.first_name || aff.nombre || "",
+          apellido: aff.last_name || aff.apellido || "",
+          fechaNacimiento: birthDate,
+          direccion: aff.address || aff.direccion || "",
           idPlan: planId,
         });
 
-        // ✅ Teléfonos
-        setTelefonos(
-          aff.telefonos && aff.telefonos.length > 0
-            ? aff.telefonos.map((t: any) => ({ idTelefono: t.idTelefono, telefono: t.telefono }))
-            : [{ telefono: "" }]
-        );
-
-        // ✅ Emails
-        setEmails(
-          aff.email && aff.email.length > 0
-            ? aff.email.map((e: any) => ({ idEmail: e.idEmail, email: e.email }))
-            : [{ email: "" }]
-        );
-
-        // ✅ Situaciones terapéuticas
-        setSituaciones(aff.situaciones || []);
+        // El afiliado tiene un único phone/email en la DB
+        setTelefonos([{ telefono: aff.phone || "" }]);
+        setEmails([{ email: aff.email || "" }]);
+        setSituaciones([]);
 
         setSituacionesDisponibles(situacionesData);
         setPlanesDisponibles(planesData.plans || []);
@@ -124,7 +106,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
     };
 
     fetchData();
-  }, [affiliate.dni]);
+  }, [affiliateId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -188,24 +170,15 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
       return;
     }
 
-    // Si no hay errores, proceder con el guardado
+    // Payload usa los nombres de campo del backend (inglés)
     const payload = {
-      nombre: formData.nombre,
-      apellido: formData.apellido,
-      fecha_nacimiento: formData.fechaNacimiento,
-      direccion: formData.direccion,
-      idPlan: formData.idPlan,
-      telefonos: telefonos.filter(t => t.telefono.trim() !== ""),
-      emails: emails.filter(e => e.email.trim() !== ""),
-      situaciones: situaciones.map(s => ({
-        idSituacionAfiliado: s.idSituacionAfiliado,
-        idSituacion: s.idSituacion || s.situacionTerapeutica?.idSituacion,
-        fechaInicio: s.fechaInicio,
-        fechaFin: s.fechaFin
-      })),
-      telefonosEliminados,
-      emailsEliminados,
-      situacionesEliminadas
+      first_name: formData.nombre.trim(),
+      last_name: formData.apellido.trim(),
+      birth_date: formData.fechaNacimiento,
+      address: formData.direccion.trim(),
+      plan_id: formData.idPlan,
+      phone: telefonos[0]?.telefono.trim() || undefined,
+      email: emails[0]?.email.trim() || undefined,
     };
 
     onSave(payload);
