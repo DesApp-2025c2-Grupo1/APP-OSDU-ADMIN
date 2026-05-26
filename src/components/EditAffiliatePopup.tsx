@@ -176,7 +176,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
       last_name: formData.apellido.trim(),
       birth_date: formData.fechaNacimiento,
       address: formData.direccion.trim(),
-      plan_id: formData.idPlan,
+      plan: formData.idPlan,
       phone: telefonos[0]?.telefono.trim() || undefined,
       email: emails[0]?.email.trim() || undefined,
     };
