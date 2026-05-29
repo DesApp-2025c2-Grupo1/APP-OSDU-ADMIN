@@ -45,10 +45,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   const [emails, setEmails] = useState<Array<{ idEmail?: number; email: string }>>([]);
   const [situaciones, setSituaciones] = useState<Situacion[]>([]);
 
-  const [telefonosEliminados, setTelefonosEliminados] = useState<number[]>([]);
-  const [emailsEliminados, setEmailsEliminados] = useState<number[]>([]);
-  const [situacionesEliminadas, setSituacionesEliminadas] = useState<number[]>([]);
-
   const [situacionesDisponibles, setSituacionesDisponibles] = useState<SituacionDisponible[]>([]);
   const [planesDisponibles, setPlanesDisponibles] = useState<Plan[]>([]);
 
@@ -187,10 +183,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   // TELÉFONOS
   const addTelefono = () => setTelefonos(prev => [...prev, { telefono: "" }]);
   const removeTelefono = (idx: number) => {
-    const tel = telefonos[idx];
-    if (tel.idTelefono) {
-      setTelefonosEliminados(prev => [...prev, tel.idTelefono!]);
-    }
     setTelefonos(prev => prev.filter((_, i) => i !== idx));
   };
   const updateTelefono = (idx: number, value: string) => {
@@ -200,10 +192,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   // EMAILS
   const addEmail = () => setEmails(prev => [...prev, { email: "" }]);
   const removeEmail = (idx: number) => {
-    const mail = emails[idx];
-    if (mail.idEmail) {
-      setEmailsEliminados(prev => [...prev, mail.idEmail!]);
-    }
     setEmails(prev => prev.filter((_, i) => i !== idx));
   };
   const updateEmail = (idx: number, value: string) => {
@@ -229,15 +217,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   };
 
   const removeSituacion = (idx: number) => {
-    const sit = situaciones[idx];
-
-    if (sit.idSituacionAfiliado) {
-      setSituacionesEliminadas(prev => {
-        const newList = [...prev, sit.idSituacionAfiliado!];
-        return newList;
-      });
-    }
-
     setSituaciones(prev => prev.filter((_, i) => i !== idx));
   };
 
