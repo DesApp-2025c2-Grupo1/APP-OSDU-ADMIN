@@ -51,12 +51,16 @@ export function AffiliatesAdminPage() {
   const [affiliates, setAffiliates] = useState([]);
   const [filtroActivo, setFiltroActivo] = useState("all");
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
 
-  const fetchAffiliates = useCallback(async () => {
+  const fetchAffiliates = useCallback(async (clearSuccess = true) => {
     setIsLoading(true);
     setError("");
+    if (clearSuccess) {
+      setSuccessMessage("");
+    }
 
     try {
       setAffiliates(await getAffiliates(filtroActivo));
@@ -80,15 +84,18 @@ export function AffiliatesAdminPage() {
   const updateStatus = async (affiliate) => {
     setUpdatingId(affiliate.id);
     setError("");
+    setSuccessMessage("");
 
     try {
+      const isActivating = !affiliate.activo;
       if (affiliate.activo) {
         await deactivateAffiliate(affiliate.id);
       } else {
         await activateAffiliate(affiliate.id);
       }
 
-      await fetchAffiliates();
+      await fetchAffiliates(false);
+      setSuccessMessage(isActivating ? "Afiliado aprobado con éxito" : "Afiliado desactivado con éxito");
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
@@ -139,6 +146,7 @@ export function AffiliatesAdminPage() {
       </Stack>
 
       {error && <Alert severity="error">{error}</Alert>}
+      {successMessage && <Alert severity="success">{successMessage}</Alert>}
 
       <Paper elevation={1}>
         {isLoading ? (
