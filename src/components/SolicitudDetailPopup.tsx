@@ -62,7 +62,7 @@ export function SolicitudDetailPopup({ solicitud, onClose, onUpdated }: Props) {
               Solicitud #{solicitud.nro}
             </p>
             <h3 className="text-lg font-bold text-slate-800">
-              {solicitud.prestador ?? "Prestador desconocido"}
+              {solicitud.prestador ?? `Trámite de ${solicitud.tipo}`}
             </h3>
             {solicitud.prestadorCuit && (
               <p className="text-xs text-slate-400 font-mono mt-0.5">CUIT {solicitud.prestadorCuit}</p>

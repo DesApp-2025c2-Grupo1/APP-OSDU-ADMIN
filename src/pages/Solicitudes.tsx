@@ -66,8 +66,8 @@ export function Solicitudes() {
     <div className="w-full p-4 sm:p-8 space-y-5">
       {/* Título */}
       <div>
-        <h1 className="text-lg font-bold text-slate-800">Solicitudes de Prestadores</h1>
-        <p className="text-xs text-slate-400 mt-0.5">Revisá y resolvé las solicitudes enviadas por los prestadores.</p>
+        <h1 className="text-lg font-bold text-slate-800">Solicitudes y Trámites</h1>
+        <p className="text-xs text-slate-400 mt-0.5">Revisá y resolvé solicitudes de prestadores, recetas y autorizaciones de afiliados.</p>
       </div>
 
       {/* Tabs */}

@@ -394,31 +394,50 @@ export function AddAffiliate() {
   };
 
 
-  const buildFormData = () => {
-    // El backend espera los nombres de campo en inglés según affiliateSchema
+  const buildFormData = (altaProgramadaEn?: string) => {
     const familyGroup = familiares.map(f => ({
-      full_name: `${f.nombre.trim()} ${f.apellido.trim()}`,
-      relationship: f.parentesco,
-      document_number: f.nroDocumento,
+      nombreCompleto: `${f.nombre.trim()} ${f.apellido.trim()}`,
+      parentesco: f.parentesco,
+      nroDocumento: f.nroDocumento,
+      tipoDocumento: f.tipoDocumento,
+      fechaNacimiento: f.fechaNacimiento,
+      nombre: f.nombre.trim(),
+      apellido: f.apellido.trim(),
+      email: f.usaContactoTitular ? formData.email.trim() : f.email?.trim(),
+      telefono: f.usaContactoTitular ? formData.telefono.trim() : f.telefono?.trim(),
+      direccion: f.usaDireccionTitular ? formData.direccion.trim() : f.direccion?.trim(),
+      localidad: f.usaDireccionTitular ? formData.localidad.trim() : undefined,
+      provincia: f.usaDireccionTitular ? formData.provincia.trim() : undefined,
+      situaciones: (f.situaciones || []).map(s => ({
+        id: s.idSituacion,
+        fechaFin: s.fechaFinalizacion || null,
+      })),
+    }));
+
+    const normalizedSituations = situaciones.map(s => ({
+      id: s.idSituacion,
+      fechaFin: s.fechaFinalizacion || null,
     }));
 
     const fd = new FormData();
-    fd.append('document_number', formData.nroDocumento);
-    fd.append('first_name', formData.nombre.trim());
-    fd.append('last_name', formData.apellido.trim());
-    fd.append('document_type', formData.tipoDocumento);
-    fd.append('birth_date', formData.fechaNacimiento);
-    fd.append('plan_id', formData.planMedico);
+    fd.append('nroDocumento', formData.nroDocumento);
+    fd.append('nombre', formData.nombre.trim());
+    fd.append('apellido', formData.apellido.trim());
+    fd.append('tipoDocumento', formData.tipoDocumento);
+    fd.append('fechaNacimiento', formData.fechaNacimiento);
+    fd.append('idPlan', formData.planMedico);
     fd.append('email', formData.email.trim());
-    fd.append('phone', formData.telefono.trim());
-    if (formData.direccion?.trim()) fd.append('address', formData.direccion.trim());
-    if (formData.localidad?.trim()) fd.append('city', formData.localidad.trim());
-    if (formData.provincia?.trim()) fd.append('province', formData.provincia.trim());
-    if (familyGroup.length > 0) fd.append('family_group', JSON.stringify(familyGroup));
+    fd.append('telefono', formData.telefono.trim());
+    if (formData.direccion?.trim()) fd.append('direccion', formData.direccion.trim());
+    if (formData.localidad?.trim()) fd.append('localidad', formData.localidad.trim());
+    if (formData.provincia?.trim()) fd.append('provincia', formData.provincia.trim());
+    if (normalizedSituations.length > 0) fd.append('situaciones', JSON.stringify(normalizedSituations));
+    if (familyGroup.length > 0) fd.append('grupoFamiliar', JSON.stringify(familyGroup));
+    if (altaProgramadaEn) fd.append('altaProgramadaEn', altaProgramadaEn);
     return fd;
   };
 
-  const handleProgramarAlta = async (_fechaAltaISO: string) => {
+  const handleProgramarAlta = async (fechaAltaISO: string) => {
     if (!validate()) {
       setShowAltaPopup(false);
       return;
@@ -431,7 +450,7 @@ export function AddAffiliate() {
     try {
       const response = await apiFetch(`${API_BASE_URL}/affiliates`, {
         method: "POST",
-        body: buildFormData(),
+        body: buildFormData(fechaAltaISO),
       });
 
       if (!response.ok) {

@@ -24,13 +24,14 @@ const Toast = ({ message, onClose }: { message: string; onClose: () => void }) =
 
 // Tipo para el afiliado que viene del endpoint
 interface AffiliateFromAPI {
+  id: number;
   grupoFamiliar: number;
   tipoDocumento: string;
   apellido: string;
   credencial: string;
   direccion: string;
   dni: string;
-  email: Array<{ idEmail: number; email: string }>;
+  email: string | Array<{ idEmail: number; email: string }>;
   nombre: string;
   parentesco: string;
   telefonos: Array<{ idTelefono?: number; telefono: string }>;
@@ -54,6 +55,7 @@ interface FamilyGroupAPIResponse {
 // ✅ Función para transformar correctamente
 function transformAffiliate(apiAffiliate: AffiliateFromAPI): Affiliate {
   return {
+    id: apiAffiliate.id,
     grupoFamiliar: apiAffiliate.grupoFamiliar,
     tipoDocumento: apiAffiliate.tipoDocumento,
     apellido: apiAffiliate.apellido,
@@ -64,7 +66,9 @@ function transformAffiliate(apiAffiliate: AffiliateFromAPI): Affiliate {
     dni: apiAffiliate.dni,
     nombre: apiAffiliate.nombre,
     parentesco: apiAffiliate.parentesco,
-    email: apiAffiliate.email || [],
+    email: Array.isArray(apiAffiliate.email)
+      ? apiAffiliate.email
+      : (apiAffiliate.email ? [{ idEmail: 0, email: apiAffiliate.email }] : []),
     telefonos: (apiAffiliate.telefonos || []).map(t => ({
       idTelefono: t.idTelefono || 0,
       telefono: t.telefono
