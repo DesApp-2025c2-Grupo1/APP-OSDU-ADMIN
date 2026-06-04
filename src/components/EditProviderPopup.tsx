@@ -136,7 +136,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
       const localidades = await fetchGeorefLocalities(provinciaId);
       setLocalidadesPorProvincia((prev) => ({ ...prev, [provinciaId]: localidades }));
     } catch {
-      setError("No se pudieron cargar las localidades de Georef");
+      setError("No se pudieron cargar las localidades");
     } finally {
       setLoadingLocalidades((prev) => ({ ...prev, [provinciaId]: false }));
     }
