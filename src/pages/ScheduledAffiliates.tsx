@@ -39,9 +39,11 @@ export default function ScheduledAffiliates() {
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
+        if (Number.isNaN(date.getTime())) return dateString;
         return new Intl.DateTimeFormat('es-AR', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
             timeZone: 'America/Argentina/Buenos_Aires'
         }).format(date);
     };

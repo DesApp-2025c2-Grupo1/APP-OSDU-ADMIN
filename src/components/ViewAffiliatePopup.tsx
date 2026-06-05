@@ -57,6 +57,17 @@ interface ViewAffiliatePopupProps {
   onStatusChanged?: () => void;
 }
 
+const buildDocumentUrl = (path?: string) => {
+  if (!path) return null;
+  const base = API_BASE_URL.replace('/api', '').replace(/\/$/, '');
+  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+};
+
+const isPreviewableImage = (path?: string) => {
+  if (!path) return false;
+  return /\.(png|jpe?g|webp|gif)$/i.test(path);
+};
+
 export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: ViewAffiliatePopupProps) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -78,7 +89,7 @@ export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: View
 
         const data = await response.json();
 
-        setFullAffiliate(data.affiliates);
+        setFullAffiliate(data);
       } catch (error) {
         setFullAffiliate(affiliate); // Usar datos básicos si falla
       } finally {
@@ -154,6 +165,8 @@ export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: View
   }
 
   const displayAffiliate = fullAffiliate || affiliate;
+  const dniDocumentUrl = buildDocumentUrl(displayAffiliate.dni_document_path);
+  const payslipDocumentUrl = buildDocumentUrl(displayAffiliate.payslip_document_path);
 
   const handleStatusChange = async (action: 'activate' | 'deactivate') => {
     if (!displayAffiliate.id) return;
@@ -295,28 +308,66 @@ export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: View
             <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
               Documentación Adjunta
             </h2>
-            <div className="flex gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {displayAffiliate.dni_document_path && (
-                <a 
-                    href={`${API_BASE_URL.replace('/api', '')}${displayAffiliate.dni_document_path}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex-1 p-4 border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 transition"
-                >
-                    <span className="font-semibold text-gray-700">Ver DNI</span>
-                    <span className="text-blue-500 underline text-sm">Abrir documento</span>
-                </a>
+                <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
+                  <div className="flex items-center justify-between gap-3 p-4 border-b border-gray-200">
+                    <span className="font-semibold text-gray-700">DNI</span>
+                    {dniDocumentUrl && (
+                      <a
+                        href={dniDocumentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 underline text-sm"
+                      >
+                        Abrir documento
+                      </a>
+                    )}
+                  </div>
+                  <div className="p-4 bg-gray-50">
+                    {dniDocumentUrl && isPreviewableImage(displayAffiliate.dni_document_path) ? (
+                      <img
+                        src={dniDocumentUrl}
+                        alt="Documento DNI del afiliado"
+                        className="w-full max-h-[28rem] object-contain rounded border border-gray-200 bg-white"
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-600">
+                        Documento cargado. Abrilo desde el enlace para verlo o descargarlo.
+                      </p>
+                    )}
+                  </div>
+                </div>
               )}
               {displayAffiliate.payslip_document_path && (
-                <a 
-                    href={`${API_BASE_URL.replace('/api', '')}${displayAffiliate.payslip_document_path}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex-1 p-4 border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 transition"
-                >
-                    <span className="font-semibold text-gray-700">Ver Recibo de Sueldo</span>
-                    <span className="text-blue-500 underline text-sm">Abrir documento</span>
-                </a>
+                <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
+                  <div className="flex items-center justify-between gap-3 p-4 border-b border-gray-200">
+                    <span className="font-semibold text-gray-700">Recibo de sueldo</span>
+                    {payslipDocumentUrl && (
+                      <a
+                        href={payslipDocumentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 underline text-sm"
+                      >
+                        Abrir documento
+                      </a>
+                    )}
+                  </div>
+                  <div className="p-4 bg-gray-50">
+                    {payslipDocumentUrl && isPreviewableImage(displayAffiliate.payslip_document_path) ? (
+                      <img
+                        src={payslipDocumentUrl}
+                        alt="Recibo de sueldo del afiliado"
+                        className="w-full max-h-[28rem] object-contain rounded border border-gray-200 bg-white"
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-600">
+                        Documento cargado. Abrilo desde el enlace para verlo o descargarlo.
+                      </p>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </div>
