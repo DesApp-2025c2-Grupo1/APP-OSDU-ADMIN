@@ -268,7 +268,7 @@ export function AddProvider() {
       }
 
       // Mostrar diálogo de éxito en lugar de alert
-      setSuccessMessage("Prestador creado correctamente");
+      setSuccessMessage("Prestador creado y credenciales enviadas por mail");
       setOpenSuccess(true);
     } catch (err: any) {
       setError(err.message || "Error al guardar");
