@@ -8,6 +8,20 @@ import { fetchGeorefLocalities, fetchGeorefProvinces, type GeorefLocality, type 
 
 type BloqueHorario = { dias: DiaSemana[]; desde: string; hasta: string };
 
+const emptyLugarAtencion = (): LugarAtencion => ({
+  calle: "",
+  localidad: "",
+  provincia: "",
+  cp: "",
+  horarios: [{ dias: [], desde: "", hasta: "" }] as unknown as BloqueHorario[],
+});
+
+const cloneLugaresAtencion = (lugares?: LugarAtencion[]) =>
+  (lugares && lugares.length > 0 ? lugares : [emptyLugarAtencion()]).map((lugar) => ({
+    ...lugar,
+    horarios: lugar.horarios ? [...lugar.horarios] : [],
+  }));
+
 export function AddProvider() {
   const navigate = useNavigate();
 
@@ -24,9 +38,7 @@ export function AddProvider() {
   const [loadingLocalidades, setLoadingLocalidades] = useState<Record<string, boolean>>({});
   const [telefonos, setTelefonos] = useState<string[]>([""]);
   const [mails, setMails] = useState<string[]>([""]);
-  const [lugaresAtencion, setLugaresAtencion] = useState<LugarAtencion[]>([
-    { calle: "", localidad: "", provincia: "", cp: "", horarios: [{ dias: [], desde: "", hasta: "" }] as unknown as BloqueHorario[] },
-  ]);
+  const [lugaresAtencion, setLugaresAtencion] = useState<LugarAtencion[]>([emptyLugarAtencion()]);
 
   const [centros, setCentros] = useState<any[]>([]);
   const [integraCentro, setIntegraCentro] = useState<string>("");
@@ -36,6 +48,8 @@ export function AddProvider() {
   const [emailErrors, setEmailErrors] = useState<string[]>([""]);
   const [openSuccess, setOpenSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const centroSeleccionado = centros.find((centro) => centro.cuitCuil === integraCentro);
+  const usaDireccionCentro = tipo === "profesional" && Boolean(centroSeleccionado);
 
   // Formatea CUIT/CUIL: inserta guiones en el patrón 2-8-1 cuando sea posible
   const formatCuil = (input: string) => {
@@ -151,7 +165,7 @@ export function AddProvider() {
   const handleAgregarLugar = () =>
     setLugaresAtencion([
       ...lugaresAtencion,
-      { calle: "", localidad: "", provincia: "", cp: "", horarios: [{ dias: [], desde: "", hasta: "" }] as unknown as BloqueHorario[] },
+      emptyLugarAtencion(),
     ]);
   const handleEliminarLugar = (index: number) =>
     setLugaresAtencion(lugaresAtencion.filter((_, i) => i !== index));
@@ -394,7 +408,12 @@ export function AddProvider() {
               </label>
               <select
                 value={integraCentro}
-                onChange={(e) => setIntegraCentro(e.target.value)}
+                onChange={(e) => {
+                  const centroId = e.target.value;
+                  setIntegraCentro(centroId);
+                  const centro = centros.find((item) => item.cuitCuil === centroId);
+                  setLugaresAtencion(centro ? cloneLugaresAtencion(centro.lugaresAtencion) : [emptyLugarAtencion()]);
+                }}
                 className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700"
               >
                 <option value="">No pertenece</option>
@@ -504,6 +523,11 @@ export function AddProvider() {
           {/* Lugares de Atención */}
           <div className="mb-6">
             <h2 className="text-base font-600 text-slate-800 mb-4 pb-3 border-b border-slate-100">Lugares de Atención</h2>
+            {usaDireccionCentro && (
+              <p className="mb-3 rounded-lg border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-600 text-teal-700">
+                Se usa la dirección registrada del centro médico {centroSeleccionado?.nombreCompleto}.
+              </p>
+            )}
             {lugaresAtencion.map((lugar, idx) => (
               <div key={idx} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
@@ -511,12 +535,13 @@ export function AddProvider() {
                     placeholder="Calle"
                     value={lugar.calle}
                     onChange={(e) => handleLugarChange(idx, "calle", e.target.value)}
+                    disabled={usaDireccionCentro}
                     className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                   />
                   <select
                     value={getProvinciaId(lugar.provincia)}
                     onChange={(e) => handleProvinciaChange(idx, e.target.value)}
-                    disabled={loadingGeoref}
+                    disabled={loadingGeoref || usaDireccionCentro}
                     className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 bg-white disabled:bg-slate-100 disabled:text-slate-400"
                   >
                     <option value="">{loadingGeoref ? "Cargando provincias..." : "Seleccionar provincia"}</option>
@@ -529,7 +554,7 @@ export function AddProvider() {
                   <select
                     value={lugar.localidad || ""}
                     onChange={(e) => handleLugarChange(idx, "localidad", e.target.value)}
-                    disabled={!getProvinciaId(lugar.provincia) || Boolean(loadingLocalidades[getProvinciaId(lugar.provincia)])}
+                    disabled={usaDireccionCentro || !getProvinciaId(lugar.provincia) || Boolean(loadingLocalidades[getProvinciaId(lugar.provincia)])}
                     className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 bg-white disabled:bg-slate-100 disabled:text-slate-400"
                   >
                     {(() => {
@@ -545,6 +570,9 @@ export function AddProvider() {
                                 ? "Cargando localidades..."
                                 : "Seleccionar localidad"}
                           </option>
+                          {lugar.localidad && !localidades.some((localidad) => localidad.nombre === lugar.localidad) && (
+                            <option value={lugar.localidad}>{lugar.localidad}</option>
+                          )}
                           {localidades.map((localidad) => (
                             <option key={localidad.id} value={localidad.nombre}>
                               {localidad.nombre}
@@ -558,11 +586,12 @@ export function AddProvider() {
                     placeholder="Código Postal"
                     value={lugar.cp}
                     onChange={(e) => handleLugarChange(idx, "cp", e.target.value)}
+                    disabled={usaDireccionCentro}
                     className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-slate-700 placeholder-slate-400"
                   />
                 </div>
 
-                {lugaresAtencion.length > 1 && (
+                {lugaresAtencion.length > 1 && !usaDireccionCentro && (
                   <button
                     type="button"
                     onClick={() => handleEliminarLugar(idx)}
@@ -576,6 +605,7 @@ export function AddProvider() {
             <button
               type="button"
               onClick={handleAgregarLugar}
+              disabled={usaDireccionCentro}
               className="flex items-center gap-1.5 text-teal-600 text-sm font-600 hover:text-teal-700 transition-colors"
             >
               + Agregar lugar

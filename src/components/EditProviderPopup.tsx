@@ -14,6 +14,20 @@ interface EditProviderPopupProps {
   onSave: (data: Prestador) => void;
 }
 
+const emptyLugarAtencion = (): LugarAtencion => ({
+  calle: "",
+  localidad: "",
+  provincia: "",
+  cp: "",
+  horarios: [],
+});
+
+const cloneLugaresAtencion = (lugares?: LugarAtencion[]) =>
+  (lugares && lugares.length > 0 ? lugares : [emptyLugarAtencion()]).map((lugar) => ({
+    ...lugar,
+    horarios: lugar.horarios ? [...lugar.horarios] : [],
+  }));
+
 export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPopupProps) {
   const [formData, setFormData] = useState({
     cuitCuil: provider.cuitCuil || "",
@@ -50,6 +64,8 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
   const [pendingSave, setPendingSave] = useState(false);
   const [agendaImpactConfirmed, setAgendaImpactConfirmed] = useState(false);
   const [originalPlaces, setOriginalPlaces] = useState<LugarAtencion[]>([]);
+  const centroSeleccionado = centrosMedicos.find((centro) => centro.cuitCuil === formData.centroMedicoId);
+  const usaDireccionCentro = formData.tipoPrestador === "profesional" && Boolean(centroSeleccionado);
 
 
   // Cargar centros médicos y especialidades al montar
@@ -454,10 +470,14 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                 <select
                   name="centroMedico"
                   onChange={(e) => {
+                    const centroId = e.target.value || null;
+                    const centro = centrosMedicos.find((item) => item.cuitCuil === centroId);
                     setFormData(prev => ({
                       ...prev,
-                      centroMedicoId: e.target.value || null
+                      centroMedicoId: centroId,
+                      lugaresAtencion: centro ? cloneLugaresAtencion(centro.lugaresAtencion) : (provider.lugaresAtencion?.length ? cloneLugaresAtencion(provider.lugaresAtencion) : [emptyLugarAtencion()])
                     }));
+                    setSelectedLugarIndex(0);
                   }}
                   value={(formData as any).centroMedicoId || ""}
                   className="p-2 border border-gray-300 rounded"
@@ -598,6 +618,11 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
         {/* LUGARES DE ATENCIÓN (MÚLTIPLES) */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
           <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">Lugares de Atención</h2>
+          {usaDireccionCentro && (
+            <p className="mb-3 rounded-lg border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-700">
+              Se usa la dirección registrada del centro médico {centroSeleccionado?.nombreCompleto}.
+            </p>
+          )}
 
           {/* Selector de lugar */}
           {formData.lugaresAtencion.length > 0 && (
@@ -630,6 +655,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                     type="text"
                     value={lugarActual.calle || ""}
                     onChange={(e) => handleLugarChange(selectedLugarIndex, "calle", e.target.value)}
+                    disabled={usaDireccionCentro}
                     className="p-2 border border-gray-300 rounded"
                     placeholder="Ej: Calle 9 No. 1234"
                   />
@@ -639,7 +665,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                   <select
                     value={lugarActual.localidad || ""}
                     onChange={(e) => handleLugarChange(selectedLugarIndex, "localidad", e.target.value)}
-                    disabled={!getProvinciaId(lugarActual.provincia) || Boolean(loadingLocalidades[getProvinciaId(lugarActual.provincia)])}
+                    disabled={usaDireccionCentro || !getProvinciaId(lugarActual.provincia) || Boolean(loadingLocalidades[getProvinciaId(lugarActual.provincia)])}
                     className="p-2 border border-gray-300 rounded bg-white disabled:bg-gray-100 disabled:text-gray-500"
                   >
                     {(() => {
@@ -673,7 +699,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                   <select
                     value={getProvinciaId(lugarActual.provincia)}
                     onChange={(e) => handleProvinciaChange(selectedLugarIndex, e.target.value)}
-                    disabled={loadingGeoref}
+                    disabled={loadingGeoref || usaDireccionCentro}
                     className="p-2 border border-gray-300 rounded bg-white disabled:bg-gray-100 disabled:text-gray-500"
                   >
                     <option value="">{loadingGeoref ? "Cargando provincias..." : "Seleccionar provincia"}</option>
@@ -690,6 +716,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
                     type="text"
                     value={lugarActual.cp || ""}
                     onChange={(e) => handleLugarChange(selectedLugarIndex, "cp", e.target.value)}
+                    disabled={usaDireccionCentro}
                     className="p-2 border border-gray-300 rounded"
                     placeholder="Código Postal"
                   />
@@ -697,7 +724,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
               </div>
 
               {/* Botón para eliminar este lugar */}
-              {formData.lugaresAtencion.length > 1 && (
+              {formData.lugaresAtencion.length > 1 && !usaDireccionCentro && (
                 <div className="mt-4 flex justify-end">
                   <button
                     type="button"
@@ -715,6 +742,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
           <button
             type="button"
             onClick={addLugar}
+            disabled={usaDireccionCentro}
             className="px-4 py-2 bg-[#14B8A6] text-white rounded font-semibold hover:bg-teal-700"
           >
             + Agregar lugar de atención
