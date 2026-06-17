@@ -87,7 +87,7 @@ export function Sidebar() {
       className={`
         flex flex-col bg-white border-r border-slate-100 shadow-sm
         transition-all duration-300 ease-in-out flex-shrink-0
-        fixed md:sticky bottom-0 md:bottom-auto top-auto md:top-0 left-0 right-0 md:right-auto z-[70]
+        fixed md:sticky bottom-0 md:bottom-auto top-auto md:top-0 left-0 right-0 md:right-auto z-30
         w-full md:w-auto h-16 md:h-screen border-t md:border-t-0 pb-0
         ${collapsed ? "md:w-16" : "md:w-60"}
       `}
