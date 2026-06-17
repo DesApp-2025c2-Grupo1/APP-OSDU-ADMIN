@@ -68,6 +68,15 @@ const isPreviewableImage = (path?: string) => {
   return /\.(png|jpe?g|webp|gif)$/i.test(path);
 };
 
+const formatDateOnly = (value?: string | null) => {
+  if (!value) return "";
+  const clean = String(value).split("T")[0];
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(clean);
+  if (!match) return value;
+  const [, yyyy, mm, dd] = match;
+  return `${dd}/${mm}/${yyyy}`;
+};
+
 export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: ViewAffiliatePopupProps) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -190,13 +199,7 @@ export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: View
   const emails = obtenerEmails(displayAffiliate);
   const telefonos = obtenerTelefonos(displayAffiliate);
   const rawDate = displayAffiliate.fechaNacimiento || displayAffiliate.fecha_nacimiento;
-  let fechaNac = rawDate;
-  if (rawDate && rawDate.includes("-")) {
-    const d = new Date(rawDate);
-    if (!isNaN(d.getTime())) {
-      fechaNac = d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
-    }
-  }
+  const fechaNac = formatDateOnly(rawDate);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 overflow-y-auto p-4">
