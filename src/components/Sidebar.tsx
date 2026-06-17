@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import clsx from "clsx";
+import { useModalState } from "../context/ModalContext";
 
 const navItems = [
   {
@@ -68,10 +69,14 @@ const navItems = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { isModalOpen } = useModalState();
 
   const getActivePage = () => {
     const path = location.pathname;
-    const item = navItems.find(item => path.startsWith(item.to));
+    const item = navItems.find(item => {
+      if (item.to === "/home") return path === "/home";
+      return path === item.to || path.startsWith(`${item.to}/`);
+    });
     return item?.id || "";
   };
 
@@ -145,38 +150,44 @@ export function Sidebar() {
             Menú principal
           </p>
         )}
-        {navItems.map((item) => (
-          <NavLink
-            key={item.id}
-            to={item.to}
-            className={({ isActive }) =>
-              clsx(
-                "w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 px-1 md:px-3 py-2 md:py-2.5 rounded-xl text-[10px] sm:text-[11px] md:text-sm font-500 transition-all duration-150 min-w-0",
-                isActive || activePage === item.id
-                  ? "bg-teal-50 text-teal-700"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-700",
-                collapsed ? "md:justify-center" : ""
-              )
-            }
-            title={collapsed ? item.label : undefined}
-          >
-            <span
-              className={`flex-shrink-0 ${
-                activePage === item.id ? "text-teal-600" : ""
-              }`}
+        {navItems.map((item) => {
+          const visuallyActive = !isModalOpen && activePage === item.id;
+
+          return (
+            <NavLink
+              key={item.id}
+              to={item.to}
+              className={({ isActive }) => {
+                const highlighted = !isModalOpen && (isActive || activePage === item.id);
+
+                return clsx(
+                  "w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 px-1 md:px-3 py-2 md:py-2.5 rounded-xl text-[10px] sm:text-[11px] md:text-sm font-500 transition-all duration-150 min-w-0",
+                  highlighted
+                    ? "bg-teal-50 text-teal-700"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-700",
+                  collapsed ? "md:justify-center" : ""
+                );
+              }}
+              title={collapsed ? item.label : undefined}
             >
-              {item.icon}
-            </span>
-            {!collapsed && (
-              <span className="truncate text-center md:text-left max-w-full md:max-w-none">
-                {item.label}
+              <span
+                className={`flex-shrink-0 ${
+                  visuallyActive ? "text-teal-600" : ""
+                }`}
+              >
+                {item.icon}
               </span>
-            )}
-            {!collapsed && activePage === item.id && (
-              <span className="hidden md:block ml-auto w-1.5 h-1.5 rounded-full bg-teal-500 flex-shrink-0" />
-            )}
-          </NavLink>
-        ))}
+              {!collapsed && (
+                <span className="truncate text-center md:text-left max-w-full md:max-w-none">
+                  {item.label}
+                </span>
+              )}
+              {!collapsed && visuallyActive && (
+                <span className="hidden md:block ml-auto w-1.5 h-1.5 rounded-full bg-teal-500 flex-shrink-0" />
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
     </aside>
   );

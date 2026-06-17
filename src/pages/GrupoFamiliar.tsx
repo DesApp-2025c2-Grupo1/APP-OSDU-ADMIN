@@ -12,6 +12,7 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import { API_BASE_URL, apiFetch } from "../config/api";
 import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
+import { useModalPresence } from "../context/ModalContext";
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => (
   <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in z-50">
@@ -100,6 +101,11 @@ export function GrupoFamiliar() {
   const [successISO, setSuccessISO] = useState<string>("");
   const [successName, setSuccessName] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useModalPresence(
+    "family-group-modals",
+    showAddFamiliarPopup || showEditPopup || showViewPopup || showDeleteDialog || showSuccess
+  );
 
   const showToast = (msg: string) => {
     setToastMessage(msg);

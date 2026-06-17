@@ -7,6 +7,7 @@ import ScheduledSuccessPopup from "./BajaExitosaPopup";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import { API_BASE_URL, apiFetch } from "../config/api";
+import { useModalPresence } from "../context/ModalContext";
 
 export type Affiliate = {
   id: number;
@@ -75,6 +76,11 @@ export function AffiliatesTable({
   const [showSuccess, setShowSuccess] = useState(false);
   const [successISO, setSuccessISO] = useState<string>("");
   const [successName, setSuccessName] = useState<string>("");
+
+  useModalPresence(
+    "affiliates-table-modals",
+    showEditPopup || showDeleteDialog || showSuccess
+  );
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
     const opt = option.trim().toLowerCase();

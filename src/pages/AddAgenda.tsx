@@ -47,7 +47,10 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
     const cargarDatos = async () => {
       try {
         const prestadoresData = await fetchProviders();
-        setPrestadores(prestadoresData);
+        setPrestadores(prestadoresData.filter((prestador: any) => {
+          const estado = prestador.estado || (prestador.activo === false ? "baja" : "activo");
+          return estado === "activo";
+        }));
       } catch (err) {
         setError("No se pudieron cargar los datos iniciales");
       }
@@ -75,9 +78,9 @@ export function AddAgendaPage({ }: AddAgendaPageProps) {
       if (prestador) {
         // Mapear especialidades del prestador
         const especialidadesPrestador = prestador.especialidades.map((esp: any) => ({
-          id: esp.id,
+          id: esp.id ?? esp.idEspecialidad,
           nombre: esp.nombre
-        }));
+        })).filter((esp: any) => Boolean(esp.id));
         setEspecialidadesDisponibles(especialidadesPrestador);
 
         // Mapear lugares de atención del prestador

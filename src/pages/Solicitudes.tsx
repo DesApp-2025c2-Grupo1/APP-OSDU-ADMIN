@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { fetchSolicitudes } from "../api/solicitudService";
 import type { SolicitudAdmin } from "../model/Solicitud.model";
 import { SolicitudDetailPopup } from "../components/SolicitudDetailPopup";
+import { useModalPresence } from "../context/ModalContext";
 
 const LIMIT = 15;
 
@@ -33,6 +34,8 @@ export function Solicitudes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<SolicitudAdmin | null>(null);
+
+  useModalPresence("requests-modals", Boolean(selected));
 
   const cargar = useCallback(async (t: TabKey, p: number) => {
     setLoading(true);
