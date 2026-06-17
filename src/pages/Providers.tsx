@@ -15,6 +15,7 @@ import {
   resetProviderPassword,
   suspendProvider,
 } from "../api/providerService";
+import { useModalPresence } from "../context/ModalContext";
 
 type ProviderField = keyof Pick<Prestador, "cuitCuil" | "nombreCompleto">;
 
@@ -56,6 +57,11 @@ export function Prestadores() {
   const [openDeletePopup, setOpenDeletePopup] = useState(false);
   const [suspendingProvider, setSuspendingProvider] = useState<Prestador | null>(null);
   const [openSuspendPopup, setOpenSuspendPopup] = useState(false);
+
+  useModalPresence(
+    "providers-modals",
+    openEditPopup || openViewPopup || openDeletePopup || openSuspendPopup
+  );
 
   const providerFilters = useMemo<ProviderFilters>(() => {
     const filters: ProviderFilters = {

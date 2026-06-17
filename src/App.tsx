@@ -21,6 +21,7 @@ import { SituacionesPorAfiliado } from "./pages/Consulta_AfiliadosSituaciones";
 import { SituacionesPorGrupo } from "./pages/Consulta_GrupoFamiliarSituaciones";
 import LoginPage from "./pages/LoginPage";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ModalProvider } from "./context/ModalContext";
 import { FormStylePreview } from "./pages/FormStylePreview";
 
 function ProtectedLayout() {
@@ -35,15 +36,17 @@ function ProtectedLayout() {
   }
   
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <Header />
-      <div className="flex flex-1 min-h-0">
-        <Sidebar />
-        <main className="flex-1 min-w-0 overflow-y-auto">
-          <Outlet />
-        </main>
+    <ModalProvider>
+      <div className="min-h-screen flex flex-col bg-slate-50">
+        <Header />
+        <div className="flex flex-1 min-h-0">
+          <Sidebar />
+          <main className="flex-1 min-w-0 overflow-y-auto">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </ModalProvider>
   );
 }
 

@@ -5,6 +5,7 @@ import { fetchPlans, type Plan } from "../api/planService";
 import AltaProgramadaPopup from "../components/AltaProgramadaPopup";
 import { fetchGeorefLocalities, fetchGeorefProvinces, type GeorefLocality, type GeorefProvince } from "../api/georefService";
 import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
+import { useModalPresence } from "../context/ModalContext";
 
 interface Situacion {
   idSituacion: number;
@@ -35,6 +36,8 @@ interface Familiar {
 export function AddAffiliate() {
   const navigate = useNavigate();
   const [showAltaPopup, setShowAltaPopup] = useState(false);
+  useModalPresence("add-affiliate-modals", showAltaPopup);
+
   const [formData, setFormData] = useState({
     tipoDocumento: "DNI",
     nroDocumento: "",

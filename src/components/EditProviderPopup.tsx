@@ -28,12 +28,18 @@ const cloneLugaresAtencion = (lugares?: LugarAtencion[]) =>
     horarios: lugar.horarios ? [...lugar.horarios] : [],
   }));
 
+const normalizeEspecialidad = (especialidad: any): Especialidad => ({
+  ...especialidad,
+  id: Number(especialidad.id ?? especialidad.idEspecialidad ?? especialidad.especialidadId),
+  nombre: especialidad.nombre,
+});
+
 export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPopupProps) {
   const [formData, setFormData] = useState({
     cuitCuil: provider.cuitCuil || "",
     nombreCompleto: provider.nombreCompleto || "",
     tipoPrestador: provider.tipoPrestador || "profesional",
-    especialidades: provider.especialidades || [],
+    especialidades: (provider.especialidades || []).map(normalizeEspecialidad).filter((esp) => Boolean(esp.id)),
     telefonos: provider.telefonos || [""],
     mails: provider.mails || [""],
     lugaresAtencion: provider.lugaresAtencion || [],
@@ -83,9 +89,9 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
         const dataEsp = await resEsp.json();
         const especialidadesArray = dataEsp.especialidades || dataEsp || [];
         setEspecialidadesDisponibles(especialidadesArray.map((e: any) => ({
-          id: e.idEspecialidad,
+          id: Number(e.id ?? e.idEspecialidad),
           nombre: e.nombre
-        })));
+        })).filter((esp: any) => Boolean(esp.id)));
 
         setLoadingGeoref(true);
         const provinciasData = await fetchGeorefProvinces();
@@ -236,7 +242,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
   // ---------- especialidades ----------
   const delEsp = async (i: number) => {
-    const specialtyToRemove = formData.especialidades[i];
+    const specialtyToRemove = normalizeEspecialidad(formData.especialidades[i]);
 
     try {
       setCheckingAgendas(true);
@@ -301,7 +307,7 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
 
     setFormData(prev => ({
       ...prev,
-      especialidades: [...prev.especialidades, especialidad]
+      especialidades: [...prev.especialidades, normalizeEspecialidad(especialidad)]
     }));
   };
 
@@ -373,23 +379,23 @@ export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPop
     try {
       const placesChanged = JSON.stringify(originalPlaces) !== JSON.stringify(formData.lugaresAtencion);
       // Enviar solo los IDs de especialidades, no los objetos completos
-      const updated = {
+      const updated: any = {
         cuitCuil: formData.cuitCuil,
         nombreCompleto: formData.nombreCompleto,
         tipoPrestador: formData.tipoPrestador,
-        especialidades: formData.especialidades.map(e => (e as any).id), // Extraer solo IDs
+        especialidades: formData.especialidades.map(e => Number((e as any).id)).filter(Boolean), // Extraer solo IDs
         telefonos: formData.telefonos.filter(t => t.trim()),
         mails: formData.mails.filter(m => m.trim()),
         confirmAgendaImpact: pendingSave || agendaImpactConfirmed
       };
 
       if (placesChanged) {
-        (updated as any).lugaresAtencion = formData.lugaresAtencion;
+        updated.lugaresAtencion = formData.lugaresAtencion;
       }
 
       // Agregar centroMedicoId si es profesional
       if (formData.tipoPrestador === "profesional") {
-        (updated as any).centroMedicoId = (formData as any).centroMedicoId || null;
+        updated.centroMedicoId = (formData as any).centroMedicoId || null;
       }
 
 

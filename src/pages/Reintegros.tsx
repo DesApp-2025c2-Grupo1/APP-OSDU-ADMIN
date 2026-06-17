@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { fetchReintegros } from "../api/reintegroService";
 import type { ReintegroAdmin } from "../model/Reintegro.model";
 import { ReintegroDetailPopup } from "../components/ReintegroDetailPopup";
+import { useModalPresence } from "../context/ModalContext";
 
 const LIMIT = 15;
 
@@ -41,6 +42,8 @@ export function Reintegros() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<ReintegroAdmin | null>(null);
+
+  useModalPresence("refund-modals", Boolean(selected));
 
   const cargar = useCallback(async (t: TabKey, p: number) => {
     setLoading(true);

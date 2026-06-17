@@ -6,6 +6,7 @@ import { ConfirmDeleteDialog } from "../components/ConfirmDeleteDialog";
 import { ViewAffiliatePopup } from "../components/ViewAffiliatePopup";
 import { EditAffiliatePopup } from "../components/EditAffiliatePopup";
 import { API_BASE_URL, apiFetch } from "../config/api";
+import { useModalPresence } from "../context/ModalContext";
 
 // 🔹 Pequeño Toast (notificación visual sin alert)
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => (
@@ -43,6 +44,11 @@ export function Home() {
   const [showPending, setShowPending] = useState(false);
 
   const navigate = useNavigate();
+
+  useModalPresence(
+    "home-affiliate-modals",
+    showViewPopup || showEditPopup || showDeleteDialog
+  );
 
   // 🟩 Función para mostrar mensaje visual (toast)
   const showToast = (msg: string) => {

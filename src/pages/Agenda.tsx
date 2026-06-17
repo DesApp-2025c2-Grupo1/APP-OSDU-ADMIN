@@ -13,6 +13,7 @@ import { fetchProviders } from "../api/providerService";
 import { fetchSpecialties } from "../api/specialtyService";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import { useModalPresence } from "../context/ModalContext";
 
 export interface HorarioAgenda {
   id: string;
@@ -63,6 +64,11 @@ export function Agenda() {
   const [openViewPopup, setOpenViewPopup] = useState(false);
   const [agendaToDelete, setAgendaToDelete] = useState<HorarioAgenda | null>(null);
   const [editingAgenda, setEditingAgenda] = useState<HorarioAgenda | null>(null);
+
+  useModalPresence(
+    "agenda-modals",
+    openViewPopup || Boolean(agendaToDelete) || Boolean(editingAgenda)
+  );
 
   const [busquedaPrestador, setBusquedaPrestador] = useState("");
   const [mostrarDropdownPrestador, setMostrarDropdownPrestador] = useState(false);
