@@ -6,6 +6,7 @@ import AltaProgramadaPopup from "../components/AltaProgramadaPopup";
 import { fetchGeorefLocalities, fetchGeorefProvinces, type GeorefLocality, type GeorefProvince } from "../api/georefService";
 import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
 import { useModalPresence } from "../context/ModalContext";
+import { validateBirthDate, validateDocument, validatePersonName } from "../utils/affiliateValidation";
 
 interface Situacion {
   idSituacion: number;
@@ -246,44 +247,17 @@ export function AddAffiliate() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    // DNI del titular
-    if (!formData.nroDocumento?.trim()) {
-      newErrors.nroDocumento = "Requerido";
-    } else if (!/^[0-9]{7,8}$/.test(formData.nroDocumento)) {
-      newErrors.nroDocumento = "El DNI debe tener 7 u 8 dígitos numéricos";
-    }
+    const docErr = validateDocument(formData.tipoDocumento, formData.nroDocumento);
+    if (docErr) newErrors.nroDocumento = docErr;
 
-    // Nombre del titular
-    if (!formData.nombre?.trim()) {
-      newErrors.nombre = "Requerido";
-    } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
-      newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
-    }
+    const nombreErr = validatePersonName(formData.nombre, "nombre");
+    if (nombreErr) newErrors.nombre = nombreErr;
 
-    // Apellido del titular
-    if (!formData.apellido?.trim()) {
-      newErrors.apellido = "Requerido";
-    } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
-      newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
-    }
+    const apellidoErr = validatePersonName(formData.apellido, "apellido");
+    if (apellidoErr) newErrors.apellido = apellidoErr;
 
-    // Fecha de nacimiento del titular
-    if (!formData.fechaNacimiento) {
-      newErrors.fechaNacimiento = "Requerido";
-    } else {
-      const fechaNac = new Date(formData.fechaNacimiento);
-      const hoy = new Date();
-
-      if (fechaNac > hoy) {
-        newErrors.fechaNacimiento = "La fecha no puede ser futura";
-      }
-
-      const edad = (hoy.getTime() - fechaNac.getTime()) / (1000 * 60 * 60 * 24 * 365);
-
-      if (edad > 150) {
-        newErrors.fechaNacimiento = "La fecha de nacimiento no es válida";
-      }
-    }
+    const fechaErr = validateBirthDate(formData.fechaNacimiento);
+    if (fechaErr) newErrors.fechaNacimiento = fechaErr;
 
     // Emails del titular
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -320,43 +294,17 @@ export function AddAffiliate() {
     familiares.forEach((f, index) => {
       const prefix = `familiares[${index}]`;
 
-      // DNI del familiar
-      if (!f.nroDocumento?.trim()) {
-        newErrors[`${prefix}.nroDocumento`] = "Requerido";
-      } else if (!/^[0-9]{7,8}$/.test(f.nroDocumento)) {
-        newErrors[`${prefix}.nroDocumento`] = "El DNI debe tener 7 u 8 dígitos numéricos";
-      }
+      const familiarDocErr = validateDocument(f.tipoDocumento, f.nroDocumento);
+      if (familiarDocErr) newErrors[`${prefix}.nroDocumento`] = familiarDocErr;
 
-      // Nombre del familiar
-      if (!f.nombre?.trim()) {
-        newErrors[`${prefix}.nombre`] = "Requerido";
-      } else if (f.nombre.trim().length < 2 || f.nombre.trim().length > 50) {
-        newErrors[`${prefix}.nombre`] = "El nombre debe tener entre 2 y 50 caracteres";
-      }
+      const familiarNombreErr = validatePersonName(f.nombre, "nombre");
+      if (familiarNombreErr) newErrors[`${prefix}.nombre`] = familiarNombreErr;
 
-      // Apellido del familiar
-      if (!f.apellido?.trim()) {
-        newErrors[`${prefix}.apellido`] = "Requerido";
-      } else if (f.apellido.trim().length < 2 || f.apellido.trim().length > 50) {
-        newErrors[`${prefix}.apellido`] = "El apellido debe tener entre 2 y 50 caracteres";
-      }
+      const familiarApellidoErr = validatePersonName(f.apellido, "apellido");
+      if (familiarApellidoErr) newErrors[`${prefix}.apellido`] = familiarApellidoErr;
 
-      // Fecha de nacimiento del familiar
-      if (!f.fechaNacimiento) {
-        newErrors[`${prefix}.fechaNacimiento`] = "Requerido";
-      } else {
-        const fechaNac = new Date(f.fechaNacimiento);
-        const hoy = new Date();
-
-        if (fechaNac > hoy) {
-          newErrors[`${prefix}.fechaNacimiento`] = "La fecha no puede ser futura";
-        }
-
-        const edad = (hoy.getTime() - fechaNac.getTime()) / (1000 * 60 * 60 * 24 * 365);
-        if (edad > 150) {
-          newErrors[`${prefix}.fechaNacimiento`] = "La fecha de nacimiento no es válida";
-        }
-      }
+      const familiarFechaErr = validateBirthDate(f.fechaNacimiento);
+      if (familiarFechaErr) newErrors[`${prefix}.fechaNacimiento`] = familiarFechaErr;
 
       // Email del familiar
       if (!f.usaContactoTitular) {

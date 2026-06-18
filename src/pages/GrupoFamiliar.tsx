@@ -13,6 +13,7 @@ import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import { API_BASE_URL, apiFetch } from "../config/api";
 import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
 import { useModalPresence } from "../context/ModalContext";
+import { validateBirthDate, validateDocument, validatePersonName } from "../utils/affiliateValidation";
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => (
   <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in z-50">
@@ -752,33 +753,17 @@ function AddFamiliarPopup({ planFijo, titular, onClose, onSave }: AddFamiliarPop
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.nroDocumento?.trim()) {
-      newErrors.nroDocumento = "Requerido";
-    } else if (!/^[0-9]{7,8}$/.test(formData.nroDocumento)) {
-      newErrors.nroDocumento = "El DNI debe tener 7 u 8 dígitos numéricos";
-    }
+    const docErr = validateDocument(formData.tipoDocumento, formData.nroDocumento);
+    if (docErr) newErrors.nroDocumento = docErr;
 
-    if (!formData.nombre?.trim()) {
-      newErrors.nombre = "Requerido";
-    } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
-      newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
-    }
+    const nombreErr = validatePersonName(formData.nombre, "nombre");
+    if (nombreErr) newErrors.nombre = nombreErr;
 
-    if (!formData.apellido?.trim()) {
-      newErrors.apellido = "Requerido";
-    } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
-      newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
-    }
+    const apellidoErr = validatePersonName(formData.apellido, "apellido");
+    if (apellidoErr) newErrors.apellido = apellidoErr;
 
-    if (!formData.fechaNacimiento) {
-      newErrors.fechaNacimiento = "Requerido";
-    } else {
-      const fechaNac = new Date(formData.fechaNacimiento);
-      const hoy = new Date();
-      if (fechaNac > hoy) {
-        newErrors.fechaNacimiento = "La fecha no puede ser futura";
-      }
-    }
+    const fechaErr = validateBirthDate(formData.fechaNacimiento);
+    if (fechaErr) newErrors.fechaNacimiento = fechaErr;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.usaContactoTitular && formData.email && !emailRegex.test(formData.email)) {
@@ -862,14 +847,10 @@ function AddFamiliarPopup({ planFijo, titular, onClose, onSave }: AddFamiliarPop
                 value={formData.tipoDocumento}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
-              >
-                <option value="DNI">DNI</option>
-                <option value="CUIL">CUIL</option>
-                <option value="CUIT">CUIT</option>
-                <option value="DOCUMENTO EXTRANJERO">DOCUMENTO EXTRANJERO</option>
-                <option value="CDI">CDI</option>
-                <option value="Pasaporte">Pasaporte</option>
-              </select>
+	              >
+	                <option value="DNI">DNI</option>
+	                <option value="Pasaporte">Pasaporte</option>
+	              </select>
             </div>
 
             <div className="flex flex-col">
