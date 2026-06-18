@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
+import { validateBirthDate, validateDocument, validatePersonName } from "../utils/affiliateValidation";
 
 interface Situacion {
   idSituacion: number;
@@ -117,6 +118,20 @@ export function AddFamiliarMember({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const nextErrors: Record<string, string> = {};
+    const docErr = validateDocument(formData.tipoDocumento, formData.nroDocumento);
+    if (docErr) nextErrors.nroDocumento = docErr;
+    const nombreErr = validatePersonName(formData.nombre, "nombre");
+    if (nombreErr) nextErrors.nombre = nombreErr;
+    const apellidoErr = validatePersonName(formData.apellido, "apellido");
+    if (apellidoErr) nextErrors.apellido = apellidoErr;
+    const fechaErr = validateBirthDate(formData.fechaNacimiento);
+    if (fechaErr) nextErrors.fechaNacimiento = fechaErr;
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
     // Construir situaciones con el formato correcto para el backend
     const situacionesPayload = situaciones
       .filter(s => s.idSituacion)
@@ -201,14 +216,10 @@ export function AddFamiliarMember({
                 value={formData.tipoDocumento}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
-              >
-                <option value="DNI">DNI</option>
-                <option value="CUIL">CUIL</option>
-                <option value="CUIT">CUIT</option>
-                <option value="DOCUMENTO EXTRANJERO">DOCUMENTO EXTRANJERO</option>
-                <option value="CDI">CDI</option>
-                <option value="Pasaporte">Pasaporte</option>
-              </select>
+	              >
+	                <option value="DNI">DNI</option>
+	                <option value="Pasaporte">Pasaporte</option>
+	              </select>
             </div>
 
             <div className="flex flex-col">
@@ -218,10 +229,11 @@ export function AddFamiliarMember({
                 name="nroDocumento"
                 value={formData.nroDocumento}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-                required
-              />
-            </div>
+	                className="p-2 border border-gray-300 rounded"
+	                required
+	              />
+	              {errors.nroDocumento && <p className="text-red-500 text-xs mt-1">{errors.nroDocumento}</p>}
+	            </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Nombres *</label>
@@ -230,10 +242,11 @@ export function AddFamiliarMember({
                 name="nombre"
                 value={formData.nombre}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-                required
-              />
-            </div>
+	                className="p-2 border border-gray-300 rounded"
+	                required
+	              />
+	              {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
+	            </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Apellidos *</label>
@@ -242,10 +255,11 @@ export function AddFamiliarMember({
                 name="apellido"
                 value={formData.apellido}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-                required
-              />
-            </div>
+	                className="p-2 border border-gray-300 rounded"
+	                required
+	              />
+	              {errors.apellido && <p className="text-red-500 text-xs mt-1">{errors.apellido}</p>}
+	            </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Fecha Nacimiento *</label>
@@ -254,10 +268,11 @@ export function AddFamiliarMember({
                 name="fechaNacimiento"
                 value={formData.fechaNacimiento}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-                required
-              />
-            </div>
+	                className="p-2 border border-gray-300 rounded"
+	                required
+	              />
+	              {errors.fechaNacimiento && <p className="text-red-500 text-xs mt-1">{errors.fechaNacimiento}</p>}
+	            </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Parentesco *</label>

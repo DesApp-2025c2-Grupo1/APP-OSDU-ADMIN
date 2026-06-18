@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { Affiliate as AffiliateType } from "./AffiliatesTable";
 import { API_BASE_URL, apiFetch } from "../config/api";
 import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
+import { validateBirthDate, validatePersonName } from "../utils/affiliateValidation";
 
 interface Situacion {
   idSituacionAfiliado?: number;
@@ -112,33 +113,14 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   const handleSave = () => {
     const newErrors: Record<string, string> = {};
 
-    // Validar nombre
-    if (!formData.nombre.trim()) {
-      newErrors.nombre = "El nombre es obligatorio";
-    } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
-      newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
-    }
+    const nombreErr = validatePersonName(formData.nombre, "nombre");
+    if (nombreErr) newErrors.nombre = nombreErr;
 
-    // Validar apellido
-    if (!formData.apellido.trim()) {
-      newErrors.apellido = "El apellido es obligatorio";
-    } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
-      newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
-    }
+    const apellidoErr = validatePersonName(formData.apellido, "apellido");
+    if (apellidoErr) newErrors.apellido = apellidoErr;
 
-    // Validar fecha de nacimiento
-    if (!formData.fechaNacimiento) {
-      newErrors.fechaNacimiento = "La fecha de nacimiento es obligatoria";
-    } else {
-      const partes = formData.fechaNacimiento.split('/');
-      if (partes.length === 3) {
-        const fecha = new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
-        const hoy = new Date();
-        if (fecha > hoy) {
-          newErrors.fechaNacimiento = "La fecha no puede ser futura";
-        }
-      }
-    }
+    const fechaErr = validateBirthDate(formData.fechaNacimiento);
+    if (fechaErr) newErrors.fechaNacimiento = fechaErr;
 
     // Validar plan
     if (!formData.idPlan || formData.idPlan === 0) {

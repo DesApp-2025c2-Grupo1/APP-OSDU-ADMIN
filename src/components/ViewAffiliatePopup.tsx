@@ -396,12 +396,12 @@ export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: View
                     <div className="flex flex-col sm:flex-row gap-2 text-sm text-gray-600">
                       {sit.fechaInicio && (
                         <span className="bg-blue-100 px-3 py-1 rounded">
-                          Inicio: {sit.fechaInicio}
+                          Inicio: {formatDateOnly(sit.fechaInicio)}
                         </span>
                       )}
                       {sit.fechaFin && (
                         <span className="bg-green-100 px-3 py-1 rounded">
-                          Fin: {sit.fechaFin}
+                          Fin: {formatDateOnly(sit.fechaFin)}
                         </span>
                       )}
                       {!sit.fechaFin && (
