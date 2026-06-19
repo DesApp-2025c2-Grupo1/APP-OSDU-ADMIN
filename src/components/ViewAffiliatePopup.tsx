@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { API_BASE_URL, apiFetch } from "../config/api";
 
 
@@ -81,6 +82,11 @@ export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: View
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [fullAffiliate, setFullAffiliate] = useState<AffiliateType | null>(null);
+  const [successDialog, setSuccessDialog] = useState<{
+    title: string;
+    message: string;
+    shouldRefresh: boolean;
+  } | null>(null);
 
   // Cargar datos completos del afiliado
   useEffect(() => {
@@ -186,14 +192,31 @@ export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: View
             headers: { "Content-Type": "application/json" },
         });
         if (!response.ok) throw new Error(`Error al ${action} el afiliado`);
-        alert(`Afiliado ${action === 'activate' ? 'aprobado' : 'rechazado'} con éxito.`);
-        if (onStatusChanged) onStatusChanged();
-        onClose();
+        setSuccessDialog(
+          action === 'activate'
+            ? {
+                title: "Afiliado aprobado",
+                message: "El afiliado fue aprobado correctamente y ya puede acceder a las funcionalidades correspondientes.",
+                shouldRefresh: true,
+              }
+            : {
+                title: "Afiliado rechazado",
+                message: "La solicitud del afiliado fue rechazada correctamente.",
+                shouldRefresh: true,
+              }
+        );
     } catch (err) {
         alert(`Ocurrió un error al intentar cambiar el estado.`);
     } finally {
         setActionLoading(false);
     }
+  };
+
+  const handleCloseSuccessDialog = () => {
+    const shouldRefresh = successDialog?.shouldRefresh;
+    setSuccessDialog(null);
+    if (shouldRefresh && onStatusChanged) onStatusChanged();
+    onClose();
   };
 
   const emails = obtenerEmails(displayAffiliate);
@@ -459,6 +482,32 @@ export function ViewAffiliatePopup({ affiliate, onClose, onStatusChanged }: View
             </div>
           )}
         </div>
+
+        {successDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2100] p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600">
+                <CheckCircle2 size={34} strokeWidth={2.4} />
+              </div>
+
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                {successDialog.title}
+              </h2>
+
+              <p className="text-sm leading-6 text-gray-600 mb-6">
+                {successDialog.message}
+              </p>
+
+              <button
+                onClick={handleCloseSuccessDialog}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
+                autoFocus
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -5,6 +5,10 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   InputLabel,
   MenuItem,
@@ -19,6 +23,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import {
   activateAffiliate,
   deactivateAffiliate,
@@ -52,6 +57,7 @@ export function AffiliatesAdminPage() {
   const [filtroActivo, setFiltroActivo] = useState("all");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
 
@@ -95,7 +101,11 @@ export function AffiliatesAdminPage() {
       }
 
       await fetchAffiliates(false);
-      setSuccessMessage(isActivating ? "Afiliado aprobado con éxito" : "Afiliado desactivado con éxito");
+      if (isActivating) {
+        setApprovalDialogOpen(true);
+      } else {
+        setSuccessMessage("Afiliado desactivado con éxito");
+      }
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
@@ -203,6 +213,37 @@ export function AffiliatesAdminPage() {
           </TableContainer>
         )}
       </Paper>
+
+      <Dialog
+        open={approvalDialogOpen}
+        onClose={() => setApprovalDialogOpen(false)}
+        aria-labelledby="affiliate-approved-title"
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle
+          id="affiliate-approved-title"
+          sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 1 }}
+        >
+          <CheckCircleIcon color="success" fontSize="large" />
+          Afiliado aprobado
+        </DialogTitle>
+        <DialogContent>
+          <Typography color="text.secondary">
+            El afiliado fue aprobado correctamente y ya puede acceder a las funcionalidades correspondientes.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={() => setApprovalDialogOpen(false)}
+            autoFocus
+          >
+            Aceptar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }
