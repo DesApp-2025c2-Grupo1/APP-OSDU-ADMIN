@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { OptionsMenu } from "./OptionsMenu";
 import { EditAffiliatePopup } from "./EditAffiliatePopup";
@@ -188,9 +188,19 @@ export function AffiliatesTable({
 
   const totalPages = Math.max(1, Math.ceil(affiliates.length / itemsPerPage));
   const safePage = Math.min(currentPage, totalPages);
-  const startIndex = (safePage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentAffiliates = affiliates.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [affiliates]);
+
+  const currentAffiliates = useMemo(() => {
+    const startIndex = (safePage - 1) * itemsPerPage;
+    return affiliates.slice(startIndex, startIndex + itemsPerPage);
+  }, [affiliates, itemsPerPage, safePage]);
 
   return (
     <>
@@ -213,7 +223,7 @@ export function AffiliatesTable({
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {currentAffiliates.map((a) => (
-                  <tr key={a.credencial} className="hover:bg-slate-50 transition-colors">
+                  <tr key={a.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 text-sm font-500 text-slate-700">{a.credencial}</td>
                     <td className="px-6 py-4 text-sm text-slate-600">{a.dni}</td>
                     <td className="px-6 py-4 text-sm font-500 text-slate-700">{a.nombre}</td>
@@ -254,7 +264,7 @@ export function AffiliatesTable({
           <div className="divide-y divide-slate-50">
             {currentAffiliates.map((a) => (
               <div 
-                key={a.credencial || a.dni} 
+                key={a.id} 
                 className="px-4 py-4 hover:bg-slate-50 transition-colors"
               >
                 <div className="flex items-start justify-between gap-3">
