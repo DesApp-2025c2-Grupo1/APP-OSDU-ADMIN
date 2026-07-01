@@ -46,7 +46,7 @@ export function Prestadores() {
   const [serverPage, setServerPage] = useState(1);
   const [serverTotal, setServerTotal] = useState(0);
   const [serverTotalPages, setServerTotalPages] = useState(1);
-  const serverPageSize = 10;
+  const serverPageSize = 5;
 
   // Popups
   const [editingProvider, setEditingProvider] = useState<Prestador | null>(null);
