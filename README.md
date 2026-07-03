@@ -1,16 +1,61 @@
-# Desarrollo de Aplicaciones - Universidad Nacional de Hurlingham - Template para armar un proyecto de FE basado en React
-La organización de este repo se creó usando Vite (https://vitejs.dev/). Integra los siguientes packages (además de React, claro):
-- Material UI.
-- Redux (usado a título demostrativo en un solo componente).
-- React Router.
-- Axios.
+# front-unahur-admin — Panel de Administración
 
-## Cómo trabajar con este template
-Loguearse con un usuario de Github. Entrar a este repo, pulsar el botón "Use this template" que van a ver arriba a la derecha. Se abre un menucito con dos opciones, elegir la primera, "Create a new repository". Llenar los datos que pide la página siguiente, y darle a "Create repository".  
-Eso va a crear un repo en el usuario o la orga que hayan elegido, con el contenido del template en un único commit inicial. 
+Frontend del panel administrativo del Portal de Medicina Integral UNAHUR. Permite gestionar afiliados, prestadores, agendas y consultas.
 
-Clonarse el repo, en la carpeta principal de la copia local ejecutar `npm install` para instalar las dependencias. 
+## Tecnologías
 
-Para levantar la app en modo desarrollo, `npm run dev`.
+- React + TypeScript + Vite
+- Tailwind CSS + Material UI
+- React Router DOM
+- Autenticación via cookie JWT (httpOnly)
 
-Obviamente las funcionalidades están solamente a modo de ejemplo. Se puede empezar agregando la funcionalidad de nuestro proyecto, y después a medida que este va creciendo, ir borrando el código de ejemplo.
+## Requisitos previos
+
+- [Node.js v18+](https://nodejs.org/)
+- Backend `app-unahur-portal` corriendo en el puerto 9002
+
+## Instalación
+
+```bash
+# 1. Clonar el repo
+git clone <url-del-repo>
+cd front-unahur-admin
+
+# 2. Instalar dependencias
+npm install
+
+# 3. Crear archivo de variables de entorno
+cp .env.example .env
+```
+
+## Variables de entorno
+
+Crear un archivo `.env` en la raíz:
+
+```env
+VITE_API_URL=http://localhost:9002
+```
+
+> Debe apuntar a la URL donde corre el backend.
+
+## Ejecutar en desarrollo
+
+```bash
+npm run dev
+```
+
+El panel queda disponible en **http://localhost:5173**
+
+## Credenciales de acceso
+
+| Campo    | Valor                    |
+|----------|--------------------------|
+| Email    | admin@mediunahur.com     |
+| Password | clave123                 |
+
+## Funcionalidades
+
+- **Afiliados**: alta, baja, edición, búsqueda y grupo familiar
+- **Prestadores**: alta, baja, edición con especialidades y lugares de atención
+- **Agendas**: creación y gestión de agendas por prestador
+- **Consultas**: reportes de afiliados, prestadores y situaciones terapéuticas

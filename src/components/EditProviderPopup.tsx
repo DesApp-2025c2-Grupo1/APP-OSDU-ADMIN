@@ -1,0 +1,806 @@
+import { useState, useEffect } from "react";
+import type { Prestador, LugarAtencion, Especialidad } from "../model/Provider.model";
+import { updateProvider } from "../api/providerService";
+import { API_BASE_URL, apiFetch } from "../config/api";
+import { checkProviderSpecialtyAgendas, checkProviderPlaceAgendas } from "../api/providerService";
+import { ConfirmSpecialtyChangeDialog } from "./ConfirmSpecialtyChangeDialog";
+import { ConfirmPlaceChangeDialog } from "./ConfirmPlaceChangeDialog";
+import { firstProviderValidationMessage, validateProviderPayload } from "../utils/providerValidation";
+import { fetchGeorefLocalities, fetchGeorefProvinces, type GeorefLocality, type GeorefProvince } from "../api/georefService";
+
+interface EditProviderPopupProps {
+  provider: Prestador;
+  onClose: () => void;
+  onSave: (data: Prestador) => void;
+}
+
+const emptyLugarAtencion = (): LugarAtencion => ({
+  calle: "",
+  localidad: "",
+  provincia: "",
+  cp: "",
+  horarios: [],
+});
+
+const cloneLugaresAtencion = (lugares?: LugarAtencion[]) =>
+  (lugares && lugares.length > 0 ? lugares : [emptyLugarAtencion()]).map((lugar) => ({
+    ...lugar,
+    horarios: lugar.horarios ? [...lugar.horarios] : [],
+  }));
+
+const normalizeEspecialidad = (especialidad: any): Especialidad => ({
+  ...especialidad,
+  id: Number(especialidad.id ?? especialidad.idEspecialidad ?? especialidad.especialidadId),
+  nombre: especialidad.nombre,
+});
+
+export function EditProviderPopup({ provider, onClose, onSave }: EditProviderPopupProps) {
+  const [formData, setFormData] = useState({
+    cuitCuil: provider.cuitCuil || "",
+    nombreCompleto: provider.nombreCompleto || "",
+    tipoPrestador: provider.tipoPrestador || "profesional",
+    especialidades: (provider.especialidades || []).map(normalizeEspecialidad).filter((esp) => Boolean(esp.id)),
+    telefonos: provider.telefonos || [""],
+    mails: provider.mails || [""],
+    lugaresAtencion: provider.lugaresAtencion || [],
+    centroMedicoId: (provider as any).centroMedicoId || null
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [telefonoErrors, setTelefonoErrors] = useState<string[]>([]);
+  const [emailErrors, setEmailErrors] = useState<string[]>([]);
+  const [selectedLugarIndex, setSelectedLugarIndex] = useState<number>(0);
+  const [centrosMedicos, setCentrosMedicos] = useState<any[]>([]);
+  const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState<{ id: number, nombre: string }[]>([]);
+  const [provincias, setProvincias] = useState<GeorefProvince[]>([]);
+  const [localidadesPorProvincia, setLocalidadesPorProvincia] = useState<Record<string, GeorefLocality[]>>({});
+  const [loadingGeoref, setLoadingGeoref] = useState(false);
+  const [loadingLocalidades, setLoadingLocalidades] = useState<Record<string, boolean>>({});
+
+  const [showSpecialtyWarning, setShowSpecialtyWarning] = useState(false);
+  const [pendingSpecialtyToRemove, setPendingSpecialtyToRemove] = useState<{
+    specialty: Especialidad;
+    agendas: any[];
+  } | null>(null);
+  const [checkingAgendas, setCheckingAgendas] = useState(false);
+
+  const [showPlaceWarning, setShowPlaceWarning] = useState(false);
+  const [placeAgendas, setPlaceAgendas] = useState<any[]>([]);
+  const [pendingSave, setPendingSave] = useState(false);
+  const [agendaImpactConfirmed, setAgendaImpactConfirmed] = useState(false);
+  const [originalPlaces, setOriginalPlaces] = useState<LugarAtencion[]>([]);
+  const centroSeleccionado = centrosMedicos.find((centro) => centro.cuitCuil === formData.centroMedicoId);
+  const usaDireccionCentro = formData.tipoPrestador === "profesional" && Boolean(centroSeleccionado);
+
+
+  // Cargar centros médicos y especialidades al montar
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        // Cargar centros médicos
+        const resCentros = await apiFetch(`${API_BASE_URL}/prestadores/`);
+        const dataCentros = await resCentros.json();
+        const centros = dataCentros.filter((p: any) => p.tipoPrestador === "centro_medico");
+        setCentrosMedicos(centros);
+
+        // Cargar especialidades desde API
+        const resEsp = await apiFetch(`${API_BASE_URL}/specialties`);
+        const dataEsp = await resEsp.json();
+        const especialidadesArray = dataEsp.especialidades || dataEsp || [];
+        setEspecialidadesDisponibles(especialidadesArray.map((e: any) => ({
+          id: Number(e.id ?? e.idEspecialidad),
+          nombre: e.nombre
+        })).filter((esp: any) => Boolean(esp.id)));
+
+        setLoadingGeoref(true);
+        const provinciasData = await fetchGeorefProvinces();
+        setProvincias(provinciasData);
+
+        const provinciaIds = Array.from(new Set(
+          (provider.lugaresAtencion || [])
+            .map((lugar) => provinciasData.find((provincia) => provincia.nombre === lugar.provincia)?.id)
+            .filter((id): id is string => Boolean(id))
+        ));
+
+        const localidadesEntries = await Promise.all(
+          provinciaIds.map(async (provinciaId) => [provinciaId, await fetchGeorefLocalities(provinciaId)] as const)
+        );
+        setLocalidadesPorProvincia(Object.fromEntries(localidadesEntries));
+      } catch (err) {
+        setError("No se pudieron cargar todos los datos del formulario");
+      } finally {
+        setLoadingGeoref(false);
+      }
+    };
+    cargarDatos();
+
+    // Guardar lugares originales para detectar cambios
+    setOriginalPlaces(JSON.parse(JSON.stringify(provider.lugaresAtencion || [])));
+  }, []);
+
+  // ---------- helpers campos simples ----------
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // ---------- lugaresAtencion (múltiples) ----------
+  const handleLugarChange = (index: number, campo: keyof LugarAtencion, valor: any) => {
+    setFormData(prev => {
+      const nuevosLugares = [...prev.lugaresAtencion];
+      nuevosLugares[index] = { ...nuevosLugares[index], [campo]: valor };
+      return { ...prev, lugaresAtencion: nuevosLugares };
+    });
+  };
+
+  const normalizeGeorefName = (value?: string) =>
+    (value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLocaleLowerCase("es-AR");
+
+  const getProvinciaId = (provinciaNombre?: string) =>
+    provincias.find((provincia) => {
+      const provinceName = normalizeGeorefName(provincia.nombre);
+      const selectedName = normalizeGeorefName(provinciaNombre);
+
+      return provinceName === selectedName
+        || (provincia.id === "02" && ["caba", "ciudad de buenos aires", "capital federal"].includes(selectedName));
+    })?.id || "";
+
+  const cargarLocalidades = async (provinciaId: string) => {
+    if (!provinciaId || localidadesPorProvincia[provinciaId] || loadingLocalidades[provinciaId]) return;
+
+    setLoadingLocalidades((prev) => ({ ...prev, [provinciaId]: true }));
+    try {
+      const localidades = await fetchGeorefLocalities(provinciaId);
+      setLocalidadesPorProvincia((prev) => ({ ...prev, [provinciaId]: localidades }));
+    } catch {
+      setError("No se pudieron cargar las localidades");
+    } finally {
+      setLoadingLocalidades((prev) => ({ ...prev, [provinciaId]: false }));
+    }
+  };
+
+  const handleProvinciaChange = (index: number, provinciaId: string) => {
+    const provincia = provincias.find((item) => item.id === provinciaId);
+    setFormData(prev => {
+      const nuevosLugares = [...prev.lugaresAtencion];
+      nuevosLugares[index] = {
+        ...nuevosLugares[index],
+        provincia: provincia?.nombre || "",
+        localidad: "",
+      };
+      return { ...prev, lugaresAtencion: nuevosLugares };
+    });
+    void cargarLocalidades(provinciaId);
+  };
+
+  const addLugar = () => {
+    const nuevoLugar: LugarAtencion = {
+      calle: "",
+      localidad: "",
+      provincia: "",
+      cp: "",
+      horarios: []
+    };
+    setFormData(prev => ({
+      ...prev,
+      lugaresAtencion: [...prev.lugaresAtencion, nuevoLugar]
+    }));
+    setSelectedLugarIndex(formData.lugaresAtencion.length);
+  };
+
+  const delLugar = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      lugaresAtencion: prev.lugaresAtencion.filter((_, idx) => idx !== index)
+    }));
+    if (selectedLugarIndex >= formData.lugaresAtencion.length - 1) {
+      setSelectedLugarIndex(Math.max(0, formData.lugaresAtencion.length - 2));
+    }
+  };
+
+  // ---------- telefonos / mails ----------
+  // Sin formateo automático - el usuario puede escribir libremente
+  const setArr = (field: "telefonos" | "mails", i: number, val: string) => {
+    const arr = [...formData[field]];
+    arr[i] = val;
+    setFormData(prev => ({ ...prev, [field]: arr }));
+    // Limpiar error al cambiar
+    if (field === "telefonos") {
+      const errors = [...telefonoErrors];
+      errors[i] = "";
+      setTelefonoErrors(errors);
+    } else if (field === "mails") {
+      const errors = [...emailErrors];
+      errors[i] = "";
+      setEmailErrors(errors);
+    }
+  };
+  const addArr = (field: "telefonos" | "mails") => {
+    setFormData(prev => ({ ...prev, [field]: [...prev[field], ""] }));
+    if (field === "telefonos") {
+      setTelefonoErrors([...telefonoErrors, ""]);
+    } else if (field === "mails") {
+      setEmailErrors([...emailErrors, ""]);
+    }
+  };
+  const delArr = (field: "telefonos" | "mails", i: number) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].filter((_, idx) => idx !== i)
+    }));
+    if (field === "telefonos") {
+      setTelefonoErrors(telefonoErrors.filter((_, idx) => idx !== i));
+    } else if (field === "mails") {
+      setEmailErrors(emailErrors.filter((_, idx) => idx !== i));
+    }
+  };
+
+  // ---------- especialidades ----------
+  const delEsp = async (i: number) => {
+    const specialtyToRemove = normalizeEspecialidad(formData.especialidades[i]);
+
+    try {
+      setCheckingAgendas(true);
+
+      // Verificar agendas desde el backend
+      const result = await checkProviderSpecialtyAgendas(
+        formData.cuitCuil,
+        specialtyToRemove.id
+      );
+
+      if (result.count > 0) {
+        // Mostrar diálogo de confirmación
+        setPendingSpecialtyToRemove({
+          specialty: specialtyToRemove,
+          agendas: result.agendas,
+        });
+        setShowSpecialtyWarning(true);
+      } else {
+        // Si no hay agendas, eliminar directamente
+        setFormData((prev) => ({
+          ...prev,
+          especialidades: prev.especialidades.filter((_, idx) => idx !== i),
+        }));
+      }
+    } catch (err) {
+      // Si hay error, permitir eliminar (pero mostrar alerta)
+      alert("No se pudo verificar las agendas asociadas. Por favor, intenta de nuevo.");
+    } finally {
+      setCheckingAgendas(false);
+    }
+  };
+
+  const confirmRemoveSpecialty = () => {
+    if (!pendingSpecialtyToRemove) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      especialidades: prev.especialidades.filter(
+        (e) => e.id !== pendingSpecialtyToRemove.specialty.id
+      ),
+    }));
+
+    setAgendaImpactConfirmed(true);
+    setShowSpecialtyWarning(false);
+    setPendingSpecialtyToRemove(null);
+  };
+
+  // Agregar función para cancelar
+  const cancelRemoveSpecialty = () => {
+    setShowSpecialtyWarning(false);
+    setPendingSpecialtyToRemove(null);
+  };
+
+
+
+  const addEsp = (especialidad: Especialidad) => {
+    // Verificar que no exista ya
+    if (formData.especialidades.some(e => e.id === especialidad.id)) {
+      alert('Esta especialidad ya ha sido agregada.');
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      especialidades: [...prev.especialidades, normalizeEspecialidad(especialidad)]
+    }));
+  };
+
+
+  const handleSaveClick = async () => {
+    const validationErrors = validateProviderPayload({
+      cuitCuil: formData.cuitCuil,
+      nombreCompleto: formData.nombreCompleto,
+      tipoPrestador: formData.tipoPrestador,
+      mails: formData.mails,
+      telefonos: formData.telefonos,
+      especialidades: formData.especialidades,
+      lugaresAtencion: formData.lugaresAtencion,
+    });
+    const newTelefonoErrors: string[] = [];
+    const newEmailErrors: string[] = [];
+
+    formData.telefonos.forEach((_, idx) => {
+      newTelefonoErrors[idx] = validationErrors.some((err) => err.field === `telefonos.${idx}`)
+        ? "El teléfono debe tener entre 7 y 15 dígitos"
+        : "";
+    });
+
+    formData.mails.forEach((_, idx) => {
+      newEmailErrors[idx] = validationErrors.some((err) => err.field === `mails.${idx}`)
+        ? "Formato de email inválido"
+        : "";
+    });
+
+    setTelefonoErrors(newTelefonoErrors);
+    setEmailErrors(newEmailErrors);
+
+    if (validationErrors.length > 0) {
+      setError(firstProviderValidationMessage(validationErrors));
+      return;
+    }
+
+    await handleSave();
+  };
+
+  const handleSave = async () => {
+    const placesChanged = JSON.stringify(originalPlaces) !== JSON.stringify(formData.lugaresAtencion);
+
+    if (placesChanged && !pendingSave) {
+      try {
+        setCheckingAgendas(true);
+        const result = await checkProviderPlaceAgendas(formData.cuitCuil);
+
+      if (result.count > 0) {
+        setPlaceAgendas(result.agendas);
+        setShowPlaceWarning(true);
+          setCheckingAgendas(false);
+          return; // No continuar con el guardado
+        } else {
+        }
+      } catch (err) {
+      } finally {
+        setCheckingAgendas(false);
+      }
+    } else {
+    }
+    await performSave();
+  };
+
+  const performSave = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const placesChanged = JSON.stringify(originalPlaces) !== JSON.stringify(formData.lugaresAtencion);
+      // Enviar solo los IDs de especialidades, no los objetos completos
+      const updated: any = {
+        cuitCuil: formData.cuitCuil,
+        nombreCompleto: formData.nombreCompleto,
+        tipoPrestador: formData.tipoPrestador,
+        especialidades: formData.especialidades.map(e => Number((e as any).id)).filter(Boolean), // Extraer solo IDs
+        telefonos: formData.telefonos.filter(t => t.trim()),
+        mails: formData.mails.filter(m => m.trim()),
+        confirmAgendaImpact: pendingSave || agendaImpactConfirmed
+      };
+
+      if (placesChanged) {
+        updated.lugaresAtencion = formData.lugaresAtencion;
+      }
+
+      // Agregar centroMedicoId si es profesional
+      if (formData.tipoPrestador === "profesional") {
+        updated.centroMedicoId = (formData as any).centroMedicoId || null;
+      }
+
+
+      // Llamar al API para guardar cambios
+      const result = await updateProvider(formData.cuitCuil, updated);
+
+      onSave(result);
+      onClose();
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+      setPendingSave(false); // Reset pending save flag
+    }
+  };
+
+  const confirmPlaceChange = () => {
+    setShowPlaceWarning(false);
+    setPendingSave(true);
+    setAgendaImpactConfirmed(true);
+    // Llamar performSave inmediatamente después de confirmar
+    setTimeout(() => performSave(), 0);
+  };
+
+  const cancelPlaceChange = () => {
+    setShowPlaceWarning(false);
+    setPendingSave(false);
+  };
+
+  const lugarActual = formData.lugaresAtencion[selectedLugarIndex];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+      <div className="bg-white rounded-lg w-[90%] max-w-5xl max-h-[90vh] overflow-y-auto p-6 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-600 text-2xl hover:text-gray-800">✕</button>
+        <h1 className="text-2xl font-semibold text-gray-800 mb-6">Editar Prestador</h1>
+
+        {/* DATOS DEL PRESTADOR */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">Datos del Prestador</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">CUIT / CUIL (*)</label>
+              <input
+                type="text"
+                name="cuitCuil"
+                value={formData.cuitCuil}
+                disabled
+                className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-600"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Nombre Completo (*)</label>
+              <input
+                type="text"
+                name="nombreCompleto"
+                value={formData.nombreCompleto}
+                onChange={handleInputChange}
+                className="p-2 border border-gray-300 rounded"
+              />
+            </div>
+
+            {/* Tipo: mostrar sin permitir editar */}
+            <div className="flex flex-col sm:col-span-2">
+              <label className="font-semibold mb-1 bg-gray-100 px-2">Tipo de Prestador</label>
+              <div className="p-2 border border-gray-300 rounded bg-gray-50 text-gray-700 select-none pointer-events-none">
+                <span className="capitalize">
+                  {formData.tipoPrestador === "profesional" ? "Profesional" : "Centro Médico"}
+                </span>
+              </div>
+            </div>
+
+            {/* Centro Médico (solo si es profesional) */}
+            {formData.tipoPrestador === "profesional" && (
+              <div className="flex flex-col sm:col-span-2">
+                <label className="font-semibold mb-1 bg-gray-100 px-2">¿Pertenece a un Centro Médico?</label>
+                <select
+                  name="centroMedico"
+                  onChange={(e) => {
+                    const centroId = e.target.value || null;
+                    const centro = centrosMedicos.find((item) => item.cuitCuil === centroId);
+                    setFormData(prev => ({
+                      ...prev,
+                      centroMedicoId: centroId,
+                      lugaresAtencion: centro ? cloneLugaresAtencion(centro.lugaresAtencion) : (provider.lugaresAtencion?.length ? cloneLugaresAtencion(provider.lugaresAtencion) : [emptyLugarAtencion()])
+                    }));
+                    setSelectedLugarIndex(0);
+                  }}
+                  value={(formData as any).centroMedicoId || ""}
+                  className="p-2 border border-gray-300 rounded"
+                >
+                  <option value="">No pertenece a ninguno</option>
+                  {centrosMedicos.map((centro) => (
+                    <option key={centro.cuitCuil} value={centro.cuitCuil}>
+                      {centro.nombreCompleto}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ESPECIALIDADES (editable) */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">Especialidades</h2>
+
+          {formData.especialidades.length > 0 ? (
+            <div className="space-y-2 mb-4">
+              {formData.especialidades.map((esp, i) => (
+                <div key={i} className="p-2 border border-gray-200 rounded bg-gray-50 flex justify-between items-center">
+                  <span>{esp.nombre}</span>
+                  <button
+                    type="button"
+                    onClick={() => delEsp(i)}
+                    className="px-3 py-1 text-sm border rounded hover:bg-red-50 text-red-500 font-semibold"
+                  >
+                    X
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 mb-4">Sin especialidades</p>
+          )}
+
+          {/* Dropdown para agregar especialidades */}
+          <div className="flex gap-2">
+            <select
+              onChange={(e) => {
+                const selected = especialidadesDisponibles.find(s => s.id === parseInt(e.target.value));
+                if (selected) addEsp(selected);
+                e.target.value = "";
+              }}
+              className="p-2 border border-gray-300 rounded flex-1"
+              defaultValue=""
+            >
+              <option value="">Seleccionar especialidad...</option>
+              {especialidadesDisponibles
+                .filter(esp => !formData.especialidades.some(e => e.id === esp.id))
+                .map((esp) => (
+                  <option key={esp.id} value={esp.id}>
+                    {esp.nombre}
+                  </option>
+                ))
+              }
+            </select>
+          </div>
+          {formData.especialidades.length === especialidadesDisponibles.length && (
+            <p className="text-sm text-gray-500 mt-2">
+              ℹ️ Todas las especialidades disponibles ya han sido agregadas
+            </p>
+          )}
+        </div>
+
+        {/* CONTACTO */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">Contacto</h2>
+
+          {/* Teléfonos */}
+          <div className="mb-6">
+            <label className="font-semibold mb-2 block">Teléfonos</label>
+            {formData.telefonos.map((tel, i) => (
+              <div key={i} className="flex flex-col gap-1 mb-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={tel}
+                    onChange={(e) => setArr("telefonos", i, e.target.value)}
+                    className={`p-2 border rounded w-full ${telefonoErrors[i] ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    placeholder="Ej: 011 4444-5555 o 1234567890"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => delArr("telefonos", i)}
+                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
+                  >
+                    X
+                  </button>
+                </div>
+                {telefonoErrors[i] && (
+                  <p className="text-red-500 text-xs">{telefonoErrors[i]}</p>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={() => addArr("telefonos")} className="text-sm text-[#14B8A6] font-semibold hover:underline">
+              + Agregar teléfono
+            </button>
+          </div>
+
+          {/* Mails */}
+          <div>
+            <label className="font-semibold mb-2 block">Emails</label>
+            {formData.mails.map((mail, i) => (
+              <div key={i} className="flex flex-col gap-1 mb-2">
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={mail}
+                    onChange={(e) => setArr("mails", i, e.target.value)}
+                    className={`p-2 border rounded w-full ${emailErrors[i] ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    placeholder="Ej: email@example.com"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => delArr("mails", i)}
+                    className="px-3 py-2 border rounded hover:bg-red-50 text-red-500 font-semibold"
+                  >
+                    X
+                  </button>
+                </div>
+                {emailErrors[i] && (
+                  <p className="text-red-500 text-xs">{emailErrors[i]}</p>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={() => addArr("mails")} className="text-sm text-[#14B8A6] font-semibold hover:underline">
+              + Agregar email
+            </button>
+          </div>
+        </div>
+
+        {/* LUGARES DE ATENCIÓN (MÚLTIPLES) */}
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">Lugares de Atención</h2>
+          {usaDireccionCentro && (
+            <p className="mb-3 rounded-lg border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-700">
+              Se usa la dirección registrada del centro médico {centroSeleccionado?.nombreCompleto}.
+            </p>
+          )}
+
+          {/* Selector de lugar */}
+          {formData.lugaresAtencion.length > 0 && (
+            <div className="mb-4">
+              <div className="flex gap-2 flex-wrap">
+                {formData.lugaresAtencion.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedLugarIndex(idx)}
+                    className={`px-4 py-2 rounded font-semibold transition ${selectedLugarIndex === idx
+                      ? 'bg-[#14B8A6] text-white'
+                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                      }`}
+                  >
+                    Lugar {idx + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Formulario del lugar seleccionado */}
+          {lugarActual && (
+            <div className="mb-6 p-4 border border-gray-300 rounded-lg bg-gray-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col sm:col-span-2">
+                  <label className="font-semibold mb-1 text-sm">Dirección (*)</label>
+                  <input
+                    type="text"
+                    value={lugarActual.calle || ""}
+                    onChange={(e) => handleLugarChange(selectedLugarIndex, "calle", e.target.value)}
+                    disabled={usaDireccionCentro}
+                    className="p-2 border border-gray-300 rounded"
+                    placeholder="Ej: Calle 9 No. 1234"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="font-semibold mb-1 text-sm">Localidad</label>
+                  <select
+                    value={lugarActual.localidad || ""}
+                    onChange={(e) => handleLugarChange(selectedLugarIndex, "localidad", e.target.value)}
+                    disabled={usaDireccionCentro || !getProvinciaId(lugarActual.provincia) || Boolean(loadingLocalidades[getProvinciaId(lugarActual.provincia)])}
+                    className="p-2 border border-gray-300 rounded bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                  >
+                    {(() => {
+                      const provinciaId = getProvinciaId(lugarActual.provincia);
+                      const localidades = localidadesPorProvincia[provinciaId] || [];
+                      const cargando = Boolean(loadingLocalidades[provinciaId]);
+                      return (
+                        <>
+                          <option value="">
+                            {!provinciaId
+                              ? "Seleccione una provincia primero"
+                              : cargando
+                                ? "Cargando localidades..."
+                                : "Seleccionar localidad"}
+                          </option>
+                          {lugarActual.localidad && !localidades.some((localidad) => localidad.nombre === lugarActual.localidad) && (
+                            <option value={lugarActual.localidad}>{lugarActual.localidad}</option>
+                          )}
+                          {localidades.map((localidad) => (
+                            <option key={localidad.id} value={localidad.nombre}>
+                              {localidad.nombre}
+                            </option>
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </select>
+                </div>
+                <div className="flex flex-col">
+                  <label className="font-semibold mb-1 text-sm">Provincia</label>
+                  <select
+                    value={getProvinciaId(lugarActual.provincia)}
+                    onChange={(e) => handleProvinciaChange(selectedLugarIndex, e.target.value)}
+                    disabled={loadingGeoref || usaDireccionCentro}
+                    className="p-2 border border-gray-300 rounded bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                  >
+                    <option value="">{loadingGeoref ? "Cargando provincias..." : "Seleccionar provincia"}</option>
+                    {provincias.map((provincia) => (
+                      <option key={provincia.id} value={provincia.id}>
+                        {provincia.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col">
+                  <label className="font-semibold mb-1 text-sm">Código Postal (*)</label>
+                  <input
+                    type="text"
+                    value={lugarActual.cp || ""}
+                    onChange={(e) => handleLugarChange(selectedLugarIndex, "cp", e.target.value)}
+                    disabled={usaDireccionCentro}
+                    className="p-2 border border-gray-300 rounded"
+                    placeholder="Código Postal"
+                  />
+                </div>
+              </div>
+
+              {/* Botón para eliminar este lugar */}
+              {formData.lugaresAtencion.length > 1 && !usaDireccionCentro && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => delLugar(selectedLugarIndex)}
+                    className="px-4 py-2 border rounded text-red-500 font-semibold hover:bg-red-50"
+                  >
+                    Eliminar este lugar
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Botón para agregar nuevo lugar */}
+          <button
+            type="button"
+            onClick={addLugar}
+            disabled={usaDireccionCentro}
+            className="px-4 py-2 bg-[#14B8A6] text-white rounded font-semibold hover:bg-teal-700"
+          >
+            + Agregar lugar de atención
+          </button>
+        </div>
+
+        {/* ERROR MESSAGE */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+
+        {/* BOTONES */}
+        <div className="flex justify-center gap-4 mt-4">
+          <button
+            onClick={handleSaveClick}
+            disabled={loading}
+            className="bg-[#14B8A6] text-white px-6 py-3 rounded font-semibold shadow hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? "Guardando..." : "Guardar Cambios"}
+          </button>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="bg-gray-500 text-white px-6 py-3 rounded font-semibold shadow hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+      {showSpecialtyWarning && pendingSpecialtyToRemove && (
+        <ConfirmSpecialtyChangeDialog
+          open={showSpecialtyWarning}
+          providerName={formData.nombreCompleto}
+          specialty={pendingSpecialtyToRemove.specialty.nombre}
+          agendaCount={pendingSpecialtyToRemove.agendas.length}
+          onConfirm={confirmRemoveSpecialty}
+          onCancel={cancelRemoveSpecialty}
+          isLoading={loading || checkingAgendas}
+        />
+      )}
+      {showPlaceWarning && (
+        <ConfirmPlaceChangeDialog
+          open={showPlaceWarning}
+          providerName={formData.nombreCompleto}
+          agendaCount={placeAgendas.length}
+          onConfirm={confirmPlaceChange}
+          onCancel={cancelPlaceChange}
+          isLoading={loading || checkingAgendas}
+        />
+      )}
+    </div>
+  );
+}
