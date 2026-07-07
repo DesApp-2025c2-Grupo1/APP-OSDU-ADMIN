@@ -1,21 +1,27 @@
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
-import SearchDropdown from "../components/SearchDropdown";
 import { ProvidersTable } from "../components/ProvidersTable";
-import type { Prestador } from "../model/Provider.model";
+import type { Prestador, ProviderFilters } from "../model/Provider.model";
 import { EditProviderPopup } from "../components/EditProviderPopup";
 import { ViewProviderPopup } from "../components/ViewProviderPopup";
 import { ConfirmDeleteProviderDialog } from "../components/ConfirmDeleteProviderDialog";
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
-import { fetchProviders, deleteProvider } from "../api/providerService";
+import {
+  deleteProvider,
+  fetchProviderByCuit,
+  fetchProvidersPage,
+  forceProviderPasswordChange,
+  reactivateProvider,
+  resendProviderCredentials,
+  resetProviderPassword,
+  suspendProvider,
+} from "../api/providerService";
+import { useModalPresence } from "../context/ModalContext";
 
 type ProviderField = keyof Pick<Prestador, "cuitCuil" | "nombreCompleto">;
 
 // 🔹 Toast component (notificación visual)
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => (
-  <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
+  <div className="fixed bottom-4 right-4 bg-[#14B8A6] text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
     {message}
     <button className="ml-3 font-bold text-white" onClick={onClose}>
       ×
@@ -33,6 +39,14 @@ export function Prestadores() {
   const [field, setField] = useState<ProviderField>("cuitCuil");
   const [query, setQuery] = useState("");
   const [tipoFiltro, setTipoFiltro] = useState<"todos" | "profesional" | "centro_medico">("todos");
+  const [especialidadFiltro, setEspecialidadFiltro] = useState("");
+  const [localidadFiltro, setLocalidadFiltro] = useState("");
+  const [estadoFiltro, setEstadoFiltro] = useState<"todos" | "activo" | "suspendido" | "baja">("activo");
+  const [centroFiltro, setCentroFiltro] = useState("");
+  const [serverPage, setServerPage] = useState(1);
+  const [serverTotal, setServerTotal] = useState(0);
+  const [serverTotalPages, setServerTotalPages] = useState(1);
+  const serverPageSize = 5;
 
   // Popups
   const [editingProvider, setEditingProvider] = useState<Prestador | null>(null);
@@ -41,6 +55,33 @@ export function Prestadores() {
   const [openViewPopup, setOpenViewPopup] = useState(false);
   const [deletingProvider, setDeletingProvider] = useState<Prestador | null>(null);
   const [openDeletePopup, setOpenDeletePopup] = useState(false);
+  const [suspendingProvider, setSuspendingProvider] = useState<Prestador | null>(null);
+  const [openSuspendPopup, setOpenSuspendPopup] = useState(false);
+
+  useModalPresence(
+    "providers-modals",
+    openEditPopup || openViewPopup || openDeletePopup || openSuspendPopup
+  );
+
+  const providerFilters = useMemo<ProviderFilters>(() => {
+    const filters: ProviderFilters = {
+      tipoPrestador: tipoFiltro,
+      especialidad: especialidadFiltro.trim(),
+      localidad: localidadFiltro.trim(),
+      estado: estadoFiltro,
+      centroMedicoId: centroFiltro.trim(),
+      page: serverPage,
+      limit: serverPageSize,
+    };
+
+    const trimmedQuery = query.trim();
+    if (trimmedQuery) {
+      if (field === "cuitCuil") filters.cuitCuil = trimmedQuery;
+      else filters.nombre = trimmedQuery;
+    }
+
+    return filters;
+  }, [tipoFiltro, especialidadFiltro, localidadFiltro, estadoFiltro, centroFiltro, field, query, serverPage]);
 
   // 🟩 Función para mostrar mensaje visual (toast)
   const showToast = (msg: string) => {
@@ -48,77 +89,94 @@ export function Prestadores() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // 🔹 Carga de proveedores desde API
-  const loadProviders = async () => {
+  // Carga de prestadores desde API
+  const loadProviders = async (filters = providerFilters) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchProviders();
-      setPrestadores(data);
+      const pageData = await fetchProvidersPage(filters);
+      setPrestadores(pageData.data);
+      setServerTotal(pageData.total);
+      setServerTotalPages(pageData.totalPages);
     } catch (err) {
-      setError("No se pudieron cargar los proveedores");
+      setError("No se pudieron cargar los prestadores");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 Cargar proveedores al montar el componente
+  // Cargar prestadores al montar el componente
   useEffect(() => {
-    loadProviders();
-  }, []);
-
-  // Buscador
-  const handleSearch = (f: string, q: string) => {
-    setField(f as ProviderField);
-    setQuery(q);
-  };
+    loadProviders(providerFilters);
+  }, [providerFilters]);
 
   // Filtros toggle
   const handleToggleFiltro = (valor: "profesional" | "centro_medico") => {
     setTipoFiltro((prev) => (prev === valor ? "todos" : valor));
   };
 
-  // Filtrado
+  // Filtrado local de respaldo para una respuesta ya filtrada por backend.
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
     let result = prestadores;
-
-    if (tipoFiltro !== "todos") {
-      result = result.filter((p) => p.tipoPrestador === tipoFiltro);
-    }
-
-    if (q) {
-      result = result.filter((p) => String(p[field] ?? "").toLowerCase().includes(q));
-    }
-
     return result;
-  }, [prestadores, field, query, tipoFiltro]);
-
-  // Paginación para MOBILE (5 por página)
-  const [page, setPage] = useState(1);
-  const pageSize = 5;
-  const total = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const startIndex = (safePage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, total);
-  const current = filtered.slice(startIndex, endIndex);
+  }, [prestadores]);
 
   useEffect(() => {
-    setPage(1);
-  }, [field, query, tipoFiltro]);
+    setServerPage(1);
+  }, [field, query, tipoFiltro, especialidadFiltro, localidadFiltro, estadoFiltro, centroFiltro]);
 
   // Opciones por item
-  const handleOptionClick = (option: string, prestador: Prestador) => {
+  const handleOptionClick = async (option: string, prestador: Prestador) => {
     if (option === "Editar") {
       setEditingProvider(prestador);
       setOpenEditPopup(true);
     } else if (option === "Ver Detalles") {
-      setViewingProvider(prestador);
-      setOpenViewPopup(true);
+      try {
+        const providerDetail = await fetchProviderByCuit(prestador.cuitCuil);
+        setViewingProvider(providerDetail);
+        setOpenViewPopup(true);
+      } catch {
+        setViewingProvider(prestador);
+        setOpenViewPopup(true);
+      }
     } else if (option === "Dar de Baja") {
       setDeletingProvider(prestador);
       setOpenDeletePopup(true);
+    } else if (option === "Suspender") {
+      setSuspendingProvider(prestador);
+      setOpenSuspendPopup(true);
+    } else if (option === "Reactivar") {
+      try {
+        await reactivateProvider(prestador.cuitCuil);
+        await loadProviders();
+        showToast(`Prestador ${prestador.nombreCompleto} reactivado`);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Error al reactivar prestador");
+      }
+    } else if (option === "Resetear contraseña") {
+      try {
+        const result = await resetProviderPassword(prestador.cuitCuil);
+        await loadProviders();
+        showToast(result.temporaryPassword ? `Contraseña temporal: ${result.temporaryPassword}` : result.message);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Error al resetear contraseña");
+      }
+    } else if (option === "Reenviar credenciales") {
+      try {
+        const result = await resendProviderCredentials(prestador.cuitCuil);
+        await loadProviders();
+        showToast(result.message);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Error al reenviar credenciales");
+      }
+    } else if (option === "Forzar cambio de contraseña") {
+      try {
+        await forceProviderPasswordChange(prestador.cuitCuil);
+        await loadProviders();
+        showToast("Cambio de contraseña requerido en próximo ingreso");
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Error al forzar cambio de contraseña");
+      }
     }
   };
 
@@ -128,218 +186,294 @@ export function Prestadores() {
       setOpenEditPopup(false);
       setEditingProvider(null);
 
-      // Recargar la lista de proveedores desde el API
+      // Recargar la lista de prestadores desde el API
       await loadProviders();
       const updatedName = updated?.nombreCompleto ? ` ${updated.nombreCompleto}` : "";
-      showToast(`Proveedor${updatedName} actualizado correctamente`);
+      showToast(`Prestador${updatedName} actualizado correctamente`);
     } catch (err) {
-      showToast("Error al actualizar el proveedor");
+      showToast("Error al actualizar el prestador");
     }
   };
 
-  const handleDeleteProvider = async () => {
+  const handleDeleteProvider = async (motivo: string) => {
     if (!deletingProvider) return;
 
     try {
-      await deleteProvider(deletingProvider.cuitCuil);
-      setPrestadores((prev) => prev.filter((p) => p.cuitCuil !== deletingProvider.cuitCuil));
+      await deleteProvider(deletingProvider.cuitCuil, motivo);
+      await loadProviders();
       setOpenDeletePopup(false);
       setDeletingProvider(null);
       const deletedName = deletingProvider?.nombreCompleto ? ` ${deletingProvider.nombreCompleto}` : "";
-      showToast(`Proveedor${deletedName} eliminado correctamente`);
+      showToast(`Prestador${deletedName} dado de baja correctamente`);
     } catch (err) {
-      showToast("Error al eliminar el proveedor");
+      showToast(err instanceof Error ? err.message : "Error al dar de baja el prestador");
+    }
+  };
+
+  const handleSuspendProvider = async (motivo: string) => {
+    if (!suspendingProvider) return;
+
+    try {
+      await suspendProvider(suspendingProvider.cuitCuil, motivo);
+      await loadProviders();
+      setOpenSuspendPopup(false);
+      setSuspendingProvider(null);
+      showToast(`Prestador ${suspendingProvider.nombreCompleto} suspendido`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Error al suspender prestador");
     }
   };
 
   const handleAddProvider = () => navigate("/prestadores/agregarPrestador");
 
   return (
-    <div className="w-full p-6 space-y-6">
-      {/* Barra de herramientas (igual) */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <SearchDropdown
-            options={[
-              { value: "cuitCuil", label: "CUIL/CUIT" },
-              { value: "nombreCompleto", label: "Nombre" },
-            ]}
-            placeholder="Buscar"
-            onSearch={handleSearch}
-            className="w-full sm:w-96"
-          />
-
-          <div className="flex gap-2">
-            <button
-              onClick={(e) => {
-                handleToggleFiltro("profesional");
-                (e.currentTarget as HTMLButtonElement).blur();
-              }}
-              aria-pressed={tipoFiltro === "profesional"}
-              className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors ${tipoFiltro === "profesional"
-                ? "bg-[#5FA92C] text-white border-[#5FA92C]"
-                : "border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white"
-                } btn-filter`}
-            >
-              Ver profesionales
-            </button>
-
-            <button
-              onClick={(e) => {
-                handleToggleFiltro("centro_medico");
-                (e.currentTarget as HTMLButtonElement).blur();
-              }}
-              aria-pressed={tipoFiltro === "centro_medico"}
-              className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors ${tipoFiltro === "centro_medico"
-                ? "bg-[#5FA92C] text-white border-[#5FA92C]"
-                : "border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white"
-                } btn-filter`}
-            >
-              Ver centros
-            </button>
-
-          </div>
+    <main className="flex-1 min-w-0 w-full bg-slate-50 overflow-y-auto pb-24 md:pb-0">
+      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4 sticky top-0 z-10">
+        <div>
+          <h1 className="text-lg font-700 text-slate-800">Prestadores</h1>
+          <p className="text-xs text-slate-400">Gestión de proveedores y centros médicos</p>
         </div>
+      </header>
 
-        <ButtonAddAffiliate text="Agregar Prestador" onClick={handleAddProvider} />
-      </div>
-
-      {/* DESKTOP: tabla (igual que antes) */}
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
-            <p className="text-gray-600 text-sm font-medium">Cargando proveedores...</p>
+      <div className="p-4 sm:p-8 space-y-5">
+        {loading ? (
+          <div className="flex justify-center items-center py-16">
+            <div className="flex flex-col items-center">
+              <div className="w-10 h-10 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+              <p className="text-slate-600 text-sm font-medium">Cargando prestadores...</p>
+            </div>
           </div>
-        </div>
-      ) : error ? (
-        <div className="text-center text-red-600 py-6 border border-red-300 rounded-md bg-red-50">
-          {error}
-        </div>
-      ) : (
-        <>
-          <div className="hidden md:block rounded-md shadow-sm border border-gray-200">
-            <ProvidersTable
-              prestadores={filtered}
-              onOptionClick={handleOptionClick}
-              pageSize={5}
-            />
+        ) : error ? (
+          <div className="text-center text-rose-600 py-6 border border-rose-300 rounded-2xl bg-rose-50">
+            {error}
           </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="px-4 sm:px-6 pt-5 pb-4 border-b border-slate-100 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Buscar prestador por CUIL/CUIT o nombre..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    className="w-full pl-9 pr-9 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none text-slate-700"
+                  />
+                  {query && (
+                    <button 
+                      onClick={() => setQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  value={field}
+                  onChange={(e) => setField(e.target.value as ProviderField)}
+                  className="px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none text-slate-600 bg-white"
+                >
+                  <option value="cuitCuil">CUIL/CUIT</option>
+                  <option value="nombreCompleto">Nombre</option>
+                </select>
+                
+                <button
+                  onClick={() => handleToggleFiltro("profesional")}
+                  className={`px-4 py-2 text-xs font-600 rounded-lg transition-colors ${
+                    tipoFiltro === "profesional"
+                      ? "bg-teal-100 text-teal-700 border border-teal-200 hover:bg-teal-200"
+                      : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                  }`}
+                >
+                  Ver Profesionales
+                </button>
 
-          {/* MOBILE: cards + paginación */}
-          <div className="md:hidden">
-            {/* Cards */}
-            <div className="grid grid-cols-1 gap-4">
-              {current.length === 0 && (
-                <div className="text-center text-gray-500 py-6 border rounded-md bg-white">
+                <button
+                  onClick={() => handleToggleFiltro("centro_medico")}
+                  className={`px-4 py-2 text-xs font-600 rounded-lg transition-colors ${
+                    tipoFiltro === "centro_medico"
+                      ? "bg-teal-100 text-teal-700 border border-teal-200 hover:bg-teal-200"
+                      : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                  }`}
+                >
+                  Ver Centros
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <input
+                  value={especialidadFiltro}
+                  onChange={(event) => setEspecialidadFiltro(event.target.value)}
+                  placeholder="Especialidad"
+                  className="h-10 rounded-lg border border-slate-200 px-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                />
+                <input
+                  value={localidadFiltro}
+                  onChange={(event) => setLocalidadFiltro(event.target.value)}
+                  placeholder="Localidad"
+                  className="h-10 rounded-lg border border-slate-200 px-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                />
+                <select
+                  value={estadoFiltro}
+                  onChange={(event) => setEstadoFiltro(event.target.value as "todos" | "activo" | "suspendido" | "baja")}
+                  className="h-10 rounded-lg border border-slate-200 px-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none bg-white"
+                >
+                  <option value="todos">Todos los estados</option>
+                  <option value="activo">Activos</option>
+                  <option value="suspendido">Suspendidos</option>
+                  <option value="baja">Dados de baja</option>
+                </select>
+                <input
+                  value={centroFiltro}
+                  onChange={(event) => setCentroFiltro(event.target.value)}
+                  placeholder="CUIT centro médico"
+                  className="h-10 rounded-lg border border-slate-200 px-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between px-4 sm:px-6 py-3 border-b border-slate-100 bg-slate-50/50">
+              <div className="text-xs font-500 text-slate-400">
+                Mostrando {prestadores.length} de {serverTotal} prestadores
+              </div>
+              <button
+                onClick={handleAddProvider}
+                className="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-600 px-4 py-2 rounded-xl transition-colors w-fit"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Agregar Prestador
+              </button>
+            </div>
+
+            <div className="hidden md:block">
+              <ProvidersTable
+                prestadores={filtered}
+                onOptionClick={handleOptionClick}
+                pageSize={serverPageSize}
+                showPagination={false}
+              />
+            </div>
+
+            <div className="md:hidden">
+              {filtered.length === 0 && (
+                <div className="px-4 py-12 text-center text-sm text-slate-400">
                   No hay prestadores para mostrar.
                 </div>
               )}
 
-              {current.map((p) => (
-                <div
-                  key={p.cuitCuil}
-                  className="bg-white border border-gray-200 rounded-lg shadow-sm p-4"
-                >
-                  <div className="mb-3">
-                    <div className="text-xs text-gray-500 uppercase">CUIL/CUIT</div>
-                    <div className="font-semibold break-all">{p.cuitCuil}</div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                      <div className="text-xs text-gray-500 uppercase">Nombre</div>
-                      <div className="text-sm">{p.nombreCompleto}</div>
+              <div className="divide-y divide-slate-50">
+                {filtered.map((p) => (
+                  <div 
+                    key={p.cuitCuil} 
+                    className="px-4 py-4 hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-600 text-slate-700">{p.nombreCompleto}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{p.cuitCuil}</p>
+                      </div>
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-500 bg-slate-100 text-slate-600 capitalize whitespace-nowrap ml-2">
+                        {p.tipoPrestador === "profesional" ? "Prof." : "Centro"}
+                      </span>
                     </div>
-                    <div>
-                      <div className="text-xs text-gray-500 uppercase">Tipo</div>
-                      <div className="text-sm capitalize">{p.tipoPrestador}</div>
+                    
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleOptionClick("Ver Detalles", p)}
+                        className="text-xs font-500 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-400 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        Ver
+                      </button>
+                      <button
+                        onClick={() => handleOptionClick("Editar", p)}
+                        className="text-xs font-500 text-teal-600 hover:text-teal-700 border border-teal-200 hover:border-teal-400 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleOptionClick("Dar de Baja", p)}
+                        className="text-xs font-500 text-rose-600 hover:text-rose-700 border border-rose-200 hover:border-rose-400 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        Baja
+                      </button>
                     </div>
                   </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      onClick={() => handleOptionClick("Ver Detalles", p)}
-                      className="px-3 py-2 text-sm border rounded-md border-gray-300 hover:bg-gray-50"
-                    >
-                      Ver detalles
-                    </button>
-                    <button
-                      onClick={() => handleOptionClick("Editar", p)}
-                      className="px-3 py-2 text-sm border-2 rounded-md border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white font-semibold"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleOptionClick("Dar de Baja", p)}
-                      className="px-3 py-2 text-sm border-2 rounded-md border-red-500 text-red-600 hover:bg-red-50 font-semibold"
-                    >
-                      Dar de baja
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            {/* Paginación (compacta en mobile) */}
-            <div className="bg-white px-4 py-3 mt-3 flex items-center justify-between gap-3 border border-gray-200 rounded">
-              <span className="text-sm text-gray-700">
-                {total === 0 ? 0 : startIndex + 1}
-                –{endIndex} de {total} {safePage}/{totalPages}
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between bg-white px-4 py-3 border-t border-slate-100">
+              <span className="text-sm text-slate-500">
+                Página {serverPage} de {serverTotalPages}
               </span>
-
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={safePage === 1}
-                  className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setServerPage((p) => Math.max(1, p - 1))}
+                  disabled={serverPage <= 1}
+                  className="h-8 w-8 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Página anterior"
-                  title="Página anterior"
                 >
-                  <NavigateBeforeIcon fontSize="small" />
+                  ‹
                 </button>
                 <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={safePage === totalPages}
-                  className="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setServerPage((p) => Math.min(serverTotalPages, p + 1))}
+                  disabled={serverPage >= serverTotalPages}
+                  className="h-8 w-8 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Página siguiente"
-                  title="Página siguiente"
                 >
-                  <NavigateNextIcon fontSize="small" />
+                  ›
                 </button>
               </div>
             </div>
           </div>
+        )}
 
-          {/* Popups */}
-          {openEditPopup && editingProvider && (
-            <EditProviderPopup
-              provider={editingProvider}
-              onClose={() => setOpenEditPopup(false)}
-              onSave={handleSaveProvider}
-            />
-          )}
+        {openEditPopup && editingProvider && (
+          <EditProviderPopup
+            provider={editingProvider}
+            onClose={() => setOpenEditPopup(false)}
+            onSave={handleSaveProvider}
+          />
+        )}
 
-          {openViewPopup && viewingProvider && (
-            <ViewProviderPopup
-              provider={viewingProvider}
-              onClose={() => setOpenViewPopup(false)}
-            />
-          )}
+        {openViewPopup && viewingProvider && (
+          <ViewProviderPopup
+            provider={viewingProvider}
+            onClose={() => setOpenViewPopup(false)}
+          />
+        )}
 
-          {openDeletePopup && deletingProvider && (
-            <ConfirmDeleteProviderDialog
-              open={openDeletePopup}
-              provider={deletingProvider}
-              onClose={() => setOpenDeletePopup(false)}
-              onConfirm={handleDeleteProvider}
-            />
-          )}
+        {openDeletePopup && deletingProvider && (
+          <ConfirmDeleteProviderDialog
+            open={openDeletePopup}
+            provider={deletingProvider}
+            onClose={() => setOpenDeletePopup(false)}
+            onConfirm={handleDeleteProvider}
+          />
+        )}
 
-          {/* ✅ Toast visual */}
-          {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
-        </>
-      )}
-    </div>
+        {openSuspendPopup && suspendingProvider && (
+          <ConfirmDeleteProviderDialog
+            open={openSuspendPopup}
+            provider={suspendingProvider}
+            action="suspension"
+            onClose={() => setOpenSuspendPopup(false)}
+            onConfirm={handleSuspendProvider}
+          />
+        )}
+
+        {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
+      </div>
+    </main>
   );
 }

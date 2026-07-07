@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import type { Affiliate as AffiliateType } from "./AffiliatesTable";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
+import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
+import { validateBirthDate, validatePersonName } from "../utils/affiliateValidation";
 
 interface Situacion {
   idSituacionAfiliado?: number;
@@ -30,6 +32,7 @@ interface EditAffiliatePopupProps {
 }
 
 export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliatePopupProps) {
+  const affiliateId = affiliate.id;
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     nombre: "",
@@ -43,10 +46,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   const [emails, setEmails] = useState<Array<{ idEmail?: number; email: string }>>([]);
   const [situaciones, setSituaciones] = useState<Situacion[]>([]);
 
-  const [telefonosEliminados, setTelefonosEliminados] = useState<number[]>([]);
-  const [emailsEliminados, setEmailsEliminados] = useState<number[]>([]);
-  const [situacionesEliminadas, setSituacionesEliminadas] = useState<number[]>([]);
-
   const [situacionesDisponibles, setSituacionesDisponibles] = useState<SituacionDisponible[]>([]);
   const [planesDisponibles, setPlanesDisponibles] = useState<Plan[]>([]);
 
@@ -57,64 +56,43 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         setLoading(true);
 
 
-        // Cargar datos del afiliado
-        const [affiliateRes, situacionesRes, planesRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/affiliates/affiliate/${affiliate.dni}`),
-          fetch(`${API_BASE_URL}/therapeutic`),
-          fetch(`${API_BASE_URL}/plans`)
+        // Cargar datos del afiliado — backend devuelve campos en inglés
+        const [affiliateRes, situacionesData, planesRes] = await Promise.all([
+          apiFetch(`${API_BASE_URL}/affiliates/${affiliateId}`),
+          fetchTherapeuticSituationTypes(),
+          apiFetch(`${API_BASE_URL}/plans`)
         ]);
 
         if (!affiliateRes.ok) throw new Error("Error al cargar datos del afiliado");
-        if (!situacionesRes.ok) throw new Error("Error al cargar situaciones");
         if (!planesRes.ok) throw new Error("Error al cargar planes");
 
-        const affiliateData = await affiliateRes.json();
-        const situacionesData = await situacionesRes.json();
+        const aff = await affiliateRes.json();
         const planesData = await planesRes.json();
 
-        // El endpoint puede devolver el afiliado directamente o dentro de un objeto
-        const aff = affiliateData.affiliate || affiliateData.affiliates || affiliateData;
-
-        if (!aff || !aff.dni) {
+        if (!aff || !aff.id) {
           throw new Error("No se encontraron datos del afiliado");
         }
 
-        // ✅ Manejar el plan correctamente (puede ser null, objeto, o número)
-        let planId = 0;
-        if (aff.plan) {
-          if (typeof aff.plan === 'object' && aff.plan.idPlan) {
-            planId = aff.plan.idPlan;
-          } else if (typeof aff.plan === 'number') {
-            planId = aff.plan;
-          }
-        }
+        // Normalizar: el backend devuelve first_name/last_name/birth_date/address/plan_id
+        const planId = aff.plan_id || 0;
+        const birthDate = aff.birth_date
+          ? aff.birth_date.split('T')[0]
+          : (aff.fecha_nacimiento || "");
 
         setFormData({
-          nombre: aff.nombre || "",
-          apellido: aff.apellido || "",
-          fechaNacimiento: aff.fecha_nacimiento || "",
-          direccion: aff.direccion || "",
+          nombre: aff.first_name || aff.nombre || "",
+          apellido: aff.last_name || aff.apellido || "",
+          fechaNacimiento: birthDate,
+          direccion: aff.address || aff.direccion || "",
           idPlan: planId,
         });
 
-        // ✅ Teléfonos
-        setTelefonos(
-          aff.telefonos && aff.telefonos.length > 0
-            ? aff.telefonos.map((t: any) => ({ idTelefono: t.idTelefono, telefono: t.telefono }))
-            : [{ telefono: "" }]
-        );
+        // El afiliado tiene un único phone/email en la DB
+        setTelefonos([{ telefono: aff.phone || "" }]);
+        setEmails([{ email: aff.email || "" }]);
+        setSituaciones([]);
 
-        // ✅ Emails
-        setEmails(
-          aff.email && aff.email.length > 0
-            ? aff.email.map((e: any) => ({ idEmail: e.idEmail, email: e.email }))
-            : [{ email: "" }]
-        );
-
-        // ✅ Situaciones terapéuticas
-        setSituaciones(aff.situaciones || []);
-
-        setSituacionesDisponibles(situacionesData.situaciones || []);
+        setSituacionesDisponibles(situacionesData);
         setPlanesDisponibles(planesData.plans || []);
 
       } catch (error) {
@@ -125,7 +103,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
     };
 
     fetchData();
-  }, [affiliate.dni]);
+  }, [affiliateId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -135,33 +113,14 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   const handleSave = () => {
     const newErrors: Record<string, string> = {};
 
-    // Validar nombre
-    if (!formData.nombre.trim()) {
-      newErrors.nombre = "El nombre es obligatorio";
-    } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
-      newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
-    }
+    const nombreErr = validatePersonName(formData.nombre, "nombre");
+    if (nombreErr) newErrors.nombre = nombreErr;
 
-    // Validar apellido
-    if (!formData.apellido.trim()) {
-      newErrors.apellido = "El apellido es obligatorio";
-    } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
-      newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
-    }
+    const apellidoErr = validatePersonName(formData.apellido, "apellido");
+    if (apellidoErr) newErrors.apellido = apellidoErr;
 
-    // Validar fecha de nacimiento
-    if (!formData.fechaNacimiento) {
-      newErrors.fechaNacimiento = "La fecha de nacimiento es obligatoria";
-    } else {
-      const partes = formData.fechaNacimiento.split('/');
-      if (partes.length === 3) {
-        const fecha = new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
-        const hoy = new Date();
-        if (fecha > hoy) {
-          newErrors.fechaNacimiento = "La fecha no puede ser futura";
-        }
-      }
-    }
+    const fechaErr = validateBirthDate(formData.fechaNacimiento);
+    if (fechaErr) newErrors.fechaNacimiento = fechaErr;
 
     // Validar plan
     if (!formData.idPlan || formData.idPlan === 0) {
@@ -189,24 +148,15 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
       return;
     }
 
-    // Si no hay errores, proceder con el guardado
+    // Payload usa los nombres de campo del backend (inglés)
     const payload = {
-      nombre: formData.nombre,
-      apellido: formData.apellido,
-      fecha_nacimiento: formData.fechaNacimiento,
-      direccion: formData.direccion,
-      idPlan: formData.idPlan,
-      telefonos: telefonos.filter(t => t.telefono.trim() !== ""),
-      emails: emails.filter(e => e.email.trim() !== ""),
-      situaciones: situaciones.map(s => ({
-        idSituacionAfiliado: s.idSituacionAfiliado,
-        idSituacion: s.idSituacion || s.situacionTerapeutica?.idSituacion,
-        fechaInicio: s.fechaInicio,
-        fechaFin: s.fechaFin
-      })),
-      telefonosEliminados,
-      emailsEliminados,
-      situacionesEliminadas
+      first_name: formData.nombre.trim(),
+      last_name: formData.apellido.trim(),
+      birth_date: formData.fechaNacimiento,
+      address: formData.direccion.trim(),
+      plan: formData.idPlan,
+      phone: telefonos[0]?.telefono.trim() || undefined,
+      email: emails[0]?.email.trim() || undefined,
     };
 
     onSave(payload);
@@ -215,10 +165,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   // TELÉFONOS
   const addTelefono = () => setTelefonos(prev => [...prev, { telefono: "" }]);
   const removeTelefono = (idx: number) => {
-    const tel = telefonos[idx];
-    if (tel.idTelefono) {
-      setTelefonosEliminados(prev => [...prev, tel.idTelefono!]);
-    }
     setTelefonos(prev => prev.filter((_, i) => i !== idx));
   };
   const updateTelefono = (idx: number, value: string) => {
@@ -228,10 +174,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   // EMAILS
   const addEmail = () => setEmails(prev => [...prev, { email: "" }]);
   const removeEmail = (idx: number) => {
-    const mail = emails[idx];
-    if (mail.idEmail) {
-      setEmailsEliminados(prev => [...prev, mail.idEmail!]);
-    }
     setEmails(prev => prev.filter((_, i) => i !== idx));
   };
   const updateEmail = (idx: number, value: string) => {
@@ -257,15 +199,6 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
   };
 
   const removeSituacion = (idx: number) => {
-    const sit = situaciones[idx];
-
-    if (sit.idSituacionAfiliado) {
-      setSituacionesEliminadas(prev => {
-        const newList = [...prev, sit.idSituacionAfiliado!];
-        return newList;
-      });
-    }
-
     setSituaciones(prev => prev.filter((_, i) => i !== idx));
   };
 
@@ -296,7 +229,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
       <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
         <div className="bg-white rounded-lg p-8">
           <div className="flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
+            <div className="w-10 h-10 border-4 border-[#14B8A6] border-t-transparent rounded-full animate-spin mb-3"></div>
             <p className="text-gray-600">Cargando datos del afiliado...</p>
           </div>
         </div>
@@ -318,7 +251,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
 
         {/* DATOS BÁSICOS */}
         <div className="mb-6 sm:mb-8 p-3 sm:p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-base sm:text-lg font-semibold mb-3 sm:mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-base sm:text-lg font-semibold mb-3 sm:mb-4 border-b-2 border-[#14B8A6] pb-1">
             Datos Básicos
           </h2>
 
@@ -413,7 +346,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
 
         {/* DATOS DE CONTACTO */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
             Datos de Contacto
           </h2>
 
@@ -441,7 +374,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
             <button
               type="button"
               onClick={addTelefono}
-              className="text-sm text-[#5FA92C] font-semibold hover:underline"
+              className="text-sm text-[#14B8A6] font-semibold hover:underline"
             >
               + Agregar teléfono
             </button>
@@ -471,7 +404,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
             <button
               type="button"
               onClick={addEmail}
-              className="text-sm text-[#5FA92C] font-semibold hover:underline"
+              className="text-sm text-[#14B8A6] font-semibold hover:underline"
             >
               + Agregar email
             </button>
@@ -480,7 +413,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
 
         {/* SITUACIONES TERAPÉUTICAS */}
         <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-          <h2 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+          <h2 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
             Situaciones Terapéuticas
           </h2>
 
@@ -549,7 +482,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
           <button
             type="button"
             onClick={addSituacion}
-            className="mt-3 text-sm text-[#5FA92C] font-semibold hover:underline"
+            className="mt-3 text-sm text-[#14B8A6] font-semibold hover:underline"
             disabled={situacionesDisponibles.length === 0}
           >
             + Agregar situación terapéutica
@@ -560,7 +493,7 @@ export function EditAffiliatePopup({ affiliate, onClose, onSave }: EditAffiliate
         <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-4 sm:mt-6">
           <button
             onClick={handleSave}
-            className="bg-[#5FA92C] text-white px-6 py-2 sm:py-3 rounded font-semibold shadow hover:bg-green-700 transition w-full sm:w-auto order-2 sm:order-1"
+            className="bg-[#14B8A6] text-white px-6 py-2 sm:py-3 rounded font-semibold shadow hover:bg-teal-700 transition w-full sm:w-auto order-2 sm:order-1"
           >
             Guardar Cambios
           </button>

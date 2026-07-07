@@ -6,6 +6,7 @@ type Props = {
   prestadores: Prestador[];
   onOptionClick: (option: string, prestador: Prestador) => void;
   pageSize?: number;
+  showPagination?: boolean;
 };
 
 
@@ -19,7 +20,7 @@ function firstSpecialtyLabel(especialidades: any[]) {
   return typeof first === "object" ? first.nombre : "-";
 }
 
-export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Props) {
+export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10, showPagination = true }: Props) {
   const [page, setPage] = useState(1);
 
   useEffect(() => { setPage(1); }, [prestadores, pageSize]);
@@ -37,31 +38,39 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Pr
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
 
   return (
-    <div className="rounded-lg border border-gray-300 shadow-md">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-[#5FA92C] text-white">
-          <tr>
-            {["CUIL/CUIT", "NOMBRE COMPLETO", "ESPECIALIDAD", "TELÉFONO", "TIPO", ""].map((h) => (
-              <th key={h} scope="col" className="px-4 py-3 text-left text-sm font-medium uppercase tracking-wider">
+    <div>
+      <table className="min-w-full text-left text-sm">
+        <thead className="border-b border-slate-100 bg-slate-50">
+          <tr className="text-[10px] uppercase text-slate-400 font-bold tracking-widest">
+            {["CUIL/CUIT", "NOMBRE COMPLETO", "ESPECIALIDAD", "LOCALIDAD", "ESTADO", "TIPO", ""].map((h) => (
+              <th key={h} scope="col" className="px-6 py-4">
                 {h}
               </th>
             ))}
           </tr>
         </thead>
 
-        <tbody className="bg-white divide-y divide-gray-200">
-          {pageItems.map((p, idx) => {
+        <tbody className="divide-y divide-slate-50">
+          {pageItems.map((p) => {
             const especialidad = firstSpecialtyLabel(p.especialidades);
-            const telefono = p.telefonos?.[0] ?? "-";
+            const localidad = p.lugaresAtencion?.[0]?.localidad ?? "-";
             const tipoPrestador = p.tipoPrestador === "profesional" ? "Profesional" : "Centro Médico";
+            const estado = p.estado === "baja" ? "Baja" : p.estado === "suspendido" ? "Suspendido" : "Activo";
 
             return (
-              <tr key={p.cuitCuil} className={idx % 2 === 0 ? "bg-gray-50" : ""}>
-                <td className="px-4 py-3 text-sm">{p.cuitCuil}</td>
-                <td className="px-4 py-3 text-sm">{p.nombreCompleto}</td>
-                <td className="px-4 py-3 text-sm">{especialidad}</td>
-                <td className="px-4 py-3 text-sm">{telefono}</td>
-                <td className="px-4 py-3 text-sm">{tipoPrestador}</td>
+              <tr key={p.cuitCuil} className="hover:bg-slate-50 transition-colors group">
+                <td className="px-6 py-4 text-sm font-mono text-slate-600">{p.cuitCuil}</td>
+                <td className="px-6 py-4">
+                  <p className="font-semibold text-slate-800 group-hover:text-teal-600 transition-colors">{p.nombreCompleto}</p>
+                </td>
+                <td className="px-6 py-4 text-sm text-slate-600">{especialidad}</td>
+                <td className="px-6 py-4 text-sm text-slate-600">{localidad}</td>
+                <td className="px-6 py-4">
+                  <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase ${estado === "Activo" ? "bg-green-100 text-green-700" : estado === "Suspendido" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}>
+                    {estado}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-sm text-slate-600">{tipoPrestador}</td>
                 <td className="px-2 py-3 text-right w-10">
                   <OptionsMenu
                     affiliate={{
@@ -70,7 +79,16 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Pr
                       nombre: p.nombreCompleto,
                       apellido: "",
                     }}
-                    options={["Editar", "Ver Detalles", "Dar de Baja"]}
+                    options={[
+                      "Editar",
+                      "Ver Detalles",
+                      ...(p.estado === "activo" || !p.estado ? ["Suspender", "Dar de Baja"] : []),
+                      ...(p.estado === "suspendido" ? ["Reactivar", "Dar de Baja"] : []),
+                      ...(p.estado === "baja" ? ["Reactivar"] : []),
+                      "Resetear contraseña",
+                      "Reenviar credenciales",
+                      "Forzar cambio de contraseña",
+                    ]}
                     onOptionClick={(opt) => onOptionClick(opt, p)}
                   />
                 </td>
@@ -80,7 +98,7 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Pr
 
           {pageItems.length === 0 && (
             <tr>
-              <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
+              <td colSpan={7} className="px-6 py-12 text-center text-slate-400 text-sm">
                 Sin resultados
               </td>
             </tr>
@@ -88,40 +106,31 @@ export function ProvidersTable({ prestadores, onOptionClick, pageSize = 10 }: Pr
         </tbody>
       </table>
 
-      {/* Paginado*/}
-      <div className="flex items-center justify-between px-4 py-3">
-        <span className="text-sm text-gray-600">
-          Mostrando {from} a {to} de {prestadores.length} prestadores
-        </span>
-
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-700">Página {page} de {totalPages}</span>
-
+      {showPagination && (
+        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-400 font-bold uppercase tracking-widest">
+            Mostrando {from}–{to} de {prestadores.length} prestadores
+          </span>
           <div className="flex items-center gap-2">
             <button
               onClick={goPrev}
               disabled={page <= 1}
-              className="h-8 w-8 grid place-items-center rounded border border-gray-300 text-gray-700
-                        hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-8 w-8 rounded border border-slate-200 text-slate-600 text-sm hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Anterior"
-              title="Anterior"
             >
               ‹
             </button>
-
             <button
               onClick={goNext}
               disabled={page >= totalPages}
-              className="h-8 w-8 grid place-items-center rounded border border-gray-300 text-gray-700
-                        hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-8 w-8 rounded border border-slate-200 text-slate-600 text-sm hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Siguiente"
-              title="Siguiente"
             >
               ›
             </button>
           </div>
         </div>
-      </div>
+      )}
 
     </div>
   );

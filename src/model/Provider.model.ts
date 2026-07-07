@@ -7,7 +7,7 @@ export type HorarioAgrupado = {
 };
 
 export type LugarAtencion = {
-  idLugar?: number;
+  idLugar?: number | string;
   calle: string;
   localidad?: string;
   provincia?: string;
@@ -16,6 +16,7 @@ export type LugarAtencion = {
 };
 
 export type PrestadorTipo = "profesional" | "centro_medico";
+export type PrestadorEstado = "activo" | "suspendido" | "baja";
 
 export type Especialidad = {
   id: number;
@@ -23,13 +24,63 @@ export type Especialidad = {
 };
 
 export type Prestador = {
+  id?: number | string;
+  userId?: number;
   cuitCuil: string;
   nombreCompleto: string;             
   tipoPrestador: PrestadorTipo;
+  estado?: PrestadorEstado;
   telefonos: string[];
   mails: string[];
+  emailPrincipal?: string;
+  telefonoPrincipal?: string;
   especialidades: Especialidad[];
   lugaresAtencion: LugarAtencion[];
-  centroMedicoId?: string | null;  // Opcional: CUIT del centro médico si es profesional
+  centroMedicoId?: string | null;  // CUIT del centro médico si es profesional
+  centroMedico?: {
+    id: number;
+    cuitCuil: string;
+    nombreCompleto: string;
+  } | null;
+  cuenta?: {
+    id: number;
+    email: string;
+      rol: string;
+      debeCambiarPassword: boolean;
+      credencialesEnviadasAt?: string;
+      passwordReseteadaAt?: string;
+  } | null;
+  agendas?: {
+    id: number;
+    especialidad?: string;
+    lugar?: string;
+    duracionTurno?: number;
+    fechaInicio?: string;
+    fechaFin?: string;
+    estaActivo: boolean;
+    bloques?: HorarioAgrupado[];
+  }[];
+  createdAt?: string;
+  updatedAt?: string;
 };
 
+export type ProviderFilters = {
+  search?: string;
+  nombre?: string;
+  cuitCuil?: string;
+  especialidad?: string;
+  tipoPrestador?: PrestadorTipo | "todos";
+  localidad?: string;
+  estado?: PrestadorEstado | "todos";
+  centroMedicoId?: string;
+  page?: number;
+  limit?: number;
+};
+
+export type ProviderPage = {
+  data: Prestador[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};

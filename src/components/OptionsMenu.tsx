@@ -1,4 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import IconButton from "@mui/material/IconButton";
 
 interface OptionsMenuProps {
   affiliate: {
@@ -14,54 +17,80 @@ interface OptionsMenuProps {
 }
 
 export function OptionsMenu({ affiliate, onOptionClick, options }: OptionsMenuProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
 
-  const handleMenuClick = () => setIsMenuOpen(!isMenuOpen);
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
   const handleOptionSelect = (option: string) => {
     onOptionClick(option, affiliate);
-    setIsMenuOpen(false);
+    handleClose();
   };
 
   return (
-    <div className="relative inline-block text-left">
-      <button
-        onClick={handleMenuClick}
-        className="text-gray-700 hover:bg-gray-100 rounded px-2 py-1 text-xl cursor-pointer"
+    <div style={{ display: "inline-block" }}>
+      <IconButton
+        onClick={handleClick}
+        size="small"
+        sx={{
+          color: "text.secondary",
+          fontSize: "1.25rem",
+          padding: "4px 8px",
+          borderRadius: "4px",
+          "&:hover": {
+            backgroundColor: "rgba(0, 0, 0, 0.04)",
+          },
+        }}
         title="Opciones"
       >
         &#8942;
-      </button>
-
-      {isMenuOpen && (
-        <div
-          ref={menuRef}
-          className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg z-50"
-        >
-          <ul className="py-1">
-            {options.map((option) => (
-              <li key={option}>
-                <button
-                  onClick={() => handleOptionSelect(option)}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  {option}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      </IconButton>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+        PaperProps={{
+          sx: {
+            boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.1)",
+            border: "1px solid #e2e8f0",
+            borderRadius: "8px",
+            minWidth: "160px",
+          }
+        }}
+      >
+        {options.map((option) => (
+          <MenuItem
+            key={option}
+            onClick={() => handleOptionSelect(option)}
+            sx={{
+              fontSize: "0.875rem",
+              color: "#334155",
+              py: 1,
+              px: 2,
+              "&:hover": {
+                backgroundColor: "#f1f5f9",
+              },
+            }}
+          >
+            {option}
+          </MenuItem>
+        ))}
+      </Menu>
     </div>
   );
 }
+

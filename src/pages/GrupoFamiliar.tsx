@@ -10,7 +10,10 @@ import { ButtonAddAffiliate } from "../util/ButtonAddAffiliate";
 import { ButtonVolver } from "../util/ButtonVolver";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
+import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
+import { useModalPresence } from "../context/ModalContext";
+import { validateBirthDate, validateDocument, validatePersonName } from "../utils/affiliateValidation";
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => (
   <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in z-50">
@@ -23,13 +26,14 @@ const Toast = ({ message, onClose }: { message: string; onClose: () => void }) =
 
 // Tipo para el afiliado que viene del endpoint
 interface AffiliateFromAPI {
+  id: number;
   grupoFamiliar: number;
   tipoDocumento: string;
   apellido: string;
   credencial: string;
   direccion: string;
   dni: string;
-  email: Array<{ idEmail: number; email: string }>;
+  email: string | Array<{ idEmail: number; email: string }>;
   nombre: string;
   parentesco: string;
   telefonos: Array<{ idTelefono?: number; telefono: string }>;
@@ -53,6 +57,7 @@ interface FamilyGroupAPIResponse {
 // ✅ Función para transformar correctamente
 function transformAffiliate(apiAffiliate: AffiliateFromAPI): Affiliate {
   return {
+    id: apiAffiliate.id,
     grupoFamiliar: apiAffiliate.grupoFamiliar,
     tipoDocumento: apiAffiliate.tipoDocumento,
     apellido: apiAffiliate.apellido,
@@ -63,7 +68,9 @@ function transformAffiliate(apiAffiliate: AffiliateFromAPI): Affiliate {
     dni: apiAffiliate.dni,
     nombre: apiAffiliate.nombre,
     parentesco: apiAffiliate.parentesco,
-    email: apiAffiliate.email || [],
+    email: Array.isArray(apiAffiliate.email)
+      ? apiAffiliate.email
+      : (apiAffiliate.email ? [{ idEmail: 0, email: apiAffiliate.email }] : []),
     telefonos: (apiAffiliate.telefonos || []).map(t => ({
       idTelefono: t.idTelefono || 0,
       telefono: t.telefono
@@ -96,6 +103,11 @@ export function GrupoFamiliar() {
   const [successName, setSuccessName] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  useModalPresence(
+    "family-group-modals",
+    showAddFamiliarPopup || showEditPopup || showViewPopup || showDeleteDialog || showSuccess
+  );
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
@@ -112,7 +124,7 @@ export function GrupoFamiliar() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/affiliates/family/${dni}`);
+      const response = await apiFetch(`${API_BASE_URL}/affiliates/family/${dni}`);
 
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -183,7 +195,7 @@ export function GrupoFamiliar() {
         grupoFamiliar: grupoFamiliarId,
       };
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/affiliates/family/${dniTitular}`,
         {
           method: "POST",
@@ -199,7 +211,7 @@ export function GrupoFamiliar() {
         throw new Error(errorData.message || "Error al agregar familiar");
       }
 
-      const result = await response.json();
+      await response.json();
 
       await fetchFamilyGroup();
       setShowAddFamiliarPopup(false);
@@ -249,7 +261,7 @@ export function GrupoFamiliar() {
     }
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`,
         {
           method: "PUT",
@@ -286,7 +298,7 @@ export function GrupoFamiliar() {
         determinarParentesco(selectedAffiliate) === 'Titular';
 
       // Usar el nuevo endpoint para eliminar solo un miembro del grupo familiar
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/affiliates/family/member/${selectedAffiliate.dni}`,
         {
           method: "DELETE",
@@ -327,7 +339,7 @@ export function GrupoFamiliar() {
     if (!selectedAffiliate) return;
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}/schedule-delete`,
         {
           method: "POST",
@@ -364,7 +376,7 @@ export function GrupoFamiliar() {
       <div className="w-full p-6">
         <div className="flex justify-center items-center h-64">
           <div className="flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-[#5FA92C] border-t-transparent rounded-full animate-spin mb-3"></div>
+            <div className="w-10 h-10 border-4 border-[#14B8A6] border-t-transparent rounded-full animate-spin mb-3"></div>
             <p className="text-gray-600 text-sm font-medium">Cargando grupo familiar...</p>
           </div>
         </div>
@@ -380,7 +392,7 @@ export function GrupoFamiliar() {
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => navigate("/home")}
-            className="px-4 py-2 bg-[#5FA92C] text-white rounded hover:bg-green-700"
+            className="px-4 py-2 bg-[#14B8A6] text-white rounded hover:bg-teal-700"
           >
             Volver al inicio
           </button>
@@ -427,7 +439,7 @@ export function GrupoFamiliar() {
 
       {/* TITULAR (mobile) */}
       <div className="md:hidden mb-4 p-4 border rounded-lg bg-white shadow-sm">
-        <div className="inline-block text-xs font-semibold bg-[#5FA92C] text-white px-2 py-1 rounded mb-2">TITULAR</div>
+        <div className="inline-block text-xs font-semibold bg-[#14B8A6] text-white px-2 py-1 rounded mb-2">TITULAR</div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
           <div>
             <div className="text-xs text-gray-500 uppercase">Nombre</div>
@@ -459,7 +471,7 @@ export function GrupoFamiliar() {
       {/* TABLA (desktop) */}
       <div className="hidden md:block rounded-lg border border-gray-300 shadow-md bg-white mb-4">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-[#5FA92C] text-white">
+          <thead className="bg-[#14B8A6] text-white">
             <tr>
               {["Credencial", "DNI", "Nombre", "Apellido", "Fecha Nac.", "Dirección", "Parentesco", ""].map((h) => (
                 <th key={h} className="px-4 py-2 text-left text-sm font-medium uppercase tracking-wider">
@@ -543,7 +555,7 @@ export function GrupoFamiliar() {
                 </button>
                 <button
                   onClick={() => handleOptionClick("Editar", m)}
-                  className="px-3 py-2 text-sm border-2 rounded-md border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white font-semibold text-center"
+                  className="px-3 py-2 text-sm border-2 rounded-md border-[#14B8A6] text-[#14B8A6] hover:bg-[#14B8A6] hover:text-white font-semibold text-center"
                 >
                   Editar
                 </button>
@@ -671,7 +683,7 @@ interface Situacion {
   fechaFinalizacion: string;
 }
 
-function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, titular, onClose, onSave }: AddFamiliarPopupProps) {
+function AddFamiliarPopup({ planFijo, titular, onClose, onSave }: AddFamiliarPopupProps) {
   const [formData, setFormData] = useState({
     tipoDocumento: "DNI",
     nroDocumento: "",
@@ -696,10 +708,8 @@ function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, titular, onCl
     const loadSituaciones = async () => {
       try {
         setLoadingSituaciones(true);
-        const response = await fetch(`${API_BASE_URL}/therapeutic`);
-        if (!response.ok) throw new Error("Error al cargar situaciones terapéuticas");
-        const data = await response.json();
-        setSituacionesDisponibles(data.situaciones || []);
+        const situacionesData = await fetchTherapeuticSituationTypes();
+        setSituacionesDisponibles(situacionesData);
       } catch (error) {
         setErrors(prev => ({ ...prev, situaciones: "No se pudieron cargar las situaciones terapéuticas" }));
       } finally {
@@ -743,33 +753,17 @@ function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, titular, onCl
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.nroDocumento?.trim()) {
-      newErrors.nroDocumento = "Requerido";
-    } else if (!/^[0-9]{7,8}$/.test(formData.nroDocumento)) {
-      newErrors.nroDocumento = "El DNI debe tener 7 u 8 dígitos numéricos";
-    }
+    const docErr = validateDocument(formData.tipoDocumento, formData.nroDocumento);
+    if (docErr) newErrors.nroDocumento = docErr;
 
-    if (!formData.nombre?.trim()) {
-      newErrors.nombre = "Requerido";
-    } else if (formData.nombre.trim().length < 2 || formData.nombre.trim().length > 50) {
-      newErrors.nombre = "El nombre debe tener entre 2 y 50 caracteres";
-    }
+    const nombreErr = validatePersonName(formData.nombre, "nombre");
+    if (nombreErr) newErrors.nombre = nombreErr;
 
-    if (!formData.apellido?.trim()) {
-      newErrors.apellido = "Requerido";
-    } else if (formData.apellido.trim().length < 2 || formData.apellido.trim().length > 50) {
-      newErrors.apellido = "El apellido debe tener entre 2 y 50 caracteres";
-    }
+    const apellidoErr = validatePersonName(formData.apellido, "apellido");
+    if (apellidoErr) newErrors.apellido = apellidoErr;
 
-    if (!formData.fechaNacimiento) {
-      newErrors.fechaNacimiento = "Requerido";
-    } else {
-      const fechaNac = new Date(formData.fechaNacimiento);
-      const hoy = new Date();
-      if (fechaNac > hoy) {
-        newErrors.fechaNacimiento = "La fecha no puede ser futura";
-      }
-    }
+    const fechaErr = validateBirthDate(formData.fechaNacimiento);
+    if (fechaErr) newErrors.fechaNacimiento = fechaErr;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.usaContactoTitular && formData.email && !emailRegex.test(formData.email)) {
@@ -853,14 +847,10 @@ function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, titular, onCl
                 value={formData.tipoDocumento}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
-              >
-                <option value="DNI">DNI</option>
-                <option value="CUIL">CUIL</option>
-                <option value="CUIT">CUIT</option>
-                <option value="DOCUMENTO EXTRANJERO">DOCUMENTO EXTRANJERO</option>
-                <option value="CDI">CDI</option>
-                <option value="Pasaporte">Pasaporte</option>
-              </select>
+	              >
+	                <option value="DNI">DNI</option>
+	                <option value="Pasaporte">Pasaporte</option>
+	              </select>
             </div>
 
             <div className="flex flex-col">
@@ -1083,7 +1073,7 @@ function AddFamiliarPopup({ grupoId, dniTitular, planFijo, planId, titular, onCl
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-6">
             <button
               type="submit"
-              className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition w-full sm:w-auto order-2 sm:order-1"
+              className="bg-[#14B8A6] text-white px-6 py-3 rounded font-semibold shadow hover:bg-teal-700 transition w-full sm:w-auto order-2 sm:order-1"
             >
               Guardar Familiar
             </button>

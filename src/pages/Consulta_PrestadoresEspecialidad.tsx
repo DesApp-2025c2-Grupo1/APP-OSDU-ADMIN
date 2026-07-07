@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
-import { SPECIALTIES, loadSpecialties } from "../data/specialties";
-import { API_BASE_URL } from "../config/api";
+import { SPECIALTIES } from "../data/specialties";
+import { API_BASE_URL, apiFetch } from "../config/api";
 import { PDFDownloadButton } from "../util/ReportPDFExporter";
 
 
@@ -47,7 +47,7 @@ export function PrestadoresPorEspecialidad() {
       setPage(1);
 
       // CAMBIAR SI O SI POR LA RUTA DEL BACK-END PARA ESTE REPORTE
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/reports/prestadores-por-especialidad?specialtyId=${selectedSpecialtyId}`
       );
 
@@ -83,7 +83,7 @@ export function PrestadoresPorEspecialidad() {
   return (
     <div className="w-full flex justify-center px-2">
       <div className="w-full max-w-4xl bg-white rounded-xl shadow-md border border-gray-200 p-6 space-y-6">
-        <h1 className="text-2xl font-bold mb-2 text-[#5FA92C]">
+        <h1 className="text-2xl font-bold mb-2 text-[#14B8A6]">
           Cantidad de prestadores por especialidad
         </h1>
 
@@ -100,7 +100,7 @@ export function PrestadoresPorEspecialidad() {
             <select
               value={selectedSpecialtyId}
               onChange={(e) => setSelectedSpecialtyId(e.target.value)}
-              className="w-full sm:w-72 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
+              className="w-full sm:w-72 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
             >
               <option value="">Seleccionar especialidad</option>
               {SPECIALTIES.map((esp) => (
@@ -117,7 +117,7 @@ export function PrestadoresPorEspecialidad() {
               className={`
                 px-5 py-2 rounded-md text-white font-semibold
                 ${selectedSpecialtyId && !loading
-                  ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
+                  ? "bg-[#14B8A6] hover:bg-[#4c8c23]"
                   : "bg-gray-300 cursor-not-allowed"
                 }
               `}
@@ -173,7 +173,7 @@ export function PrestadoresPorEspecialidad() {
               {/* DESKTOP: tabla */}
               <div className="hidden md:block rounded-md shadow-sm border border-gray-200 bg-white">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-[#5FA92C] text-white">
+                  <thead className="bg-[#14B8A6] text-white">
                     <tr>
                       {["CUIL/CUIT", "Nombre", "Tipo de prestador", "Especialidad"].map(
                         (h) => (

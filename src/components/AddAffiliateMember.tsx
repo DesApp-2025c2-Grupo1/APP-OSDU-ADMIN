@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { API_BASE_URL } from "../config/api";
+import { fetchTherapeuticSituationTypes } from "../api/therapeuticSituationService";
+import { validateBirthDate, validateDocument, validatePersonName } from "../utils/affiliateValidation";
 
 interface Situacion {
   idSituacion: number;
@@ -54,12 +55,8 @@ export function AddFamiliarMember({
     const fetchSituaciones = async () => {
       try {
         setLoadingSituaciones(true);
-        const response = await fetch(`${API_BASE_URL}/therapeutic`);
-
-        if (!response.ok) throw new Error("Error al cargar situaciones terapéuticas");
-
-        const data = await response.json();
-        setSituacionesDisponibles(data.situaciones || []);
+        const situacionesData = await fetchTherapeuticSituationTypes();
+        setSituacionesDisponibles(situacionesData);
       } catch (error) {
         setErrors(prev => ({
           ...prev,
@@ -121,6 +118,20 @@ export function AddFamiliarMember({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const nextErrors: Record<string, string> = {};
+    const docErr = validateDocument(formData.tipoDocumento, formData.nroDocumento);
+    if (docErr) nextErrors.nroDocumento = docErr;
+    const nombreErr = validatePersonName(formData.nombre, "nombre");
+    if (nombreErr) nextErrors.nombre = nombreErr;
+    const apellidoErr = validatePersonName(formData.apellido, "apellido");
+    if (apellidoErr) nextErrors.apellido = apellidoErr;
+    const fechaErr = validateBirthDate(formData.fechaNacimiento);
+    if (fechaErr) nextErrors.fechaNacimiento = fechaErr;
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
     // Construir situaciones con el formato correcto para el backend
     const situacionesPayload = situaciones
       .filter(s => s.idSituacion)
@@ -177,7 +188,7 @@ export function AddFamiliarMember({
 
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
           <p className="text-blue-800 font-semibold">
-            Plan del grupo familiar: <span className="text-green-600">{planFijo}</span>
+            Plan del grupo familiar: <span className="text-teal-600">{planFijo}</span>
           </p>
           <p className="text-blue-600 text-sm">
             Todos los miembros del grupo familiar comparten el mismo plan médico.
@@ -205,14 +216,10 @@ export function AddFamiliarMember({
                 value={formData.tipoDocumento}
                 onChange={handleInputChange}
                 className="p-2 border border-gray-300 rounded"
-              >
-                <option value="DNI">DNI</option>
-                <option value="CUIL">CUIL</option>
-                <option value="CUIT">CUIT</option>
-                <option value="DOCUMENTO EXTRANJERO">DOCUMENTO EXTRANJERO</option>
-                <option value="CDI">CDI</option>
-                <option value="Pasaporte">Pasaporte</option>
-              </select>
+	              >
+	                <option value="DNI">DNI</option>
+	                <option value="Pasaporte">Pasaporte</option>
+	              </select>
             </div>
 
             <div className="flex flex-col">
@@ -222,10 +229,11 @@ export function AddFamiliarMember({
                 name="nroDocumento"
                 value={formData.nroDocumento}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-                required
-              />
-            </div>
+	                className="p-2 border border-gray-300 rounded"
+	                required
+	              />
+	              {errors.nroDocumento && <p className="text-red-500 text-xs mt-1">{errors.nroDocumento}</p>}
+	            </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Nombres *</label>
@@ -234,10 +242,11 @@ export function AddFamiliarMember({
                 name="nombre"
                 value={formData.nombre}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-                required
-              />
-            </div>
+	                className="p-2 border border-gray-300 rounded"
+	                required
+	              />
+	              {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
+	            </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Apellidos *</label>
@@ -246,10 +255,11 @@ export function AddFamiliarMember({
                 name="apellido"
                 value={formData.apellido}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-                required
-              />
-            </div>
+	                className="p-2 border border-gray-300 rounded"
+	                required
+	              />
+	              {errors.apellido && <p className="text-red-500 text-xs mt-1">{errors.apellido}</p>}
+	            </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Fecha Nacimiento *</label>
@@ -258,10 +268,11 @@ export function AddFamiliarMember({
                 name="fechaNacimiento"
                 value={formData.fechaNacimiento}
                 onChange={handleInputChange}
-                className="p-2 border border-gray-300 rounded"
-                required
-              />
-            </div>
+	                className="p-2 border border-gray-300 rounded"
+	                required
+	              />
+	              {errors.fechaNacimiento && <p className="text-red-500 text-xs mt-1">{errors.fechaNacimiento}</p>}
+	            </div>
 
             <div className="flex flex-col">
               <label className="font-semibold mb-1">Parentesco *</label>
@@ -372,7 +383,7 @@ export function AddFamiliarMember({
           </div>
 
           <div className="mt-6 p-4 border border-gray-200 rounded-lg">
-            <h3 className="text-[#5FA92C] text-lg font-semibold mb-4 border-b-2 border-[#5FA92C] pb-1">
+            <h3 className="text-[#14B8A6] text-lg font-semibold mb-4 border-b-2 border-[#14B8A6] pb-1">
               Situaciones Terapéuticas
             </h3>
 
@@ -416,7 +427,7 @@ export function AddFamiliarMember({
                     <button
                       type="button"
                       onClick={() => eliminarSituacion(index)}
-                      className="text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+                      className="text-sm px-4 py-2 border-2 border-[#14B8A6] text-[#14B8A6] rounded font-semibold hover:bg-[#14B8A6] hover:text-white transition"
                     >
                       Eliminar
                     </button>
@@ -428,7 +439,7 @@ export function AddFamiliarMember({
             <button
               type="button"
               onClick={agregarSituacion}
-              className="mt-3 text-sm px-4 py-2 border-2 border-[#5FA92C] text-[#5FA92C] rounded font-semibold hover:bg-[#5FA92C] hover:text-white transition"
+              className="mt-3 text-sm px-4 py-2 border-2 border-[#14B8A6] text-[#14B8A6] rounded font-semibold hover:bg-[#14B8A6] hover:text-white transition"
               disabled={loadingSituaciones || situacionesDisponibles.length === 0}
             >
               + Agregar Situación Terapéutica
@@ -438,7 +449,7 @@ export function AddFamiliarMember({
           <div className="flex justify-center gap-4 mt-6">
             <button
               type="submit"
-              className="bg-[#5FA92C] text-white px-6 py-3 rounded font-semibold shadow hover:bg-green-700 transition"
+              className="bg-[#14B8A6] text-white px-6 py-3 rounded font-semibold shadow hover:bg-teal-700 transition"
             >
               Guardar Familiar
             </button>

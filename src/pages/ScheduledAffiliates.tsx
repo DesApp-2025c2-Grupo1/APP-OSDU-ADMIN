@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 interface ScheduledAffiliate {
     dni: string;
@@ -22,7 +22,7 @@ export default function ScheduledAffiliates() {
     const fetchScheduledAffiliates = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_BASE_URL}/affiliates/scheduled`);
+            const response = await apiFetch(`${API_BASE_URL}/affiliates/scheduled`);
 
             if (!response.ok) {
                 throw new Error('Error al cargar afiliados programados');
@@ -39,9 +39,11 @@ export default function ScheduledAffiliates() {
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
+        if (Number.isNaN(date.getTime())) return dateString;
         return new Intl.DateTimeFormat('es-AR', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
             timeZone: 'America/Argentina/Buenos_Aires'
         }).format(date);
     };
@@ -82,7 +84,7 @@ export default function ScheduledAffiliates() {
             {!loading && !error && affiliates.length > 0 && (
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-gray-300">
-                        <thead className="bg-[#5FA92C] text-white">
+                        <thead className="bg-[#14B8A6] text-white">
                             <tr>
                                 <th className="border border-gray-300 px-4 py-2 text-left">DNI</th>
                                 <th className="border border-gray-300 px-4 py-2 text-left">Nombre</th>

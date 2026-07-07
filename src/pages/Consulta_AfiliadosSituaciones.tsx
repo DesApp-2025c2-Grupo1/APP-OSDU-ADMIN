@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { PDFDownloadButton } from "../util/ReportPDFExporter";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 type SituacionRow = {
   idSituacionAfiliado: number;
@@ -61,7 +61,7 @@ export function SituacionesPorAfiliado() {
       setResult(null);
       setPage(1);
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/reports/situaciones-por-afiliado?dni=${dni}`
       );
 
@@ -99,7 +99,7 @@ export function SituacionesPorAfiliado() {
   return (
     <div className="w-full flex justify-center px-2">
       <div className="w-full max-w-4xl bg-white rounded-xl shadow-md border border-gray-200 p-6 space-y-6">
-        <h1 className="text-2xl font-bold mb-2 text-[#5FA92C]">
+        <h1 className="text-2xl font-bold mb-2 text-[#14B8A6]">
           Situaciones terapéuticas por afiliado
         </h1>
 
@@ -118,7 +118,7 @@ export function SituacionesPorAfiliado() {
               inputMode="numeric"
               value={dni}
               onChange={(e) => handleDniChange(e.target.value)}
-              className="w-full sm:w-48 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
+              className="w-full sm:w-48 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
               placeholder="Ej: 12345678"
               maxLength={8}
             />
@@ -130,7 +130,7 @@ export function SituacionesPorAfiliado() {
               className={`
                 px-5 py-2 rounded-md text-white font-semibold
                 ${dniValido && !loading
-                  ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
+                  ? "bg-[#14B8A6] hover:bg-[#4c8c23]"
                   : "bg-gray-300 cursor-not-allowed"
                 }
               `}
@@ -160,7 +160,7 @@ export function SituacionesPorAfiliado() {
           {result && (
             <>
               {/* INFO DEL AFILIADO */}
-              <div className="mb-4 p-4 bg-[#F2FAEC] rounded-lg border border-[#5FA92C]">
+              <div className="mb-4 p-4 bg-[#F2FAEC] rounded-lg border border-[#14B8A6]">
                 <h2 className="text-lg font-semibold text-gray-900 mb-2">
                   Información del Afiliado
                 </h2>
@@ -208,7 +208,7 @@ export function SituacionesPorAfiliado() {
                   {/* DESKTOP: tabla */}
                   <div className="hidden md:block rounded-md shadow-sm border border-gray-200 bg-white">
                     <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-[#5FA92C] text-white">
+                      <thead className="bg-[#14B8A6] text-white">
                         <tr>
                           {["Situación", "Fecha Inicio", "Fecha Fin", "Estado"].map(
                             (h) => (
@@ -235,7 +235,7 @@ export function SituacionesPorAfiliado() {
                             <td className="px-4 py-2 text-sm">
                               <span
                                 className={`px-2 py-1 rounded-full text-xs font-semibold ${s.estado === "Activa"
-                                    ? "bg-green-100 text-green-800"
+                                    ? "bg-teal-100 text-teal-800"
                                     : "bg-gray-100 text-gray-800"
                                   }`}
                               >

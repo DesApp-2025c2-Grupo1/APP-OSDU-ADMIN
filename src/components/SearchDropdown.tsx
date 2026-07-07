@@ -88,7 +88,7 @@ export default function SearchDropdown({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar"
+            placeholder={placeholder}
             className="
               block md:hidden
               w-full h-full p-2.5 text-sm text-gray-900

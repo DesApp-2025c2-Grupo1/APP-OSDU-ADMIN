@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonVolver } from "../util/ButtonVolver";
 import { PDFDownloadButton } from "../util/ReportPDFExporter";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
 
 type SituacionRow = {
   idSituacionAfiliado: number;
@@ -49,7 +49,7 @@ export function SituacionesPorGrupo() {
       setError(null);
       setMiembros([]);
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE_URL}/reports/situaciones-por-grupo?dni=${dni}`
       );
 
@@ -101,7 +101,7 @@ export function SituacionesPorGrupo() {
   return (
     <div className="w-full flex justify-center px-2">
       <div className="w-full max-w-5xl bg-white rounded-xl shadow-md border border-gray-200 p-6 space-y-6">
-        <h1 className="text-2xl font-bold mb-2 text-[#5FA92C]">
+        <h1 className="text-2xl font-bold mb-2 text-[#14B8A6]">
           Situaciones terapéuticas por grupo familiar
         </h1>
 
@@ -120,7 +120,7 @@ export function SituacionesPorGrupo() {
               inputMode="numeric"
               value={dni}
               onChange={(e) => handleDniChange(e.target.value)}
-              className="w-full sm:w-48 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5FA92C]"
+              className="w-full sm:w-48 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6]"
               placeholder="Ej: 12345678"
               maxLength={8}
             />
@@ -132,7 +132,7 @@ export function SituacionesPorGrupo() {
               className={`
                 px-5 py-2 rounded-md text-white font-semibold
                 ${dniValido && !loading
-                  ? "bg-[#5FA92C] hover:bg-[#4c8c23]"
+                  ? "bg-[#14B8A6] hover:bg-[#4c8c23]"
                   : "bg-gray-300 cursor-not-allowed"
                 }
               `}
@@ -163,7 +163,7 @@ export function SituacionesPorGrupo() {
           {miembros.length > 0 && (
             <>
               {/* Resumen */}
-              <div className="mb-4 p-4 bg-[#F2FAEC] rounded-lg border border-[#5FA92C] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="mb-4 p-4 bg-[#F2FAEC] rounded-lg border border-[#14B8A6] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-2">
                     Resumen del Grupo Familiar

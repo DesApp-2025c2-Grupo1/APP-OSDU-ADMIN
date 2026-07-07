@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { OptionsMenu } from "./OptionsMenu";
 import { EditAffiliatePopup } from "./EditAffiliatePopup";
@@ -6,9 +6,11 @@ import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import ScheduledSuccessPopup from "./BajaExitosaPopup";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch } from "../config/api";
+import { useModalPresence } from "../context/ModalContext";
 
 export type Affiliate = {
+  id: number;
   grupoFamiliar: number;
   tipoDocumento: string;
   apellido: string;
@@ -18,6 +20,7 @@ export type Affiliate = {
   dni: string;
   nombre: string;
   parentesco: string;
+  status?: boolean;
 
   email: Array<{
     idEmail: number;
@@ -52,7 +55,7 @@ export type Affiliate = {
 interface AffiliatesTableProps {
   affiliates: Affiliate[];
   onOptionClick: (option: string, affiliate: Affiliate) => void;
-  onAffiliateDeleted?: (dni: string) => void;
+  onAffiliateDeleted?: () => void;
   onAffiliateUpdated?: (affiliate: Affiliate) => void;
 }
 
@@ -73,6 +76,11 @@ export function AffiliatesTable({
   const [showSuccess, setShowSuccess] = useState(false);
   const [successISO, setSuccessISO] = useState<string>("");
   const [successName, setSuccessName] = useState<string>("");
+
+  useModalPresence(
+    "affiliates-table-modals",
+    showEditPopup || showDeleteDialog || showSuccess
+  );
 
   const handleOptionClick = (option: string, affiliate: Affiliate) => {
     const opt = option.trim().toLowerCase();
@@ -100,15 +108,13 @@ export function AffiliatesTable({
   };
 
   const handleSaveAffiliate = async (data: any) => {
+    if (!selectedAffiliate?.id) return;
     try {
-
-      const response = await fetch(
-        `${API_BASE_URL}/affiliates/${selectedAffiliate?.dni}`,
+      const response = await apiFetch(
+        `${API_BASE_URL}/affiliates/${selectedAffiliate.id}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
         }
       );
@@ -118,20 +124,10 @@ export function AffiliatesTable({
         throw new Error(errorData.message || "Error al actualizar afiliado");
       }
 
-
-      // Recargar el afiliado actualizado
-      const updatedResponse = await fetch(
-        `${API_BASE_URL}/affiliates/affiliate/${selectedAffiliate?.dni}`
-      );
-
-      if (updatedResponse.ok) {
-        const updatedData = await updatedResponse.json();
-        onAffiliateUpdated?.(updatedData.affiliates);
-      }
-
+      const updated = await response.json();
+      onAffiliateUpdated?.(updated);
       setShowEditPopup(false);
       setSelectedAffiliate(null);
-
     } catch (error) {
       alert("Error al actualizar el afiliado. Por favor, intente nuevamente.");
     }
@@ -140,34 +136,25 @@ export function AffiliatesTable({
 
 
 
-  // ✅ Eliminación inmediata sin alertas
   const handleConfirmDelete = async () => {
-    if (!selectedAffiliate) return;
+    if (!selectedAffiliate?.id) return;
     setIsDeleting(true);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      // El backend no tiene DELETE — "dar de baja" desactiva el afiliado
+      const response = await apiFetch(
+        `${API_BASE_URL}/affiliates/${selectedAffiliate.id}/deactivate`,
+        { method: "PUT" }
       );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "No se pudo eliminar el afiliado");
+        throw new Error(errorData.message || "No se pudo dar de baja al afiliado");
       }
 
-      // ✅ Notifica al padre para recargar
-      onAffiliateDeleted?.(selectedAffiliate.dni);
-
-      // Cierra todo sin mostrar alertas
+      onAffiliateDeleted?.();
       setShowDeleteDialog(false);
       setSelectedAffiliate(null);
-
     } catch (error) {
     } finally {
       setIsDeleting(false);
@@ -178,7 +165,7 @@ export function AffiliatesTable({
     if (!selectedAffiliate) return;
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/affiliates/${selectedAffiliate.dni}/schedule-delete`,
         {
           method: "POST",
@@ -201,148 +188,139 @@ export function AffiliatesTable({
 
   const totalPages = Math.max(1, Math.ceil(affiliates.length / itemsPerPage));
   const safePage = Math.min(currentPage, totalPages);
-  const startIndex = (safePage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentAffiliates = affiliates.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [affiliates]);
+
+  const currentAffiliates = useMemo(() => {
+    const startIndex = (safePage - 1) * itemsPerPage;
+    return affiliates.slice(startIndex, startIndex + itemsPerPage);
+  }, [affiliates, itemsPerPage, safePage]);
 
   return (
     <>
-      <div className="rounded-lg border border-gray-300 shadow-md bg-white">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         {/* Tabla de escritorio */}
         <div className="hidden md:block">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-[#5FA92C] text-white">
-              <tr>
-                {["Credencial", "DNI", "Nombre", "Apellido", "Fecha Nac.", "Plan", "Dirección", ""].map((h) => (
-                  <th key={h} className="px-4 py-2 text-left text-sm font-medium uppercase tracking-wider">
-                    {h}
-                  </th>
+          <div className="overflow-x-auto">
+            <table className="w-full table-auto">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  {["Credencial", "DNI", "Nombre", "Apellido", "Fecha Nac.", "Plan", "Dirección", ""].map((h) => (
+                    <th 
+                      key={h} 
+                      className="text-left text-xs font-600 text-slate-400 uppercase tracking-wider px-6 py-3"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {currentAffiliates.map((a) => (
+                  <tr key={a.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-500 text-slate-700">{a.credencial}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{a.dni}</td>
+                    <td className="px-6 py-4 text-sm font-500 text-slate-700">{a.nombre}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{a.apellido}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{a.fecha_nacimiento}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{a.plan?.nombre || (a as any).plan_type || "-"}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{a.direccion}</td>
+                    <td className="px-4 py-4 text-right">
+                      <OptionsMenu
+                        affiliate={a}
+                        options={["Editar", "Ver Detalles", "Dar de Baja", "Ver Grupo Familiar"]}
+                        onOptionClick={(opt) => handleOptionClick(opt, a)}
+                      />
+                    </td>
+                  </tr>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {currentAffiliates.map((a, idx) => (
-                <tr key={a.credencial} className={idx % 2 === 0 ? "bg-gray-50" : ""}>
-                  <td className="px-4 py-2 text-sm">{a.credencial}</td>
-                  <td className="px-4 py-2 text-sm">{a.dni}</td>
-                  <td className="px-4 py-2 text-sm">{a.nombre}</td>
-                  <td className="px-4 py-2 text-sm">{a.apellido}</td>
-                  <td className="px-4 py-2 text-sm">{a.fecha_nacimiento}</td>
-                  <td className="px-4 py-2 text-sm">{a.plan.nombre}</td>
-                  <td className="px-4 py-2 text-sm">{a.direccion}</td>
-                  <td className="px-2 py-2 text-right w-10">
-                    <OptionsMenu
-                      affiliate={a}
-                      options={["Editar", "Ver Detalles", "Dar de Baja", "Ver Grupo Familiar"]}
-                      onOptionClick={(opt) => handleOptionClick(opt, a)}
-                    />
-                  </td>
-                </tr>
-              ))}
 
-              {currentAffiliates.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">
-                    No hay afiliados para mostrar.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                {currentAffiliates.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-12 text-center text-sm text-slate-400">
+                      No hay afiliados para mostrar.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div className="md:hidden p-3">
+        {/* Vista móvil */}
+        <div className="md:hidden">
           {currentAffiliates.length === 0 && (
-            <div className="px-2 py-6 text-center text-sm text-gray-500">
+            <div className="px-4 py-12 text-center text-sm text-slate-400">
               No hay afiliados para mostrar.
             </div>
           )}
 
-          <div className="flex flex-col gap-3">
+          <div className="divide-y divide-slate-50">
             {currentAffiliates.map((a) => (
-              <div key={a.credencial} className="border border-gray-200 rounded-lg shadow-sm p-4 bg-white">
-                <div className="mb-3">
-                  <div className="text-xs text-gray-500 uppercase">Credencial</div>
-                  <div className="font-semibold break-all">{a.credencial}</div>
+              <div 
+                key={a.id} 
+                className="px-4 py-4 hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-600 text-slate-700">{a.nombre} {a.apellido}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{a.credencial}</p>
+                  </div>
+                  <OptionsMenu
+                    affiliate={a}
+                    options={["Editar", "Ver Detalles", "Dar de Baja", "Ver Grupo Familiar"]}
+                    onOptionClick={(opt) => handleOptionClick(opt, a)}
+                  />
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
+                
+                <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
                   <div>
-                    <div className="text-xs text-gray-500 uppercase">DNI</div>
-                    <div className="text-sm">{a.dni}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase">Fecha Nac.</div>
-                    <div className="text-sm">{a.fecha_nacimiento}</div>
+                    <span className="text-slate-400 font-500">DNI</span>
+                    <p className="text-slate-600 mt-0.5">{a.dni}</p>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500 uppercase">Nombre</div>
-                    <div className="text-sm">{a.nombre}</div>
+                    <span className="text-slate-400 font-500">Fecha Nac.</span>
+                    <p className="text-slate-600 mt-0.5">{a.fecha_nacimiento}</p>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500 uppercase">Apellido</div>
-                    <div className="text-sm">{a.apellido}</div>
+                    <span className="text-slate-400 font-500">Plan</span>
+                    <p className="text-slate-600 mt-0.5">{a.plan?.nombre || (a as any).plan_type || "-"}</p>
                   </div>
-                  <div className="col-span-2">
-                    <div className="text-xs text-gray-500 uppercase">Plan</div>
-                    <div className="text-sm">{a.plan.nombre}</div>
+                  <div>
+                    <span className="text-slate-400 font-500">Dirección</span>
+                    <p className="text-slate-600 mt-0.5 truncate">{a.direccion}</p>
                   </div>
-                  <div className="col-span-2">
-                    <div className="text-xs text-gray-500 uppercase">Dirección</div>
-                    <div className="text-sm">{a.direccion}</div>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => handleOptionClick("Ver detalles", a)}
-                    className="flex-1 px-3 py-2 text-sm border rounded-md border-gray-300 hover:bg-gray-50"
-                  >
-                    Ver detalles
-                  </button>
-                  <button
-                    onClick={() => handleOptionClick("Editar", a)}
-                    className="flex-1 px-3 py-2 text-sm border-2 rounded-md border-[#5FA92C] text-[#5FA92C] hover:bg-[#5FA92C] hover:text-white font-semibold"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleOptionClick("Ver Grupo Familiar", a)}
-                    className="flex-1 px-3 py-2 text-sm border rounded-md border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold"
-                  >
-                    Ver Grupo
-                  </button>
-                  <button
-                    onClick={() => handleOptionClick("Dar de baja", a)}
-                    className="w-full px-3 py-2 text-sm border-2 rounded-md border-red-500 text-red-600 hover:bg-red-50 font-semibold"
-                  >
-                    Dar de baja
-                  </button>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Footer de paginación */}
-        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
-          <span className="text-sm text-gray-700">
-            Página {safePage} de {totalPages}
+        {/* Paginación mejorada */}
+        <div className="bg-slate-50 px-4 sm:px-6 py-3 border-t border-slate-100 flex items-center justify-between">
+          <span className="text-xs font-500 text-slate-400">
+            Página {safePage} de {totalPages} ({affiliates.length} afiliados)
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
-              className="px-2 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <NavigateBeforeIcon />
+              <NavigateBeforeIcon fontSize="small" />
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
-              className="px-2 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <NavigateNextIcon />
+              <NavigateNextIcon fontSize="small" />
             </button>
           </div>
         </div>
